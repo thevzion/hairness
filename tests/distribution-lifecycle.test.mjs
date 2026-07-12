@@ -22,7 +22,15 @@ test('team and forge payloads have distinct operational boundaries', async () =>
   const team = await createFixture('team-payload')
   await access(join(team.target, 'hairness.lock.json'))
   await access(join(team.target, 'LICENSES/Hairness-MIT.txt'))
-  for (const path of ['LICENSE', 'SPEC.md', 'ROADMAP.md', 'CHANGELOG.md', 'STATUS.md', 'catalog', 'src/bootstrap', 'extensions/hairness/maintainer']) await assert.rejects(access(join(team.target, path)), path)
+  for (const path of ['LICENSE', 'SPEC.md', 'SECURITY.md', 'ROADMAP.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'STATUS.md', 'docs', 'templates', 'providers', 'catalog', 'src/bootstrap', 'extensions/hairness/maintainer', 'scripts/check-commits.mjs', 'scripts/check-pack.mjs', 'scripts/impact-gate.mjs']) await assert.rejects(access(join(team.target, path)), path)
+  for (const path of ['scripts/check.mjs', 'scripts/check-providers.mjs', 'scripts/conformance.mjs', 'scripts/extension-ownership-gate.mjs', 'scripts/run-tests.mjs']) await access(join(team.target, path))
+  const teamPackage = JSON.parse(await readFile(join(team.target, 'package.json'), 'utf8'))
+  assert.equal(teamPackage.private, true)
+  assert.equal(teamPackage.license, 'UNLICENSED')
+  for (const name of ['check:pack', 'check:impact', 'check:commits']) assert.equal(teamPackage.scripts[name], undefined)
+  const teamLock = JSON.parse(await readFile(join(team.target, 'hairness.lock.json'), 'utf8'))
+  assert.ok(teamLock.materials.every((material) => !['scripts', 'providers'].includes(material.path)))
+  assert.equal(new Set(teamLock.materials.map((material) => material.id)).size, teamLock.materials.length)
 
   const forge = await createFixture('company-forge', 'forge')
   await access(join(forge.target, 'catalog/standard.json'))
@@ -31,7 +39,21 @@ test('team and forge payloads have distinct operational boundaries', async () =>
   const forgeManifest = JSON.parse(await readFile(join(forge.target, 'hairness.json'), 'utf8'))
   assert.ok(forgeManifest.extensions.some((extension) => extension.id === 'hairness/maintainer'))
   await access(join(forge.target, 'STATUS.md'))
+  for (const path of ['scripts/check-commits.mjs', 'scripts/check-pack.mjs', 'scripts/impact-gate.mjs']) await access(join(forge.target, path))
   for (const path of ['LICENSE', 'SPEC.md', 'ROADMAP.md', 'CHANGELOG.md']) await assert.rejects(access(join(forge.target, path)), path)
+})
+
+test('safe update ignores scripts outside the distribution payload', async () => {
+  const fixture = await createFixture('minimal-update')
+  const candidate = join(fixture.base, 'candidate-with-forge-script')
+  await cp(fixture.target, candidate, { recursive: true })
+  await writeFile(join(candidate, 'scripts/check.mjs'), `${await readFile(join(candidate, 'scripts/check.mjs'), 'utf8')}\n// candidate proof\n`)
+  await writeFile(join(candidate, 'scripts/check-pack.mjs'), 'throw new Error("must not be copied")\n')
+  const plan = await planDistributionUpdate(fixture.target, { to: candidate, scope: 'core' })
+  assert.equal(plan.status, 'ready')
+  await applyDistributionUpdate(fixture.target, plan.id, plan.checkpointId)
+  assert.match(await readFile(join(fixture.target, 'scripts/check.mjs'), 'utf8'), /candidate proof/)
+  await assert.rejects(access(join(fixture.target, 'scripts/check-pack.mjs')))
 })
 
 test('safe update applies intact material and rejects consumer divergence', async () => {

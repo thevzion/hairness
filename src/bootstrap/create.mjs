@@ -12,6 +12,12 @@ import { validateContract } from '../core/contracts.mjs'
 import { digestMaterial } from '../distribution/update-engine.mjs'
 
 const exec = promisify(execFile)
+const distributionScripts = ['check-providers.mjs', 'check.mjs', 'conformance.mjs', 'extension-ownership-gate.mjs', 'run-tests.mjs']
+const forgeScripts = [...distributionScripts, 'check-commits.mjs', 'check-pack.mjs', 'impact-gate.mjs']
+
+function scriptsFor(role) {
+  return role === 'forge' ? forgeScripts : distributionScripts
+}
 const sourceRoot = fileURLToPath(new URL('../../', import.meta.url))
 const implementationVersion = '0.2.0-alpha.0'
 
@@ -180,7 +186,7 @@ async function assertEmptyTarget(target) {
 }
 
 async function copyBase(target, role) {
-  for (const entry of ['bin', 'providers', 'schemas']) await cp(join(sourceRoot, entry), join(target, entry), { recursive: true })
+  for (const entry of ['bin', 'schemas']) await cp(join(sourceRoot, entry), join(target, entry), { recursive: true })
   await mkdir(join(target, 'src'), { recursive: true })
   for (const entry of ['cli.mjs', 'prologue.mjs', 'core', 'distribution', 'providers']) await cp(join(sourceRoot, 'src', entry), join(target, 'src', entry), { recursive: true })
   if (role === 'forge') {
@@ -194,7 +200,7 @@ async function copyBase(target, role) {
   await mkdir(join(target, 'LICENSES'), { recursive: true })
   await cp(join(sourceRoot, 'LICENSE'), join(target, 'LICENSES', 'Hairness-MIT.txt'))
   await mkdir(join(target, 'scripts'), { recursive: true })
-  for (const name of ['check-commits.mjs', 'check-pack.mjs', 'check-providers.mjs', 'check.mjs', 'conformance.mjs', 'extension-ownership-gate.mjs', 'impact-gate.mjs', 'run-tests.mjs']) await cp(join(sourceRoot, 'scripts', name), join(target, 'scripts', name))
+  for (const name of scriptsFor(role)) await cp(join(sourceRoot, 'scripts', name), join(target, 'scripts', name))
   await mkdir(join(target, 'tests'), { recursive: true })
   await cp(join(sourceRoot, 'templates', 'distribution-tests', 'smoke.test.mjs.template'), join(target, 'tests', 'smoke.test.mjs'))
 }
@@ -220,18 +226,17 @@ async function distributionLock(state, selectedRecipe, extensions) {
   const roots = [
     { path: 'bin', owner: 'hairness/distribution', scope: 'core' },
     { path: 'schemas', owner: 'hairness/distribution', scope: 'core' },
-    { path: 'providers', owner: 'hairness/distribution', scope: 'providers' },
-    { path: 'scripts', owner: 'hairness/distribution', scope: 'core' },
     { path: 'src/cli.mjs', owner: 'hairness/distribution', scope: 'core' },
     { path: 'src/prologue.mjs', owner: 'hairness/distribution', scope: 'core' },
     { path: 'src/core', owner: 'hairness/distribution', scope: 'core' },
     { path: 'src/distribution', owner: 'hairness/distribution', scope: 'core' },
     { path: 'src/providers', owner: 'hairness/distribution', scope: 'providers' },
+    ...scriptsFor(state.role).map((name) => ({ path: `scripts/${name}`, owner: 'hairness/distribution', scope: 'core' })),
     ...extensions.map((id) => ({ path: `extensions/${id}`, owner: id, scope: `extension:${id}` })),
     ...(state.role === 'forge' ? [{ path: 'src/bootstrap', owner: 'hairness/distribution', scope: 'core' }, { path: 'catalog', owner: 'hairness/distribution', scope: 'core' }] : []),
   ]
   const materials = []
-  for (const [index, item] of roots.entries()) materials.push({ id: `material-${index + 1}`, owner: item.owner, path: item.path, sourcePath: item.path, version: implementationVersion, baseDigest: await digestMaterial(join(state.target, item.path)), policy: 'vendored', scope: item.scope })
+  for (const item of roots) materials.push({ id: `material-${item.path.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')}`, owner: item.owner, path: item.path, sourcePath: item.path, version: implementationVersion, baseDigest: await digestMaterial(join(state.target, item.path)), policy: 'vendored', scope: item.scope })
   return {
     schemaVersion: 2,
     protocolVersion: '0.2',
@@ -282,7 +287,7 @@ export async function applyCreate(id, checkpointId, options = {}) {
   sourcePackage.private = true
   sourcePackage.license = 'UNLICENSED'
   delete sourcePackage.files
-  delete sourcePackage.scripts['check:pack']
+  if (state.role === 'distribution') for (const name of ['check:pack', 'check:impact', 'check:commits']) delete sourcePackage.scripts[name]
   await writeJsonAtomic(join(state.target, 'package.json'), sourcePackage)
   await writeFile(join(state.target, 'README.md'), generatedReadme(state, selectedRecipe))
   if (state.role === 'forge') await writeFile(join(state.target, 'STATUS.md'), generatedStatus(state))

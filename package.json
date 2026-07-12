@@ -29,7 +29,6 @@
     "catalog/minimal.json",
     "docs/extensions/catalog.md",
     "extensions/hairness/",
-    "providers/",
     "schemas/",
     "scripts/check-commits.mjs",
     "scripts/check-pack.mjs",

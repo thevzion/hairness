@@ -237,7 +237,7 @@ Markdown and TOML projections MUST use content-addressed managed regions. JSON p
 
 A DistributionRecipe MUST declare branding, starter, selected extensions, providers, sources, and codebases. Materialization MUST copy the selected source into a standalone repository and record provenance without creating a runtime dependency.
 
-`create` MUST default to role `distribution` and starter `standard`. A team distribution MUST include only the operational runtime, selected extensions, schemas, provider projections, smoke tests, and copied MIT notice. It MUST NOT include the reference project SPEC, ADRs, roadmap, changelog, maintainer documentation, dormant catalogue, or forge bootstrap. `hairness/maintainer` MUST NOT be selected by `standard`.
+`create` MUST default to role `distribution` and starter `standard`. A team distribution MUST include only the operational runtime, selected extensions, schemas, provider projections, smoke tests, their required validation scripts, and copied MIT notice. It MUST NOT include the reference project SPEC, ADRs, roadmap, changelog, maintainer documentation, dormant catalogue, forge bootstrap, packaging gates, or commit-maintenance gates. `hairness/maintainer` MUST NOT be selected by `standard`.
 
 Role `forge` MUST be explicit. A generated forge MAY include the generic catalogue, bootstrap, maintainer, qualification suites, and organization-specific forge guidance. It MUST NOT copy the reference project's historical roadmap or changelog.
 
