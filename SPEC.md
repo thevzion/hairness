@@ -1,6 +1,6 @@
 # Hairness protocol specification
 
-Status: pre-alpha  
+Status: experimental alpha
 Protocol: `0.2`  
 Implementation: `0.2.0-alpha.0`
 

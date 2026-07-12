@@ -1,20 +1,42 @@
 # Hairness
 
-## Stop rebuilding your agent setup for every project and provider.
+**The intent control layer for native AI agents.**
 
-Hairness turns agent instructions, commands, source access, safeguards, methods, and result contracts into versioned **agentic assets**. Select them once, own the source, and compile the same operating environment for Codex and Claude.
+Hairness turns instructions, commands, source access, safeguards, methods, and
+result contracts into versioned **agentic assets**. Select them once, own their
+source, and compile the same operating environment for Codex and Claude.
 
-It is not another AI tool. It is the lightweight layer that makes your preferred AI tools understand how you work.
+**Move mountains with one intent.**
 
-**Shared reality. Shared cognition. Safe leverage.**
+> [!WARNING]
+> **Experimental alpha.** Hairness is ready for evaluation and dogfooding, but
+> its protocol, commands and extension contracts may change before 1.0.
+> Pin exact versions, keep effects checkpointed and expect documented migrations.
 
-Status: **pre-alpha** · Implementation: **0.2.0-alpha.0** · Protocol: **0.2** · Node.js: **22+** · License: **MIT** · Providers: **Codex, Claude**
+Implementation: **0.2.0-alpha.0** · Protocol: **0.2** · Node.js: **22+** ·
+License: **MIT** · Providers: **Codex, Claude**
 
 The name is a joke. The context discipline isn't.
 
-## Work with the main session
+## Stop rebuilding your agent setup
 
-Hairness is designed for the session where human judgment and model inference meet. The human provides intent, taste, priorities, and decisions. The agent provides synthesis, reach, continuity, and execution. Deterministic controls keep both grounded in the same sources, boundaries, and results.
+Starting a project still means copying skills, rewriting instructions, wiring
+tools, and teaching each AI provider the same context. Teams then accumulate
+prompts and scripts that are hard to test, version, reuse, or trust.
+
+Hairness adds one small layer above native agents. It gives humans a stable
+intent surface and gives agents deterministic routes to current context,
+sources, constraints, artifacts, and typed results. The provider keeps its
+model, UI, sandbox, tools, and native workers.
+
+**Shared reality. Shared cognition. Safe leverage.**
+
+## Control the main session
+
+The main session is where human judgment and model inference meet. The human
+brings intent, taste, priorities, and decisions. The agent brings synthesis,
+reach, continuity, and execution. Hairness keeps both grounded without turning
+the conversation into infrastructure work.
 
 Provider commands are the human interface:
 
@@ -48,13 +70,59 @@ hairness-update                  propose source-owned updates
 hairness-maintain                maintain and qualify a forge
 ```
 
-Codex invokes `$hairness-…`; Claude invokes `/hairness-…`. Each name maps to the same extension-owned operation. Modifiers such as `--present auto` and `--creative divergent` compose behavior without duplicating capabilities.
+Forge distributions also add `hairness-roadmap` and `hairness-ship` for typed
+initiative and delivery planning. Codex invokes `$hairness-…`; Claude invokes
+`/hairness-…`. Every name resolves to the same extension-owned operation.
+
+## Hairness in action
+
+Commands compress intent. The model infers a draft, Hairness resolves what is
+already known, and the human is asked only for an irreducible decision.
+
+### Resolve one real gap
+
+```text
+Human: $hairness-map
+Hairness: What should be mapped?
+Human: The provider projection flow.
+Agent: [submits the resolved invocation and renders the typed map]
+```
+
+The missing focus produces one structured gap, not an improvised interview.
+This behavior is covered by the
+[invocation gap test](tests/invocation.test.mjs).
+
+### Preserve meaning, not conversation noise
+
+```text
+Human: $hairness-recap --present compact
+Agent: [produces a bounded SegmentDigest]
+Hairness: decisions, proof, limits, open edges and next routes
+```
+
+The result passes its owner schema and fan-in before it reaches the main
+session. See the
+[recap and resume fixture](extensions/hairness/maintainer/testing/test-suites/work-controls-recap-resume/test.mjs).
+
+### Stop before an effect
+
+```text
+Human: $hairness-act --auto
+Hairness: resolved the target and constraints; needs authority
+Agent: [shows the exact checkpoint instead of mutating the target]
+```
+
+`--auto` removes safe mechanical pauses. It never bypasses trust, ambiguity,
+authority, target expansion, or result validation. See the
+[effect-gate fixture](extensions/hairness/maintainer/testing/test-suites/provider-plan-effect-gate/test.mjs).
+
+The design goal is simple: hide the mechanics and surface the judgment.
 
 ## Agentic assets are software
 
-“Skill”, “prompt”, “hook”, “MCP”, “worker”, and “CLI” describe delivery mechanisms. **Agentic asset** names the durable thing: a versioned unit that changes what an agent can understand or do.
-
-Hairness gives executable assets a small common grammar:
+“Skill”, “prompt”, “hook”, “MCP”, “worker”, and “CLI” describe delivery
+mechanisms. **Agentic asset** names the durable thing: a versioned unit that
+changes what an agent can understand or do.
 
 ```text
 AgenticAsset
@@ -69,11 +137,31 @@ AgenticAsset
 - A **route** says where the operation runs.
 - A **typed result** makes validation, fan-in, reuse, and recovery possible.
 
-The kernel owns this grammar and its guarantees. Extensions own every behavior. A distribution owns what is selected.
+The kernel owns this grammar and its guarantees. Extensions own behavior. A
+distribution owns the selection.
 
-## Create once, project everywhere
+## Intent mode and direct mode
 
-The npm alpha is not published yet. The intended flow is:
+Natural commands and explicit automation share one Invocation Engine:
+
+```text
+intent -> draft -> deterministic resolution -> preview -> route -> result gate -> receipt
+```
+
+In intent mode, the native model proposes a draft and submits it before asking
+a question. In direct mode, a script provides the canonical operation and
+inputs. Both modes create the same request, append-only events, hard gates, and
+receipt. Hairness does not contain a model or store provider output.
+
+Controls such as `--present auto` and `--creative divergent` change strategy or
+rendering without changing available evidence. Persistent session, segment,
+and frame controls remove repeated prose while constraints can only narrow the
+allowed boundary.
+
+## Create a source-owned distribution
+
+The npm alpha is not published yet. After publication under the `next` tag, the
+bootstrap will be:
 
 ```bash
 npx @hairness/hairness@next create ./acme-hairness
@@ -82,9 +170,10 @@ npm install
 hairness onboarding next
 ```
 
-The wizard asks one question at a time, presents one checkpoint, initializes local Git, and compiles repo-local provider surfaces. It never creates a commit, remote, push, tag, release, or publication.
-
-Three recipes define the initial payload:
+Until then, clone this repository to evaluate the forge itself. The wizard asks
+one question at a time, presents one checkpoint, initializes local Git, and
+compiles repo-local provider surfaces. It never creates a commit, remote, push,
+tag, release, or publication.
 
 | Recipe | Includes | Excludes |
 | --- | --- | --- |
@@ -92,19 +181,19 @@ Three recipes define the initial payload:
 | `standard` | composable controls, sessions, codebases, Git source driver | maintainer and dormant drivers |
 | `forge` | standard, maintainer, complete generic catalogue | private company assets |
 
-Create a forge explicitly:
-
-```bash
-npx @hairness/hairness@next create ./acme-agent-forge --preset forge
-```
-
-A generated distribution receives its own README and configuration, selected source only, and the MIT notice required for vendored Hairness code. It does not inherit Hairness's SPEC, STATUS, roadmap, maintainer documentation, project license, or dormant catalogue.
+A generated distribution receives its own README and configuration, selected
+source only, and the MIT notice required for vendored Hairness code. It does not
+inherit Hairness's SPEC, STATUS, roadmap, maintainer documentation, project
+license, or dormant catalogue.
 
 ## Source-owned from day one
 
-Hairness follows the open-code model popularized by shadcn/ui: generation transfers practical ownership to the consumer. The result is a standalone repository, not a thin client tied to an upstream service.
+Hairness follows the open-code model popularized by shadcn/ui. Generation
+transfers practical ownership to the consumer. The result is a standalone
+repository, not a thin client tied to an upstream service.
 
-`hairness.lock.json` records the recipe, provenance, selected materials, and base digests. Updates are explicit proposals:
+`hairness.lock.json` records provenance, selected materials, dependencies, and
+base digests. Updates are explicit proposals:
 
 ```bash
 hairness update check
@@ -112,48 +201,52 @@ hairness update plan --scope extension:hairness/cockpit
 hairness update apply <plan-id> --checkpoint <id>
 ```
 
-Intact owned material can be updated mechanically. Consumer divergence, dependency changes, or edited managed regions require review. Hairness never performs a silent merge or Git mutation.
+Intact owned material can be updated mechanically. Consumer divergence,
+dependency changes, or edited managed regions require review. Hairness never
+performs a silent merge or Git mutation.
 
-## Extensions own behavior
+## Build an extension without provider internals
 
-The standard distribution composes narrow controls:
+Extensions own their capabilities, operations, commands, instructions,
+resolvers, results, schemas, documentation, and tests. A local extension can be
+created and evaluated without knowing Codex or Claude formats:
 
-- **Cockpit** renders help, onboarding, opening, and wake-up.
-- **Work Controls** preserve mission, segment, frame, decisions, recap, plan, and execution trajectory.
-- **Understanding Controls** own map, explain, and compare.
-- **Ideation Controls** own ideate, propose, and creative strategies.
-- **Presentation Controls** select the smallest useful views without changing meaning.
-- **Constraints** narrow effects across session, segment, frame, and operation.
-- **Session Intelligence** preserves semantic handoffs, never transcripts.
-- **Codebase** identifies exact repositories and named checkouts.
-- **Sources** validates evidence from selected read-only drivers.
-
-Extensions can also adapt execution loops, MCP servers, domain methods, or company workflows. Hairness does not replace those runtimes; it gives them explicit operations, authority, results, and provider projections.
-
-## Sources prove current truth
-
-The `hairness/sources` extension owns one engine for discovery, evidence, redaction, and freshness. Drivers are selected assets, not hardcoded kernel behavior.
-
-```text
-minimal   -> no driver
-standard  -> git
-forge     -> git active; git, jira, gitlab, aws available in the catalogue
+```bash
+hairness extension init --local acme/review-controls
+hairness extension link --local acme/review-controls --from ../review-controls
+hairness build --local
+hairness extension doctor acme/review-controls
 ```
 
-Local CLIs provide deterministic proof. MCP and provider connectors can be adapters, but do not become truth merely because they are convenient. Artifacts orient; live sources prove.
+Promotion into a distribution is an explicit, checkpointed source transfer.
+Presence in a catalogue or filesystem never enables an extension and never
+grants authority. See the [extension authoring guide](docs/extensions/README.md)
+and [official catalogue](docs/extensions/catalog.md).
 
-## Native providers, bounded workers
+The standard distribution demonstrates independent Controls for work,
+understanding, ideation, presentation, constraints, sessions, codebases, and
+sources. A forge can add company methods, game design workflows, sales
+operations, execution loops, or other domain assets using the same contracts.
 
-Hairness compiles active operations into tracked repo-local surfaces:
+## Native providers and external adapters
+
+Hairness compiles active operations into tracked, repo-local surfaces:
 
 ```text
 Codex   -> AGENTS.md, .agents/skills, .codex hooks and workers
 Claude  -> CLAUDE.md, .claude skills, hooks and workers
 ```
 
-The provider keeps its model, UI, sandbox, tools, native subagents, and thread visibility. A producer receives a bounded observe/derive capsule. An executor receives an effect operation plus an exact grant. Neither receives the main-session cockpit.
+A producer receives a bounded observe or derive capsule. An executor receives
+an effect operation plus an exact grant. Neither receives the main-session
+cockpit or transcript. No fan-out completes without fan-in.
 
-No fan-out completes without fan-in. The main session gets a compact typed result, proof, limits, and valid next routes—not worker noise.
+CLIs, MCP servers, connectors, execution loops, and frameworks remain native to
+their runtime. Hairness can expose them as source or external routes with typed
+inputs, authority, results, and limits. It does not replace them.
+
+This is the shift from prompting agents to operating agentic systems, while
+keeping the model inside the tool built for it.
 
 ## Lightweight by construction
 
@@ -162,9 +255,11 @@ No fan-out completes without fan-in. The main session gets a compact typed resul
 - Repo-local projections; no plugins, marketplaces, or global install state.
 - Deterministic work where inference adds no value.
 - Native model inference where judgment and creativity do add value.
-- `.overlay/` for ignored local runs, mounts, artifacts, and extension state.
+- `.hairness/` for shared policies and assets.
+- `.overlay/` for ignored invocations, sessions, controls, runs, and scratch.
+- `~/.hairness/` for personal preferences and trust.
 
-## Safety
+## Risky operations stay explicit
 
 **Non-invasive integration. Explicit operation.**
 
@@ -172,15 +267,27 @@ No fan-out completes without fan-in. The main session gets a compact typed resul
 - Observe and derive operations cannot request effects.
 - Effects require an exact checkpoint, current policy, worker capsule, target, and valid lock.
 - Tightening a constraint invalidates an incompatible grant.
+- Partial or unknown effects stop recovery and quarantine the affected target.
 - Hairness stores no transcript, hidden reasoning, secret, credential, customer data, or production data.
 - Provider and source limitations remain explicit.
+
+## Community and contributing
+
+Hairness is testing whether agentic assets can become portable, inspectable
+software across providers and domains. Proposals are welcome as extensions,
+provider reports, protocol RFCs, and executable documentation. Community assets
+remain in their own repositories; discovery does not imply trust or authority.
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md), the
+[extension catalogue](docs/extensions/catalog.md), and the
+[known limitations](docs/known-limitations.md) before proposing a change.
 
 ## Documentation
 
 - [Protocol specification](SPEC.md)
 - [Architecture](docs/architecture.md)
 - [Agentic assets](docs/concepts/agentic-assets.md)
-- [Capabilities and operations](docs/concepts/capabilities.md)
+- [Invocations](docs/concepts/invocations.md)
 - [Composable controls](docs/concepts/composable-controls.md)
 - [Main session](docs/concepts/main-session.md)
 - [Extensions](docs/extensions/README.md)
@@ -201,6 +308,7 @@ npm run conformance
 npm run check:pack
 ```
 
-Hairness is licensed under the [MIT License](LICENSE).
+Hairness is licensed under the [MIT License](LICENSE). Security reports follow
+the process in [SECURITY.md](SECURITY.md).
 
 **Keep the model native. Make the operating system yours.**

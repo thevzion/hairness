@@ -19,7 +19,8 @@
 ## npm alpha
 
 - Complete package and clean-install smokes from the public history.
-- Complete provider fast-profile attestations and native Codex/Claude tasks.
+- Run one consolidated provider qualification campaign after deterministic validation.
+- Complete fast-profile attestations and native Codex/Claude tasks without rerunning them during every implementation step.
 - Publish `@hairness/hairness@0.2.0-alpha.0` only after a separate checkpoint.
 
 ## Alpha hardening

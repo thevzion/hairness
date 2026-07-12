@@ -12,6 +12,8 @@ entries.
 - Replaced the monolithic work surface with extension-owned Work Controls and separate Understanding and Ideation Controls.
 - Consolidated per-CLI source extensions into selected drivers owned by `hairness/sources`.
 - Made extension presence inert until selected by the distribution or explicit local configuration.
+- Made provider commands submit a typed invocation before asking the user for missing input.
+- Separated natural intent mode from direct automation while preserving one canonical request and receipt.
 
 ### Added
 
@@ -23,6 +25,10 @@ entries.
 - Evidence-based provider states and behavior evals using native Codex/Claude transports.
 - First-class CapabilitySpec, OperationRef and observe/derive/effect route validation.
 - Recipe-declared materials, capabilities, source drivers, templates, scripts and tests.
+- A deterministic Invocation Engine with append-only events, one-gap resolution, previews, hard gates, receipts and safe `--auto` progression.
+- Attention-preserving Codex and Claude command projections with explicit `strict`, `guarded` and `unsupported` host paths.
+- Forge-only Initiative and Delivery Controls for local roadmap state, sequential delivery plans, release candidates and checkpointed external effects.
+- Public alpha documentation, known limitations and a reproducible release runbook.
 
 ## 0.1.0-alpha.0
 

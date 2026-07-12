@@ -9,4 +9,4 @@ Hairness treats manifests, extensions, mounts, providers, and source tools as tr
 - Quarantine targets after ambiguous or partial execution.
 - Stop with `review-required` instead of overwriting edited managed regions or JSON entries.
 - Keep replayable E2E effects inside `.overlay/test-runs/<suite>/<attempt>/`.
-- Report vulnerabilities privately to the repository owner while the project remains private.
+- Do not open a public issue for a suspected vulnerability. Use GitHub's private vulnerability reporting for this repository, or contact the repository owner privately when that surface is unavailable.
