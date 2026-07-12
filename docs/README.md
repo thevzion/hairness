@@ -6,6 +6,9 @@ Start with the [README](../README.md) for the product and commands, then use the
 ## Design
 
 - [Architecture](architecture.md)
+- [Agentic assets](concepts/agentic-assets.md)
+- [Capabilities and operations](concepts/capabilities.md)
+- [Composable controls](concepts/composable-controls.md)
 - [Main session](concepts/main-session.md)
 - [Fan-out and fan-in](concepts/fan-out-fan-in.md)
 - [Authority](concepts/authority.md)
@@ -20,7 +23,7 @@ Start with the [README](../README.md) for the product and commands, then use the
 - [Sources](concepts/sources.md)
 - [Sessions](concepts/sessions.md)
 - [Composition](concepts/composition.md)
-- [Workframes](concepts/workframes.md)
+- [Work Controls](concepts/work-controls.md)
 - [Presentation Controls](concepts/presentation.md)
 - [Replayable testing](concepts/testing.md)
 
@@ -42,8 +45,8 @@ Start with the [README](../README.md) for the product and commands, then use the
 - [0004 — Self-hosted forge](decisions/0004-self-hosted-forge.md)
 - [0005 — Repo-local provider projections](decisions/0005-repo-provider-projections.md)
 - [0006 — Managed regions and entries](decisions/0006-managed-regions.md)
-- [0007 — Persistent Workframes](decisions/0007-persistent-workframes.md)
 - [0008 — Stable session home](decisions/0008-stable-session-home.md)
 - [0009 — Operational generated payloads](decisions/0009-operational-generated-payloads.md)
 - [0010 — Tracked provenance and safe updates](decisions/0010-tracked-provenance-safe-updates.md)
 - [0011 — Semantic method normalization](decisions/0011-semantic-method-normalization.md)
+- [0012 — Agentic foundation and composable controls](decisions/0012-agentic-foundation-controls.md)

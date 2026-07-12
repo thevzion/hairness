@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { cp, lstat, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
-import { basename, dirname, join, resolve } from 'node:path'
+import { cp, lstat, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
@@ -44,8 +44,7 @@ function gaps(target, recipes) {
     { id: 'starter', question: 'Which starter should Hairness materialize?', options: recipes.map((recipe) => ({ value: recipe.id, label: recipe.displayName })) },
     { id: 'extensions', question: 'Which initial extensions should be copied?', allowCustom: true, options: [{ value: 'preset', label: 'Use starter extensions' }] },
     { id: 'providers', question: 'Which repo-local provider projections should be generated?', options: [{ value: 'both', label: 'Codex and Claude' }, { value: 'codex', label: 'Codex' }, { value: 'claude', label: 'Claude' }] },
-    { id: 'codebases', question: 'Which codebase catalog should be created?', options: [{ value: 'preset', label: 'Use starter codebases' }, { value: 'later', label: 'Configure later' }] },
-    { id: 'rootCommit', question: 'Should Hairness create the explicit local root commit after validation?', options: [{ value: 'no', label: 'No commit' }, { value: 'yes', label: 'Create the root commit' }] }
+    { id: 'codebases', question: 'Which codebase catalog should be created?', options: [{ value: 'preset', label: 'Use starter codebases' }, { value: 'later', label: 'Configure later' }] }
   ]
 }
 
@@ -61,20 +60,20 @@ async function saveState(state) {
   return state
 }
 
-export async function startCreate(target, preset = 'standard', role = 'distribution') {
+export async function startCreate(target, preset = 'standard') {
   if (!target) throw new HairnessError('usage', 'Usage: hairness create <target> or hairness create start <target>', { exitCode: 2 })
-  if (!['distribution', 'forge'].includes(role)) throw new HairnessError('create_role_invalid', `Unsupported create role: ${role}`, { exitCode: 2 })
   const absolute = resolve(target)
   const id = createId(absolute)
   const recipes = await availableRecipes()
-  if (!recipes.some((recipe) => recipe.id === preset)) throw new HairnessError('starter_unavailable', `Starter is unavailable from configured catalog roots: ${preset}`, { exitCode: 4 })
+  const selectedRecipe = recipes.find((recipe) => recipe.id === preset)
+  if (!selectedRecipe) throw new HairnessError('starter_unavailable', `Starter is unavailable from configured catalog roots: ${preset}`, { exitCode: 4 })
   const state = {
     schemaVersion: SCHEMA_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     id,
     target: absolute,
     status: 'collecting',
-    role,
+    role: selectedRecipe.role,
     answers: { starter: preset },
     gaps: gaps(absolute, recipes),
     actions: []
@@ -137,6 +136,7 @@ export async function planCreate(id) {
   const missing = state.gaps.find((gap) => state.answers[gap.id] === undefined)
   if (missing) throw new HairnessError('create_incomplete', `Answer ${missing.id} before planning.`, { routes: [`hairness create next ${id}`] })
   const selectedRecipe = await recipe(state)
+  state.role = selectedRecipe.role
   const extensions = selectedExtensions(state, selectedRecipe)
   const providers = selectedProviders(state.answers.providers)
   const codebases = state.answers.codebases === 'preset' ? selectedRecipe.codebases : []
@@ -146,7 +146,6 @@ export async function planCreate(id) {
     { type: 'install-dependencies', target: state.target },
     { type: 'initialize-git', target: state.target },
     ...providers.map((provider) => ({ type: 'build-provider', target: provider })),
-    ...(state.answers.rootCommit === 'yes' ? [{ type: 'root-commit', target: state.target }] : [])
   ]
   const checkpointId = `create-${createHash('sha256').update(JSON.stringify({ target: state.target, answers: state.answers, actions })).digest('hex').slice(0, 12)}`
   state.actions = actions
@@ -158,7 +157,7 @@ export async function planCreate(id) {
     intent: `Create the ${state.answers.displayName} Hairness ${state.role}.`,
     targets: [state.target],
     effects: actions.map((action) => action.type),
-    exclusions: ['remote creation', ...(state.answers.rootCommit === 'yes' ? [] : ['commit']), 'push', 'tag', 'publish'],
+    exclusions: ['remote creation', 'commit', 'push', 'tag', 'publish'],
     risk: 'Writes a new repository, runs npm install, initializes local Git, and generates selected repo-local provider surfaces.',
     recipe: selectedRecipe.id,
     extensions,
@@ -179,24 +178,27 @@ async function assertEmptyTarget(target) {
   }
 }
 
-async function copyBase(target, role) {
-  for (const entry of ['bin', 'providers', 'schemas']) await cp(join(sourceRoot, entry), join(target, entry), { recursive: true })
-  await mkdir(join(target, 'src'), { recursive: true })
-  for (const entry of ['cli.mjs', 'prologue.mjs', 'core', 'distribution', 'providers']) await cp(join(sourceRoot, 'src', entry), join(target, 'src', entry), { recursive: true })
-  if (role === 'forge') {
-    await cp(join(sourceRoot, 'src', 'bootstrap'), join(target, 'src', 'bootstrap'), { recursive: true })
-    await cp(join(sourceRoot, 'catalog'), join(target, 'catalog'), { recursive: true })
-    await mkdir(join(target, 'docs', 'extensions'), { recursive: true })
-    await writeFile(join(target, 'docs', 'forge.md'), '# Company forge\n\nThis repository owns its Hairness catalog, distribution recipes, and maintainer workflows.\n')
-    await writeFile(join(target, 'docs', 'README.md'), '# Forge documentation\n\n- [Operating guide](forge.md)\n- [Extension catalogue](extensions/catalog.md)\n')
-    await cp(join(sourceRoot, 'docs', 'extensions', 'catalog.md'), join(target, 'docs', 'extensions', 'catalog.md'))
+function materialPath(path) {
+  const target = resolve(sourceRoot, path)
+  if (relative(sourceRoot, target).startsWith('..')) throw new HairnessError('recipe_material_escape', `Recipe material escapes the package: ${path}.`, { exitCode: 2 })
+  return target
+}
+
+async function copyBase(target, selectedRecipe) {
+  for (const material of selectedRecipe.materials) {
+    const destination = resolve(target, material.target)
+    if (relative(target, destination).startsWith('..')) throw new HairnessError('recipe_target_escape', `Recipe target escapes the distribution: ${material.target}.`, { exitCode: 2 })
+    await mkdir(dirname(destination), { recursive: true })
+    await cp(materialPath(material.source), destination, { recursive: true })
   }
   await mkdir(join(target, 'LICENSES'), { recursive: true })
   await cp(join(sourceRoot, 'LICENSE'), join(target, 'LICENSES', 'Hairness-MIT.txt'))
   await mkdir(join(target, 'scripts'), { recursive: true })
-  for (const name of ['check-commits.mjs', 'check-pack.mjs', 'check-providers.mjs', 'check.mjs', 'conformance.mjs', 'extension-ownership-gate.mjs', 'impact-gate.mjs', 'run-tests.mjs']) await cp(join(sourceRoot, 'scripts', name), join(target, 'scripts', name))
-  await mkdir(join(target, 'tests'), { recursive: true })
-  await cp(join(sourceRoot, 'templates', 'distribution-tests', 'smoke.test.mjs.template'), join(target, 'tests', 'smoke.test.mjs'))
+  for (const name of selectedRecipe.scripts) await cp(materialPath(join('scripts', name)), join(target, 'scripts', name))
+  if (selectedRecipe.tests.includes('smoke')) {
+    await mkdir(join(target, 'tests'), { recursive: true })
+    await cp(materialPath('templates/distribution-tests/smoke.test.mjs.template'), join(target, 'tests', 'smoke.test.mjs'))
+  }
 }
 
 async function copyExtensions(target, ids) {
@@ -206,6 +208,20 @@ async function copyExtensions(target, ids) {
     const destination = join(target, 'extensions', owner, name)
     await cp(source, destination, { recursive: true })
   }
+}
+
+async function selectSourceDrivers(target, selected) {
+  const root = join(target, 'extensions', 'hairness', 'sources')
+  const manifestPath = join(root, 'extension.json')
+  const manifest = await readJson(manifestPath, null)
+  if (!manifest) return
+  const keep = new Set(selected)
+  for (const path of manifest.sourceDrivers ?? []) {
+    const id = path.split('/').at(-2)
+    if (!keep.has(id)) await rm(join(root, 'drivers', id), { recursive: true, force: true })
+  }
+  manifest.sourceDrivers = (manifest.sourceDrivers ?? []).filter((path) => keep.has(path.split('/').at(-2)))
+  await writeJsonAtomic(manifestPath, manifest)
 }
 
 function generatedReadme(state, selectedRecipe) {
@@ -218,20 +234,12 @@ function generatedStatus(state) {
 
 async function distributionLock(state, selectedRecipe, extensions) {
   const roots = [
-    { path: 'bin', owner: 'hairness/distribution', scope: 'core' },
-    { path: 'schemas', owner: 'hairness/distribution', scope: 'core' },
-    { path: 'providers', owner: 'hairness/distribution', scope: 'providers' },
-    { path: 'scripts', owner: 'hairness/distribution', scope: 'core' },
-    { path: 'src/cli.mjs', owner: 'hairness/distribution', scope: 'core' },
-    { path: 'src/prologue.mjs', owner: 'hairness/distribution', scope: 'core' },
-    { path: 'src/core', owner: 'hairness/distribution', scope: 'core' },
-    { path: 'src/distribution', owner: 'hairness/distribution', scope: 'core' },
-    { path: 'src/providers', owner: 'hairness/distribution', scope: 'providers' },
+    ...selectedRecipe.materials.map((material) => ({ path: material.target, owner: 'hairness/distribution', scope: 'core' })),
+    ...selectedRecipe.scripts.map((name) => ({ path: `scripts/${name}`, owner: 'hairness/distribution', scope: 'core' })),
     ...extensions.map((id) => ({ path: `extensions/${id}`, owner: id, scope: `extension:${id}` })),
-    ...(state.role === 'forge' ? [{ path: 'src/bootstrap', owner: 'hairness/distribution', scope: 'core' }, { path: 'catalog', owner: 'hairness/distribution', scope: 'core' }] : []),
   ]
   const materials = []
-  for (const [index, item] of roots.entries()) materials.push({ id: `material-${index + 1}`, owner: item.owner, path: item.path, sourcePath: item.path, version: implementationVersion, baseDigest: await digestMaterial(join(state.target, item.path)), policy: 'vendored', scope: item.scope })
+  for (const item of roots) materials.push({ id: `material-${item.path.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')}`, owner: item.owner, path: item.path, sourcePath: item.path, version: implementationVersion, baseDigest: await digestMaterial(join(state.target, item.path)), policy: 'vendored', scope: item.scope })
   return {
     schemaVersion: 2,
     protocolVersion: '0.2',
@@ -250,12 +258,11 @@ export async function applyCreate(id, checkpointId, options = {}) {
   const selectedRecipe = await recipe(state)
   await assertEmptyTarget(state.target)
   await mkdir(state.target, { recursive: true })
-  await copyBase(state.target, state.role)
-  const activeExtensions = state.role === 'forge' ? [...new Set([...plan.extensions, 'hairness/maintainer'])] : plan.extensions
-  const materializedExtensions = state.role === 'forge'
-    ? (await readdir(join(sourceRoot, 'extensions', 'hairness'))).map((name) => `hairness/${name}`)
-    : activeExtensions
+  await copyBase(state.target, selectedRecipe)
+  const activeExtensions = plan.extensions
+  const materializedExtensions = [...new Set([...activeExtensions, ...(selectedRecipe.catalogExtensions ?? [])])]
   await copyExtensions(state.target, materializedExtensions)
+  if (activeExtensions.includes('hairness/sources')) await selectSourceDrivers(state.target, selectedRecipe.sourceDrivers)
 
   const manifest = {
     $schema: './schemas/distribution.schema.json',
@@ -282,7 +289,10 @@ export async function applyCreate(id, checkpointId, options = {}) {
   sourcePackage.private = true
   sourcePackage.license = 'UNLICENSED'
   delete sourcePackage.files
-  delete sourcePackage.scripts['check:pack']
+  for (const [name, command] of Object.entries(sourcePackage.scripts)) {
+    const script = /scripts\/([^ ]+\.mjs)/.exec(command)?.[1]
+    if (script && !selectedRecipe.scripts.includes(script)) delete sourcePackage.scripts[name]
+  }
   await writeJsonAtomic(join(state.target, 'package.json'), sourcePackage)
   await writeFile(join(state.target, 'README.md'), generatedReadme(state, selectedRecipe))
   if (state.role === 'forge') await writeFile(join(state.target, 'STATUS.md'), generatedStatus(state))
@@ -300,10 +310,6 @@ export async function applyCreate(id, checkpointId, options = {}) {
       })
     }
   }
-  if (options.git !== false && state.answers.rootCommit === 'yes') {
-    await exec('git', ['add', '.'], { cwd: state.target, encoding: 'utf8' })
-    await exec('git', ['commit', '-m', `feat: bootstrap ${state.answers.displayName}`], { cwd: state.target, encoding: 'utf8' })
-  }
   state.status = 'applied'
   await saveState(state)
   return { summary: `Created ${state.answers.displayName}.`, status: 'applied', target: state.target, providers: plan.providers, extensions: activeExtensions, limits: [], routes: [`cd ${state.target}`, 'hairness onboarding next'] }
@@ -316,8 +322,8 @@ export async function createStatus(id) {
 export async function createCommand(args, flags = {}) {
   const [modeOrTarget, idOrTarget] = args
   if (!modeOrTarget) throw new HairnessError('usage', 'Usage: hairness create <target>|start|status|next|answer|plan|apply', { exitCode: 2 })
-  if (!['start', 'status', 'next', 'answer', 'plan', 'apply'].includes(modeOrTarget)) return startCreate(modeOrTarget, flags.preset ?? 'standard', flags.role ?? 'distribution')
-  if (modeOrTarget === 'start') return startCreate(idOrTarget, flags.preset ?? 'standard', flags.role ?? 'distribution')
+  if (!['start', 'status', 'next', 'answer', 'plan', 'apply'].includes(modeOrTarget)) return startCreate(modeOrTarget, flags.preset ?? 'standard')
+  if (modeOrTarget === 'start') return startCreate(idOrTarget, flags.preset ?? 'standard')
   if (modeOrTarget === 'status') return createStatus(idOrTarget)
   if (modeOrTarget === 'next') return nextCreateGap(idOrTarget)
   if (modeOrTarget === 'answer') return answerCreate(idOrTarget, flags.gap, flags.value)
@@ -326,8 +332,8 @@ export async function createCommand(args, flags = {}) {
   return applyCreate(idOrTarget, flags.checkpoint, { install: !flags['no-install'], git: !flags['no-git'], build: !flags['no-build'] })
 }
 
-export async function interactiveCreate(target, preset = 'standard', role = 'distribution') {
-  let next = await startCreate(target, preset, role)
+export async function interactiveCreate(target, preset = 'standard') {
+  let next = await startCreate(target, preset)
   const input = createInterface({ input: stdin, output: stdout })
   try {
     while (next.question) {

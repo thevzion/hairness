@@ -1,6 +1,6 @@
 ## Hairness agent contract
 
-- Use the injected SessionOpening directly. If it is absent, run `hairness session opening --json` exactly once before broad exploration and obey its language instruction.
+- Use the injected SessionOpening directly. If it is absent, run `hairness opening --json` exactly once before broad exploration and obey its language instruction.
 - For wake-up, reuse the fresh opening's three attention signals without tools. Run `hairness wake-up --json` exactly once only when the opening is absent, stale, or the user explicitly requests refresh.
 - Express work through the active command surface when a routed capability exists.
 - Artifacts orient; live sources prove current truth.

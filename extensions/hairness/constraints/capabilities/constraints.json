@@ -1,0 +1,14 @@
+{
+  "$schema": "../../../../schemas/capability.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/constraints",
+  "owner": "hairness/constraints",
+  "version": "0.2.0-alpha.0",
+  "summary": "Inspect and explicitly tighten inherited operation boundaries.",
+  "operations": [
+    { "id": "inspect", "class": "observe", "summary": "Inspect effective constraints for the active scope.", "result": { "schema": "Boundary", "disposition": "run-only" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
+    { "id": "set", "class": "effect", "summary": "Tighten one constraint at an explicit scope.", "result": { "schema": "Boundary", "disposition": "effect" }, "sources": [], "effects": ["constraint-state"], "routes": ["deterministic"], "acceptsModifiers": [] },
+    { "id": "clear", "class": "effect", "summary": "Clear one constraint at its owning scope.", "result": { "schema": "Boundary", "disposition": "effect" }, "sources": [], "effects": ["constraint-state"], "routes": ["deterministic"], "acceptsModifiers": [] }
+  ]
+}

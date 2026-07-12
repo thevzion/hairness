@@ -8,6 +8,7 @@ description: Check Hairness owners, projections, package boundaries, and documen
 Invocation: `/hairness-maintain`
 Deterministic route: `hairness maintain check --json`
 Owner: `hairness/maintainer`
+Operation: `hairness/maintenance#inspect`
 
 Run the requested `hairness maintain` route. Resolve blocking ownership and projection gates before claiming readiness.
 

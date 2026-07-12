@@ -1,6 +1,7 @@
 export * from './artifacts.mjs'
 export * from './authority.mjs'
 export * from './contracts.mjs'
+export * from './capabilities.mjs'
 export * from './errors.mjs'
 export * from './fan-in.mjs'
 export * from './io.mjs'

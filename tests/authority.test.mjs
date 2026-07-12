@@ -17,7 +17,7 @@ import { assignment, temporaryWorkspace } from './helpers.mjs'
 
 test('effect grant is scoped to declared target and effect', async () => {
   const root = await temporaryWorkspace()
-  await createRun(root, { id: 'run-exec', planId: 'plan-1', assignment: assignment({ profile: 'executor', targets: ['/target'], requestedEffects: ['filesystem:write'] }) })
+  await createRun(root, { id: 'run-exec', planId: 'plan-1', assignment: assignment({ operation: { capability: 'fixture/artifacts', id: 'mutate' }, profile: 'executor', targets: ['/target'], requestedEffects: ['filesystem:write'] }) })
   await assert.rejects(assertEffectAllowed(root, 'run-exec', 'filesystem:write', '/target'), (error) => error.code === 'authority_missing')
   await grantCheckpoint(root, {
     schemaVersion: 2,

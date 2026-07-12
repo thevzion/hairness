@@ -4,7 +4,7 @@
   "title": "ExtensionManifest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "protocolVersion", "id", "version", "module", "commands", "providerCommands"],
+  "required": ["schemaVersion", "protocolVersion", "id", "version", "module", "capabilities", "commands", "providerCommands"],
   "properties": {
     "$schema": { "type": "string" },
     "schemaVersion": { "const": 2 },
@@ -12,9 +12,10 @@
     "id": { "$ref": "protocol.schema.json#/$defs/ExtensionId" },
     "version": { "type": "string", "pattern": "^0\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$" },
     "module": { "type": "string", "pattern": "^\\./" },
+    "capabilities": { "type": "array", "items": { "type": "string", "pattern": "^\\./" }, "uniqueItems": true },
     "dependencies": { "type": "array", "items": { "$ref": "protocol.schema.json#/$defs/ExtensionId" }, "uniqueItems": true },
     "services": { "type": "array", "items": { "$ref": "protocol.schema.json#/$defs/Slug" }, "uniqueItems": true },
-    "contributes": { "type": "array", "items": { "enum": ["attention", "agent-guidance", "authority-policy", "session-opening", "session-renderer", "provider-hooks"] }, "uniqueItems": true },
+    "contributes": { "type": "array", "items": { "enum": ["attention", "agent-guidance", "authority-policy", "session-opening", "session-renderer", "provider-hooks", "onboarding"] }, "uniqueItems": true },
     "relationTypes": { "type": "array", "items": { "$ref": "protocol.schema.json#/$defs/DottedId" }, "uniqueItems": true },
     "intentModifiers": {
       "type": "array",
@@ -58,6 +59,7 @@
       }
     },
     "providerCommands": { "type": "array", "items": { "$ref": "protocol.schema.json#/$defs/ProviderCommand" } },
+    "sourceDrivers": { "type": "array", "items": { "type": "string", "pattern": "^\\./" }, "uniqueItems": true },
     "methodologyBindings": {
       "type": "array",
       "items": {
@@ -74,7 +76,6 @@
         }
       }
     },
-    "sources": { "type": "array", "items": { "$ref": "protocol.schema.json#/$defs/SourceDefinition" } },
     "attention": { "type": "array", "items": { "$ref": "protocol.schema.json#/$defs/AttentionSignal" } },
     "preferences": { "type": "array", "items": { "type": "object" } },
     "onboarding": {

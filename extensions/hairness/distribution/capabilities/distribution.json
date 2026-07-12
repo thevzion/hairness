@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../../schemas/capability.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/distribution-lifecycle",
+  "owner": "hairness/distribution",
+  "version": "0.2.0-alpha.0",
+  "summary": "Inspect provenance and propose source-owned distribution updates.",
+  "operations": [
+    { "id": "inspect", "class": "observe", "summary": "Inspect distribution provenance and update readiness.", "result": { "schema": "ContextPacket", "disposition": "run-only" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
+    { "id": "apply", "class": "effect", "summary": "Apply one reviewed distribution update plan.", "result": { "schema": "ChangeReceipt", "disposition": "effect" }, "sources": [], "effects": ["distribution-files"], "routes": ["deterministic"], "acceptsModifiers": [] }
+  ]
+}

@@ -7,7 +7,7 @@ import { preferencesCommand } from './preferences.mjs'
 export async function extendedCommand(root, namespace, target, action, rest, flags) {
   if (namespace === 'build') return buildProviders(root, { provider: flags.provider, local: Boolean(flags.local), check: Boolean(flags.check) })
   if (namespace === 'clean') return cleanProviders(root, { local: Boolean(flags.local) })
-  if (namespace === 'session' && target === 'opening') {
+  if (namespace === 'opening') {
     const { buildSessionOpening } = await import('../prologue.mjs')
     return buildSessionOpening(root, flags.host ?? 'unknown')
   }

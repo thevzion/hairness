@@ -2,7 +2,7 @@ const allowed = new Set(['readonly', 'no-git', 'no-external'])
 const scopes = new Set(['session', 'segment', 'frame'])
 const empty = { session: [], segments: {}, frames: {} }
 
-async function work(runtime) { return runtime.extensions.call('hairness/workframes', 'state') }
+async function work(runtime) { return runtime.extensions.call('hairness/work-controls', 'state') }
 async function read(runtime) { return runtime.overlay.read('constraints.json', empty) }
 function bucket(document, scope, id) {
   if (scope === 'session') return document.session
@@ -55,7 +55,7 @@ export async function handleCommand({ target, action, flags, runtime }) {
   else if (mode === 'clear') values.splice(values.indexOf(constraint), values.includes(constraint) ? 1 : 0)
   else throw new Error(`Unknown constraint action: ${mode}`)
   await runtime.overlay.write('constraints.json', document)
-  if (scope !== 'session') await runtime.extensions.call('hairness/workframes', 'set-boundary', { scope, id, constraints: values })
+  if (scope !== 'session') await runtime.extensions.call('hairness/work-controls', 'set-boundary', { scope, id, constraints: values })
   return { scope, id: id ?? null, constraints: values, effective: await effective(runtime), limits: [], routes: [] }
 }
 import { createHash } from 'node:crypto'

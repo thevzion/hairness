@@ -4,13 +4,19 @@ Current target: `0.2.0-alpha.0`
 
 ## Now
 
-- `npm-alpha`
-  - Outcome: The verified alpha is available from npm with public provenance.
+- `agentic-foundation-reset`
+  - Outcome: Capability → Operation → Route → Result is the single executable grammar and every behavior has an extension owner.
   - State: active
-  - Gate: Public CI is green and the release checkpoint is approved.
-  - Evidence: Public repository, npm provenance and install smoke receipts.
+  - Gate: Clean-break schemas, 24-command parity, selected-only distributions, Node 22/24, package and native provider smokes pass.
+  - Evidence: CI receipts, generated distribution checks, provider build manifest and draft PR.
 
 ## Next
+
+- `npm-alpha`
+  - Outcome: The verified MIT alpha is available from npm with public provenance.
+  - State: planned
+  - Gate: Public CI is green and the publication checkpoint is approved.
+  - Evidence: Package provenance and clean install receipts.
 
 - `alpha-hardening`
   - Outcome: Provider behavior, managed outputs and recovery routes are release-grade.
@@ -18,17 +24,11 @@ Current target: `0.2.0-alpha.0`
   - Gate: Milestone behavior suites and native provider smokes pass.
   - Evidence: Content-addressed eval attestations and CI receipts.
 
-- `methodology-adapters`
-  - Outcome: Selected provider-native methods are reusable through semantic bindings without runtime capture.
+- `execution-adapters`
+  - Outcome: External execution loops can implement Hairness operations without losing their native runtime.
   - State: planned
-  - Gate: Binding fixtures and one reviewed real methodology pass provider parity and artifact normalization.
-  - Evidence: Binding conformance and provider eval attestations.
-
-- `source-aware-cockpit`
-  - Outcome: Cockpit signals use fresh source evidence without adding network work to session opening.
-  - State: planned
-  - Gate: Source freshness, latency and failure-mode suites pass.
-  - Evidence: Deterministic source receipts and provider behavior attestations.
+  - Gate: One adapter proves authority, typed result, recovery and fan-in without runtime capture.
+  - Evidence: Adapter conformance suite and provider-native smoke.
 
 ## Blocked
 
@@ -36,10 +36,10 @@ Current target: `0.2.0-alpha.0`
 
 ## Release gates
 
-- Generic package contains no private composition or local state.
-- Provider projections and generated distributions match their canonical sources.
+- README, SPEC, schemas, CLI, projections and tests describe the same grammar.
+- Minimal, standard and forge payloads contain selected source only.
+- Generic package contains no local state, private composition, secret, transcript or private path.
 - Node.js 22 and 24 checks pass.
-- Public history and package scans contain no secrets, transcripts or private paths.
 
 ## References
 

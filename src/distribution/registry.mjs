@@ -12,6 +12,7 @@ import { readJson, userPaths, workspacePaths, writeJsonAtomic } from '../core/io
 import { readPlan, reduceStoredPlan, writePlan } from '../core/plans.mjs'
 import { buildWorkerCapsule, createRun, readRun, readRunResult, submitRunResult, transitionRun } from '../core/runs.mjs'
 import { validateContract, validateJsonSchema } from '../core/contracts.mjs'
+import { capabilityIndex, loadCapabilities, resolveOperation, validateOperationProfile } from '../core/capabilities.mjs'
 import { resolvePreferences } from './preferences.mjs'
 import { applyDistributionUpdate, checkDistributionUpdate, doctorDistribution, inspectDistribution, planDistributionUpdate } from './update-engine.mjs'
 
@@ -39,7 +40,8 @@ export async function descriptorManifest(descriptor) {
   try {
     await validateContract('ExtensionManifest', manifest)
     if (manifest.id !== descriptor.id) throw new HairnessError('extension_id_mismatch', `${descriptor.id} does not match ${manifest.id}.`, { exitCode: 2 })
-    return { descriptor, path, manifest, error: null }
+    const capabilities = await loadCapabilities(descriptor.path, manifest)
+    return { descriptor, path, manifest, capabilities, error: null }
   } catch (error) {
     return { descriptor, path, manifest, error: error.message }
   }
@@ -77,11 +79,23 @@ async function enabledInspected(root) {
   for (const descriptor of await descriptors(root)) {
     if (!descriptor.enabled) continue
     const inspected = await descriptorManifest(descriptor)
+    if (descriptor.source === 'local' && (!inspected.manifest || !Array.isArray(inspected.manifest.capabilities))) continue
     if (inspected.error) throw new HairnessError('extension_invalid', `${descriptor.id}: ${inspected.error}`, { exitCode: 2 })
     values.push(inspected)
   }
   validateDependencyGraph(values)
+  validateCapabilities(values)
   return values
+}
+
+function validateCapabilities(values) {
+  const index = capabilityIndex(values)
+  const modifiers = new Set(values.flatMap((value) => (value.manifest.intentModifiers ?? []).map((item) => item.id)))
+  for (const value of values) for (const command of value.manifest.providerCommands) {
+    if (command.kind !== 'bridge') resolveOperation(index, command.operation)
+    for (const modifier of command.acceptsModifiers ?? []) if (!modifiers.has(modifier)) throw new HairnessError('modifier_unknown', `${command.id} accepts unknown modifier ${modifier}.`, { exitCode: 2 })
+  }
+  return index
 }
 
 function validateDependencyGraph(values) {
@@ -119,6 +133,25 @@ async function listRuns(root) {
   }))
 }
 
+async function validateAssignmentOperation(root, assignment) {
+  const index = capabilityIndex(await enabledInspected(root))
+  const operation = resolveOperation(index, assignment.operation)
+  validateOperationProfile(operation, assignment.profile)
+  if (operation.class === 'effect' && assignment.requestedEffects.length === 0) throw new HairnessError('operation_effect_missing', `${operation.capability}#${operation.id} requires requested effects.`, { exitCode: 2 })
+  if (operation.class !== 'effect' && assignment.requestedEffects.length) throw new HairnessError('operation_effect_forbidden', `${operation.capability}#${operation.id} cannot request effects.`, { exitCode: 2 })
+  return assignment
+}
+
+async function validatePlanOperations(root, plan) {
+  const index = capabilityIndex(await enabledInspected(root))
+  for (const route of plan.routes) {
+    const operation = resolveOperation(index, route.operation)
+    if (route.kind === 'worker') validateOperationProfile(operation, route.profile)
+    if (!operation.routes.includes(route.kind)) throw new HairnessError('operation_route_unsupported', `${operation.capability}#${operation.id} does not support ${route.kind}.`, { exitCode: 2 })
+  }
+  return plan
+}
+
 async function runtimeFor(root, owner, stack = []) {
   const inspected = (await enabledInspected(root)).find((value) => value.manifest.id === owner)
   if (!inspected) throw new HairnessError('extension_not_enabled', `${owner} is not enabled.`, { exitCode: 4 })
@@ -143,20 +176,17 @@ async function runtimeFor(root, owner, stack = []) {
       } } : {}),
     },
     runs: {
-      create: (value) => createRun(root, value), read: (id) => readRun(root, id), list: () => listRuns(root),
+      create: async (value) => createRun(root, { ...value, assignment: await validateAssignmentOperation(root, value.assignment) }), read: (id) => readRun(root, id), list: () => listRuns(root),
       transition: (id, state, detail) => transitionRun(root, id, state, detail), result: (id, value) => value === undefined ? readRunResult(root, id) : submitRunResult(root, value),
       capsule: (id) => buildWorkerCapsule(root, id), checkpoint: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
     },
-    plans: { read: (id) => readPlan(root, id), write: (value) => writePlan(root, value), reduce: (id) => reduceStoredPlan(root, id) },
+    plans: { read: (id) => readPlan(root, id), write: async (value) => writePlan(root, await validatePlanOperations(root, value)), reduce: (id) => reduceStoredPlan(root, id) },
     artifacts: {
       read: (id, revision) => readArtifact(root, id, revision), history: (id) => artifactHistory(root, id),
       stage: async (runId, value) => { await validateArtifactPayload(root, value); return stageArtifact(root, runId, value) }, promote: (runId) => promoteArtifact(root, runId),
     },
     authority: {
       grant: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)), acquireLocks, releaseLocks, quarantineLocks,
-    },
-    sources: {
-      list: () => sourceDefinitions(root), doctor: (source) => sourceDoctor(root, source), read: (source, operation, input = {}) => readSourceEvidence(root, source, operation, input, stack),
     },
     extensions: {
       list: () => listExtensions(root), call: (id, service, input = {}) => callService(root, owner, id, service, input, stack),
@@ -198,46 +228,14 @@ async function callService(root, caller, id, service, input, stack) {
   return module.services[service]({ root, input, manifest: target.manifest, runtime: await runtimeFor(root, id, [...stack, caller]) })
 }
 
-export async function sourceDefinitions(root) {
-  const definitions = []
-  for (const value of await enabledInspected(root)) for (const source of value.manifest.sources ?? []) definitions.push({ ...source, owner: value.manifest.id })
-  const duplicates = definitions.filter((item, index) => definitions.findIndex((candidate) => candidate.id === item.id) !== index)
-  if (duplicates.length) throw new HairnessError('source_owner_conflict', `Duplicate source owner: ${duplicates.map((item) => item.id).join(', ')}`, { exitCode: 2 })
-  return definitions
-}
-
-export async function readSourceEvidence(root, source, operation, input, stack = []) {
-  const definition = (await sourceDefinitions(root)).find((value) => value.id === source)
-  if (!definition) throw new HairnessError('source_unknown', `Unknown or disabled source: ${source}`, { exitCode: 2 })
-  const declared = definition.operations.find((value) => value.id === operation)
-  if (!declared) throw new HairnessError('source_operation_unknown', `${source} does not declare ${operation}.`, { exitCode: 2 })
-  if (declared.access !== 'read') throw new HairnessError('source_effect_forbidden', 'Source handlers cannot execute effects.', { exitCode: 2 })
-  const owner = (await enabledInspected(root)).find((value) => value.manifest.id === definition.owner)
-  await assertTrusted(root, owner.descriptor)
-  const module = await loadModule(owner)
-  if (typeof module.sourceOperations?.[operation] !== 'function') throw new HairnessError('source_operation_missing', `${definition.owner} does not export ${operation}.`, { exitCode: 2 })
-  let data
-  try { data = await module.sourceOperations[operation]({ root, input, runtime: await runtimeFor(root, definition.owner, stack) }) }
-  catch (error) { throw new HairnessError('source_unavailable', `${source}.${operation} could not produce evidence.`, { exitCode: 4, details: { owner: definition.owner, cause: error.message }, routes: [`hairness source doctor ${source}`] }) }
-  const evidence = { schemaVersion: 2, protocolVersion: '0.2', source, operation, transport: definition.transport, observedAt: new Date().toISOString(), summary: `${source}.${operation} produced live evidence.`, data, proof: [`cli:${definition.transport}`], limits: [] }
-  return validateContract('SourceEvidence', evidence)
-}
-
-async function sourceDoctor(root, sourceId) {
-  const manifest = await distribution(root)
-  const available = await sourceDefinitions(root)
-  const selected = sourceId ? manifest.sources.filter((source) => source.id === sourceId) : manifest.sources
-  const checks = await Promise.all(selected.map(async (source) => {
-    const definition = available.find((value) => value.id === source.id)
-    let executable = false
-    if (definition) {
-      try { await exec(definition.transport, ['--version'], { encoding: 'utf8', timeout: 10_000 }); executable = true }
-      catch { try { await exec(definition.transport, ['version'], { encoding: 'utf8', timeout: 10_000 }); executable = true } catch {} }
-    }
-    return { name: source.id, requirement: source.requirement, declared: Boolean(definition), executable, ok: Boolean(definition) && executable }
-  }))
-  const blocked = checks.some((check) => check.requirement === 'required' && !check.ok)
-  return { schemaVersion: 2, protocolVersion: '0.2', subject: sourceId ? `source:${sourceId}` : 'sources', status: blocked ? 'blocked' : checks.every((check) => check.ok) ? 'ready' : 'partial', checks, limits: checks.filter((check) => !check.ok).map((check) => `${check.name} is ${check.requirement} but unavailable`), routes: blocked ? ['hairness onboarding next'] : [] }
+export async function callExtensionService(root, id, service, input = {}) {
+  const target = (await enabledInspected(root)).find((value) => value.manifest.id === id)
+  if (!target) throw new HairnessError('extension_not_enabled', `${id} is not enabled.`, { exitCode: 4 })
+  await assertTrusted(root, target.descriptor)
+  if (!target.manifest.services?.includes(service)) throw new HairnessError('extension_service_undeclared', `${id} does not declare service ${service}.`, { exitCode: 2 })
+  const module = await loadModule(target)
+  if (typeof module.services?.[service] !== 'function') throw new HairnessError('extension_service_missing', `${id} does not export service ${service}.`, { exitCode: 2 })
+  return module.services[service]({ root, input, manifest: target.manifest, runtime: await runtimeFor(root, id) })
 }
 
 export async function collectContributions(root, contribution, input, stack = []) {
@@ -265,13 +263,30 @@ export async function collectContributions(root, contribution, input, stack = []
   return output
 }
 
+export async function collectOnboardingContributions(root, phase, input = {}, options = {}) {
+  if (input.trustDecision !== 'trust') throw new HairnessError('workspace_untrusted', 'Extension onboarding requires an explicit trust decision.', { exitCode: 3 })
+  const output = []
+  for (const value of await enabledInspected(root)) {
+    if (!(value.manifest.contributes ?? []).includes('onboarding')) continue
+    if (options.applied) await assertTrusted(root, value.descriptor)
+    const module = await loadModule(value)
+    if (typeof module.onboardingContributions !== 'function') throw new HairnessError('extension_contribution_missing', `${value.manifest.id} does not export onboardingContributions.`, { exitCode: 2 })
+    const runtime = options.applied
+      ? await runtimeFor(root, value.manifest.id)
+      : Object.freeze({ contracts: Object.freeze({ validate: validateContract }), distribution: Object.freeze({ read: () => distribution(root) }) })
+    const contribution = await module.onboardingContributions({ root, phase, input, manifest: value.manifest, runtime })
+    output.push({ owner: value.manifest.id, value: contribution ?? {} })
+  }
+  return output
+}
+
 export async function aggregateAuthorityPolicy(root, requestedEffects, input = {}) {
   const policies = await collectContributions(root, 'authority-policy', { ...input, requestedEffects })
   const denied = [...new Set(policies.flatMap((policy) => policy.deniedEffects))]
   const allowedEffects = requestedEffects.filter((effect) => !denied.includes(effect) && policies.every((policy) => policy.allowedEffects.includes(effect)))
   const payload = { requestedEffects, allowedEffects, deniedEffects: requestedEffects.filter((effect) => !allowedEffects.includes(effect)), policies: policies.map((policy) => policy.digest) }
   return {
-    owner: 'core',
+    owner: 'protocol/authority',
     requestedEffects,
     allowedEffects,
     deniedEffects: payload.deniedEffects,
@@ -307,7 +322,8 @@ export async function validateArtifactPayload(root, envelope) {
 export async function listExtensions(root) {
   return Promise.all((await descriptors(root)).map(async (descriptor) => {
     const inspected = await descriptorManifest(descriptor)
-    return { id: descriptor.id, source: descriptor.source, enabled: descriptor.enabled, valid: !inspected.error, error: inspected.error, path: descriptor.path, methodologyBindings: inspected.manifest?.methodologyBindings ?? [], providerCommands: (inspected.manifest?.providerCommands ?? []).map(({ name, summary, command, classification }) => ({ name, summary, classification, owner: descriptor.id, route: command })) }
+    const legacy = descriptor.source === 'local' && (!inspected.manifest || !Array.isArray(inspected.manifest.capabilities))
+    return { id: descriptor.id, source: descriptor.source, enabled: descriptor.enabled && !legacy, valid: !inspected.error && !legacy, ignored: legacy, error: legacy ? 'legacy-extension-state' : inspected.error, path: descriptor.path, methodologyBindings: inspected.manifest?.methodologyBindings ?? [], providerCommands: legacy ? [] : (inspected.manifest?.providerCommands ?? []).map(({ name, summary, command, classification }) => ({ name, summary, classification, owner: descriptor.id, route: command })) }
   }))
 }
 
@@ -321,7 +337,7 @@ async function initLocalExtension(root, id) {
   const path = join(workspacePaths(root).extensions, namespace, name)
   if (await readJson(join(path, 'extension.json'), null)) throw new HairnessError('extension_exists', `Extension already exists: ${id}`, { exitCode: 2 })
   await mkdir(path, { recursive: true })
-  await writeJsonAtomic(join(path, 'extension.json'), { $schema: join(root, 'schemas/extension.schema.json'), schemaVersion: 2, protocolVersion: '0.2', id, version: '0.2.0-alpha.0', module: './index.mjs', dependencies: [], commands: [], providerCommands: [], services: [], contributes: [], artifactSchemas: [] })
+  await writeJsonAtomic(join(path, 'extension.json'), { $schema: join(root, 'schemas/extension.schema.json'), schemaVersion: 2, protocolVersion: '0.2', id, version: '0.2.0-alpha.0', module: './index.mjs', capabilities: [], dependencies: [], commands: [], providerCommands: [], services: [], contributes: [], artifactSchemas: [] })
   await writeFile(join(path, 'index.mjs'), 'export const services = {}\n')
   const config = await readJson(workspacePaths(root).config, { schemaVersion: 2, protocolVersion: '0.2', extensions: { disabled: [], local: [] } })
   config.extensions ??= { disabled: [], local: [] }
@@ -544,6 +560,8 @@ async function doctorExtension(root, id) {
   const descriptor = (await descriptors(root)).find((value) => value.id === id)
   if (!descriptor) throw new HairnessError('extension_not_found', `Extension not found: ${id}`)
   const inspected = await descriptorManifest(descriptor)
+  const legacy = descriptor.source === 'local' && (!inspected.manifest || !Array.isArray(inspected.manifest.capabilities))
+  if (legacy) return { schemaVersion: 2, protocolVersion: '0.2', subject: `extension:${id}`, status: 'partial', checks: [{ name: 'manifest', ok: false }, { name: 'enabled', ok: false }, { name: 'runtime', ok: true }], limits: ['legacy-extension-state'], routes: [`hairness extension unlink --local ${id}`] }
   let runtimeError = null
   if (!inspected.error && descriptor.enabled) try { await enabledInspected(root); await assertTrusted(root, descriptor); await loadModule(inspected) } catch (error) { runtimeError = error.message }
   const error = inspected.error ?? runtimeError

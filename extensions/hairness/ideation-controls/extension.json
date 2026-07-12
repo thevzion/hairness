@@ -1,0 +1,19 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/ideation-controls",
+  "version": "0.2.0-alpha.0",
+  "module": "./index.mjs",
+  "capabilities": ["./capabilities/ideation.json"],
+  "dependencies": ["hairness/presentation-controls"],
+  "intentModifiers": [{ "id": "hairness.creative", "argument": "creative", "values": ["divergent", "lateral", "convergent"], "default": "divergent" }],
+  "commands": [
+    { "namespace": "ideate", "actions": ["request"] },
+    { "namespace": "propose", "actions": ["request"] }
+  ],
+  "providerCommands": [
+    { "id": "hairness.ideate", "name": "hairness-ideate", "summary": "Explore several candidate directions without turning them into decisions.", "kind": "capability", "classification": "accelerator", "command": "hairness ideate", "arguments": [{ "name": "focus", "required": false }], "result": { "schema": "ContextPacket", "disposition": "response" }, "operation": { "capability": "hairness/ideation", "id": "ideate" }, "instructions": "./commands/ideation.md", "acceptsModifiers": ["hairness.creative", "hairness.presentation"] },
+    { "id": "hairness.propose", "name": "hairness-propose", "summary": "Recommend one direction with its tradeoff, risk and confidence.", "kind": "capability", "classification": "accelerator", "command": "hairness propose", "arguments": [{ "name": "focus", "required": false }], "result": { "schema": "ContextPacket", "disposition": "response" }, "operation": { "capability": "hairness/ideation", "id": "propose" }, "instructions": "./commands/ideation.md", "acceptsModifiers": ["hairness.creative", "hairness.presentation"] }
+  ]
+}

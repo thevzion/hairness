@@ -1,0 +1,20 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/understanding-controls",
+  "version": "0.2.0-alpha.0",
+  "module": "./index.mjs",
+  "capabilities": ["./capabilities/understanding.json"],
+  "dependencies": ["hairness/presentation-controls"],
+  "commands": [
+    { "namespace": "map", "actions": ["request"] },
+    { "namespace": "explain", "actions": ["request"] },
+    { "namespace": "compare", "actions": ["request"] }
+  ],
+  "providerCommands": [
+    { "id": "hairness.map", "name": "hairness-map", "summary": "Map the relationships required to understand one focus.", "kind": "capability", "classification": "accelerator", "command": "hairness map", "arguments": [{ "name": "focus", "required": false }], "result": { "schema": "ContextPacket", "disposition": "response" }, "operation": { "capability": "hairness/understanding", "id": "map" }, "instructions": "./commands/understanding.md", "acceptsModifiers": ["hairness.presentation"] },
+    { "id": "hairness.explain", "name": "hairness-explain", "summary": "Explain one concept from available meaning and proof.", "kind": "capability", "classification": "accelerator", "command": "hairness explain", "arguments": [{ "name": "focus", "required": true }], "result": { "schema": "ContextPacket", "disposition": "response" }, "operation": { "capability": "hairness/understanding", "id": "explain" }, "instructions": "./commands/understanding.md", "acceptsModifiers": ["hairness.presentation"] },
+    { "id": "hairness.compare", "name": "hairness-compare", "summary": "Compare explicit alternatives and their tradeoffs.", "kind": "capability", "classification": "accelerator", "command": "hairness compare", "arguments": [{ "name": "focus", "required": true }], "result": { "schema": "ContextPacket", "disposition": "response" }, "operation": { "capability": "hairness/understanding", "id": "compare" }, "instructions": "./commands/understanding.md", "acceptsModifiers": ["hairness.presentation"] }
+  ]
+}

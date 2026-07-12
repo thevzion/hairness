@@ -1,0 +1,14 @@
+{
+  "$schema": "../../../../schemas/capability.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/sources",
+  "owner": "hairness/sources",
+  "version": "0.2.0-alpha.0",
+  "summary": "Produce current typed evidence through selected read-only source drivers.",
+  "operations": [
+    { "id": "list", "class": "observe", "summary": "List selected source drivers and operations.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
+    { "id": "doctor", "class": "observe", "summary": "Verify selected source drivers and required executables.", "result": { "schema": "DoctorReport", "disposition": "response" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
+    { "id": "read", "class": "observe", "summary": "Read one declared operation as current SourceEvidence.", "result": { "schema": "SourceEvidence", "disposition": "response" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] }
+  ]
+}

@@ -17,6 +17,7 @@ const route = {
   schemaVersion: 2,
   protocolVersion: '0.2',
   id: 'conformance-route',
+  operation: { capability: 'conformance/proof', id: 'reduce' },
   kind: 'deterministic',
   requirement: 'required',
   resultSchema: 'RunResult',

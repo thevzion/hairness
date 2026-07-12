@@ -8,7 +8,7 @@ import { runPaths } from './runs.mjs'
 
 function unrestrictedPolicy(effects) {
   return {
-    owner: 'core',
+    owner: 'protocol/authority',
     requestedEffects: effects,
     allowedEffects: effects,
     deniedEffects: [],
@@ -31,7 +31,7 @@ export async function grantCheckpoint(root, checkpoint, resolvePolicy) {
   }
   const policy = await currentPolicy(checkpoint.effects, resolvePolicy)
   const denied = checkpoint.effects.filter((effect) => !policy.allowedEffects.includes(effect))
-  if (denied.length) throw new HairnessError('effect_policy_denied', `Effect policy denied: ${denied.join(', ')}.`, { exitCode: 2, details: { policy }, routes: ['hairness constraint show'] })
+  if (denied.length) throw new HairnessError('effect_policy_denied', `Effect policy denied: ${denied.join(', ')}.`, { exitCode: 2, details: { policy }, routes: [`hairness run ${checkpoint.runId} show`] })
   const grant = {
     schemaVersion: 2,
     protocolVersion: '0.2',
@@ -64,7 +64,7 @@ export async function assertEffectAllowed(root, runId, effect, target, resolvePo
     throw new HairnessError('authority_revoked', `Effect ${effect} is no longer allowed by the current policy.`, {
       exitCode: 2,
       details: { grantedPolicyDigest: grant.policyDigest, currentPolicy: policy },
-      routes: ['hairness constraint show'],
+      routes: [`hairness run ${runId} show`],
     })
   }
   return grant

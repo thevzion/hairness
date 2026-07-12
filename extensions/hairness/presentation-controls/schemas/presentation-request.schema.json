@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/extensions/presentation-controls/presentation-request.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mode", "maxViews"],
+  "properties": {
+    "mode": { "enum": ["auto", "compact", "visual", "explicit", "summary", "diagram", "tree", "table", "timeline", "checklist", "matrix", "trace"] },
+    "maxViews": { "type": "integer", "minimum": 1, "maximum": 3 }
+  }
+}

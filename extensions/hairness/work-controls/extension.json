@@ -1,0 +1,26 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/work-controls",
+  "version": "0.2.0-alpha.0",
+  "module": "./index.mjs",
+  "capabilities": ["./capabilities/work.json"],
+  "dependencies": ["hairness/cockpit", "hairness/presentation-controls"],
+  "services": ["state", "set-boundary"],
+  "contributes": ["session-opening"],
+  "relationTypes": ["continues", "depends-on", "informs", "supersedes", "blocks", "related-to"],
+  "commands": [{ "namespace": "work", "actions": ["status", "history", "trace", "resume", "mission", "segment", "frame", "method", "discuss", "new-frame", "recap", "plan", "act", "execute"] }],
+  "artifactSchemas": [
+    { "type": "segment-digest", "schema": "./schemas/segment-digest.schema.json" },
+    { "type": "work-plan", "schema": "./schemas/work-plan.schema.json" }
+  ],
+  "providerCommands": [
+    { "id": "hairness.work", "name": "hairness-work", "summary": "Inspect and steer the persistent Hairness work trajectory.", "kind": "capability", "classification": "specialized", "command": "hairness work status", "arguments": [{ "name": "action", "required": false }], "result": { "schema": "WorkState", "disposition": "run-only" }, "operation": { "capability": "hairness/work", "id": "inspect" }, "instructions": "./commands/work.md" },
+    { "id": "hairness.discuss", "name": "hairness-discuss", "summary": "Discuss one bounded frame without effects.", "kind": "preset", "classification": "accelerator", "command": "hairness work discuss", "arguments": [{ "name": "focus", "required": false }], "result": { "schema": "ContextPacket", "disposition": "response" }, "operation": { "capability": "hairness/work", "id": "discuss" }, "instructions": "./commands/work.md", "acceptsModifiers": ["hairness.presentation"] },
+    { "id": "hairness.recap", "name": "hairness-recap", "summary": "Reduce active work into decisions, evidence and open edges.", "kind": "preset", "classification": "accelerator", "command": "hairness work recap", "arguments": [], "result": { "schema": "ArtifactEnvelope", "disposition": "artifact", "artifactOwner": "hairness/work-controls", "artifactType": "segment-digest" }, "operation": { "capability": "hairness/work", "id": "recap" }, "instructions": "./commands/work.md", "acceptsModifiers": ["hairness.presentation"] },
+    { "id": "hairness.plan", "name": "hairness-plan", "summary": "Produce a typed work plan from accepted decisions.", "kind": "preset", "classification": "accelerator", "command": "hairness work plan", "arguments": [], "result": { "schema": "ArtifactEnvelope", "disposition": "artifact", "artifactOwner": "hairness/work-controls", "artifactType": "work-plan" }, "operation": { "capability": "hairness/work", "id": "plan" }, "instructions": "./commands/work.md", "acceptsModifiers": ["hairness.presentation"] },
+    { "id": "hairness.act", "name": "hairness-act", "summary": "Act on one accepted frame through an explicit checkpoint.", "kind": "preset", "classification": "accelerator", "command": "hairness work act", "arguments": [{ "name": "focus", "required": true }], "result": { "schema": "ChangeReceipt", "disposition": "effect" }, "operation": { "capability": "hairness/work", "id": "act" }, "instructions": "./commands/work.md", "defaults": { "mode": "auto" }, "overrides": ["mode", "budget"] },
+    { "id": "hairness.execute", "name": "hairness-execute", "summary": "Execute an accepted WorkPlan through bounded routes.", "kind": "preset", "classification": "accelerator", "command": "hairness work execute", "arguments": [{ "name": "plan", "required": true }], "result": { "schema": "ContextPacket", "disposition": "effect" }, "operation": { "capability": "hairness/work", "id": "execute" }, "instructions": "./commands/work.md", "defaults": { "mode": "auto" }, "overrides": ["mode", "budget"] }
+  ]
+}

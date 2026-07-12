@@ -1,83 +1,76 @@
 # Architecture
 
-Hairness separates the team-owned cockpit from provider execution and business codebases.
+Hairness separates a minimal protocol kernel from selected behavior and native provider execution.
 
 ```mermaid
 flowchart TD
-    reference["Reference forge"] --> forge["Company forge · owned catalogue"]
-    forge --> recipe["Distribution recipe"]
-    recipe --> dist["Standalone distribution · selected source only"]
-    dist --> registry["Active extension registry"]
-    registry --> commands["Canonical commands and modifiers"]
-    commands --> compiler["Repo projection compiler"]
-    compiler --> codex["AGENTS.md · .agents · .codex"]
-    compiler --> claude["CLAUDE.md · .claude"]
-    human["Human intent"] --> main["Provider main session"]
-    codex --> main
-    claude --> main
-    main --> cli["Deterministic Hairness CLI"]
-    cli --> runtime["Frozen owner-scoped runtime"]
-    runtime --> routes["Deterministic routes · producer · executor"]
-    routes --> gates["Schemas · constraints · authority · fan-in"]
-    gates --> graph["Runs · artifacts · Workframes graph"]
-    graph --> main
-    targets["Named repository checkouts"] --> runtime
+  human["Human intent"] --> main["Native provider main session"]
+  opening["Compact SessionOpening"] --> main
+  commands["Repo-local commands"] --> main
+  main --> cli["Deterministic Hairness CLI"]
+  cli --> registry["Active extension registry"]
+  registry --> capability["Capability"]
+  capability --> operation["Operation: observe · derive · effect"]
+  operation --> route["Route: deterministic · inline · worker · external"]
+  route --> gates["Schemas · fan-in · policy · authority · locks"]
+  gates --> result["Typed Result"]
+  result --> main
+  sources["Selected source drivers"] --> registry
+  targets["Mounted codebase checkouts"] --> gates
 ```
 
-## Ownership
+## Owners
 
-- The core owns contracts, storage, lifecycle, exact effect enforcement, locks, fan-in, and bounded contribution aggregation.
-- Provider adapters own host syntax. `hairness/maintainer` owns replayable test sandboxes; omitting that extension removes the feature entirely.
-- The distribution owns identity, active extensions, sources, codebases, and defaults.
-- `hairness/distribution` owns provenance inspection and update behavior; the generic distribution engine performs only bounded material comparison and application.
-- Extensions own commands, capability logic, services, source operations, artifact schemas, relations, guidance, and tests.
-- Providers own model execution, threads, worker UI, and native tool access.
-- Codebases retain their Git history, tools, conventions, and runtime.
-
-The rule is simple: **the core owns the grammar; extensions own the capabilities.** Physical presence in a forge catalogue never activates code.
-
-## State boundaries
+| Owner | Owns | Does not own |
+| --- | --- | --- |
+| Kernel | contracts, registry, storage, runs, plans, fan-in, artifacts, authority enforcement, locks | domain behavior or concrete sources |
+| Extension | capabilities, operations, commands, services, contributions, schemas, instructions, tests | implicit authority |
+| Distribution | active selection, defaults, source drivers, codebase contracts, provider projections | upstream control after generation |
+| Provider adapter | Codex/Claude syntax and managed output mechanics | capabilities or model runtime |
+| Provider | model, UI, tools, sandbox, native workers and threads | Hairness source ownership |
+| Mounted codebase | Git history, runtime, conventions and files | Hairness local state |
 
 ```text
-Git-tracked
-├── core and schemas
-├── selected extensions
-├── hairness.lock.json provenance and material bases
-├── AGENTS.md and CLAUDE.md managed regions
-├── .agents/skills
-├── .codex config, hooks, and workers
-├── .claude skills, settings, and workers
-└── hairness.build.json
-
-Workspace-local .overlay
-├── config and named mounts
-├── runs and artifacts
-├── extension state and Workframes events
-├── local-only provider projections
-└── extension-owned local state
-
-User-local ~/.hairness
-├── preferences
-├── workspace and local-extension trust
-└── global realpath locks
+core owns grammar
+extensions own behavior
+distribution owns selection
+providers own execution
 ```
 
-The distribution manifest owns shared repository contracts. Local configuration may add private hub contracts and materialize mounts under `.overlay/codebases/<codebase>/<checkout>`. Linked extensions under `.overlay/extensions/` retain their external source owner and contribute only to ignored local projections.
-
-Provider transcripts remain provider application data. Hairness may consume an explicitly allowlisted inbox after opt-in, promotes only a semantic digest, then deletes the inbox.
-
-## Runtime boundary
+## Source-owned flow
 
 ```mermaid
 flowchart LR
-    handler["Extension handler"] --> runtime["Frozen runtime"]
-    runtime --> state["Owner-scoped state"]
-    runtime --> dependency["Declared dependency service"]
-    runtime --> source["Typed read-only source"]
-    runtime --> run["Plan · run · artifact · authority"]
-    runtime --> sandbox["Isolated E2E sandbox"]
-    run --> result["Typed result"]
-    sandbox --> receipt["Test receipt"]
+  package["@hairness/hairness"] --> recipe["minimal · standard · forge recipe"]
+  recipe --> generated["Standalone source-owned repository"]
+  generated --> codex["Codex projection"]
+  generated --> claude["Claude projection"]
+  update["Explicit update proposal"] --> generated
 ```
 
-The runtime exposes no general codebase or external-system mutation primitive. Local mount and link operations mutate only Hairness integration state after a checkpoint. An executor reaches a target only through an operation-scoped grant and capsule.
+A recipe declares every copied material. A generated distribution contains selected extensions and drivers only. A forge can retain dormant generic catalogue source, but only manifest-selected extensions execute.
+
+## State
+
+```text
+Git tracked
+├── kernel and public schemas
+├── selected extension source
+├── selected source drivers
+├── hairness.json and hairness.lock.json
+├── provider projections and hairness.build.json
+└── distribution-owned documentation
+
+.overlay (workspace local)
+├── config and named codebase mounts
+├── runs, artifacts and scratch
+├── extension-owned state
+└── local-only extension projections
+
+~/.hairness (user local)
+├── preferences
+├── workspace and local-extension trust
+└── canonical-realpath locks
+```
+
+No provider transcript or hidden reasoning crosses these boundaries.

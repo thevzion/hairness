@@ -1,0 +1,14 @@
+{
+  "$schema": "../../../../schemas/capability.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/cockpit",
+  "owner": "hairness/cockpit",
+  "version": "0.2.0-alpha.0",
+  "summary": "Orient the main session through help, onboarding and compact attention.",
+  "operations": [
+    { "id": "help", "class": "observe", "summary": "Explain the active human command surface.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
+    { "id": "onboarding", "class": "observe", "summary": "Continue local onboarding one gap at a time.", "result": { "schema": "OnboardingState", "disposition": "run-only" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
+    { "id": "wake-up", "class": "observe", "summary": "Render current attention and next routes.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] }
+  ]
+}

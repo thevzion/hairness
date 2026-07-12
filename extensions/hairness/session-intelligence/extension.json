@@ -5,14 +5,15 @@
   "id": "hairness/session-intelligence",
   "version": "0.2.0-alpha.0",
   "module": "./index.mjs",
+  "capabilities": ["./capabilities/session.json"],
   "dependencies": ["hairness/cockpit"],
   "relationTypes": ["session-handoff-for"],
   "contributes": ["attention", "session-opening"],
   "commands": [{ "namespace": "session", "actions": ["open", "opening", "status", "digest", "reconcile"] }],
   "artifactSchemas": [{ "type": "session-handoff", "schema": "./schemas/session-handoff.schema.json" }],
   "providerCommands": [
-    { "id": "hairness.session", "name": "hairness-session", "summary": "Inspect or reconcile the current provider session association.", "kind": "capability", "classification": "specialized", "command": "hairness session status", "arguments": [{ "name": "action", "required": false }], "result": { "schema": "HairnessSession", "disposition": "run-only" }, "capabilities": ["session"], "instructions": "./commands/hairness-session.md" },
-    { "id": "hairness.handoff", "name": "hairness-handoff", "summary": "Produce a compact durable handoff without storing a transcript.", "kind": "preset", "classification": "specialized", "command": "hairness session digest", "arguments": [{ "name": "summary", "required": false }], "result": { "schema": "ArtifactEnvelope", "disposition": "artifact", "artifactOwner": "hairness/session-intelligence", "artifactType": "session-handoff" }, "capabilities": ["session", "artifact"], "instructions": "./commands/hairness-handoff.md" }
+    { "id": "hairness.session", "name": "hairness-session", "summary": "Inspect or reconcile the current provider session association.", "kind": "capability", "classification": "specialized", "command": "hairness session status", "arguments": [{ "name": "action", "required": false }], "result": { "schema": "HairnessSession", "disposition": "run-only" }, "operation": { "capability": "hairness/session", "id": "inspect" }, "instructions": "./commands/hairness-session.md" },
+    { "id": "hairness.handoff", "name": "hairness-handoff", "summary": "Produce a compact durable handoff without storing a transcript.", "kind": "preset", "classification": "specialized", "command": "hairness session digest", "arguments": [{ "name": "summary", "required": false }], "result": { "schema": "ArtifactEnvelope", "disposition": "artifact", "artifactOwner": "hairness/session-intelligence", "artifactType": "session-handoff" }, "operation": { "capability": "hairness/session", "id": "handoff" }, "instructions": "./commands/hairness-handoff.md" }
   ],
   "preferences": [{ "id": "session.transcript", "default": false }],
   "onboarding": [{ "id": "session.transcript", "phase": "privacy", "question": "Allow volatile transcript input for session digests?", "options": [{ "value": "off", "label": "No transcript access" }, { "value": "on", "label": "Opt in with a local inbox" }], "preferenceKey": "session.transcript" }]

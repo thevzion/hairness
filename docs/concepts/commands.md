@@ -1,10 +1,13 @@
 # Commands
 
-The CLI is the deterministic machine interface. Provider commands are the human
-cockpit controls compiled from extension-owned command definitions.
+The CLI is the deterministic machine interface. Provider commands are the human controls compiled from active extensions.
 
-A capability command exposes a complete namespace. An intent preset binds a
-frequent action, default mode, budget, result contract, and argument-resolution
-policy. A preset cannot grant mutation authority or bypass a checkpoint.
+A provider command is one of:
 
-Commands may opt into extension-owned intent modifiers such as `--present`. A quick command composes operation, focus, source policy, boundary, execution mode, budget, and accepted modifiers. It does not duplicate the underlying capabilities.
+- `bridge`: the main router;
+- `capability`: a direct operation surface;
+- `preset`: a frequent composition with fixed/default values.
+
+Capability and preset commands reference an OperationRef. They can prefill mode, budget, focus, and accepted modifiers, but cannot grant effects or approve checkpoints.
+
+The standard composition exposes 24 commands with exact Codex/Claude parity. Removing an extension removes its commands at the next build.

@@ -8,6 +8,7 @@ description: Produce a compact durable handoff without storing a transcript.
 Invocation: `/hairness-handoff`
 Deterministic route: `hairness session digest --json`
 Owner: `hairness/session-intelligence`
+Operation: `hairness/session#handoff`
 
 Create a compact session digest from explicit input. Confirm that volatile transcript input is opted in before reading it.
 

@@ -6,9 +6,11 @@ export async function temporaryWorkspace() {
   const root = await mkdtemp(join(tmpdir(), 'hairness-test-'))
   const extension = join(root, 'extensions', 'fixture', 'artifacts')
   await mkdir(join(extension, 'schemas'), { recursive: true })
+  await mkdir(join(extension, 'capabilities'), { recursive: true })
   await writeFile(join(extension, 'index.mjs'), 'export const services = {}\n')
   await writeFile(join(extension, 'schemas/gate-result.schema.json'), JSON.stringify({ $schema: 'https://json-schema.org/draft/2020-12/schema', type: 'object', required: ['value'], properties: { value: { type: 'string' } }, additionalProperties: false }))
-  await writeFile(join(extension, 'extension.json'), JSON.stringify({ schemaVersion: 2, protocolVersion: '0.2', id: 'fixture/artifacts', version: '0.2.0-alpha.0', module: './index.mjs', dependencies: [], commands: [], providerCommands: [], artifactSchemas: [{ type: 'gate-result', schema: './schemas/gate-result.schema.json' }] }))
+  await writeFile(join(extension, 'capabilities/artifacts.json'), JSON.stringify({ schemaVersion: 2, protocolVersion: '0.2', id: 'fixture/artifacts', owner: 'fixture/artifacts', version: '0.2.0-alpha.0', summary: 'Fixture operations.', operations: [{ id: 'produce', class: 'derive', summary: 'Produce fixture data.', result: { schema: 'ArtifactEnvelope', disposition: 'artifact', artifactOwner: 'fixture/artifacts', artifactType: 'gate-result' }, sources: [], effects: [], routes: ['worker'], acceptsModifiers: [] }, { id: 'mutate', class: 'effect', summary: 'Mutate fixture data.', result: { schema: 'ChangeReceipt', disposition: 'effect' }, sources: [], effects: ['filesystem:write'], routes: ['worker'], acceptsModifiers: [] }] }))
+  await writeFile(join(extension, 'extension.json'), JSON.stringify({ schemaVersion: 2, protocolVersion: '0.2', id: 'fixture/artifacts', version: '0.2.0-alpha.0', module: './index.mjs', capabilities: ['./capabilities/artifacts.json'], dependencies: [], commands: [], providerCommands: [], artifactSchemas: [{ type: 'gate-result', schema: './schemas/gate-result.schema.json' }] }))
   await writeFile(join(root, 'hairness.json'), JSON.stringify({
     schemaVersion: 2,
     protocolVersion: '0.2',
@@ -36,6 +38,7 @@ export function assignment(overrides = {}) {
     schemaVersion: 2,
     protocolVersion: '0.2',
     id: 'map-ticket',
+    operation: { capability: 'fixture/artifacts', id: 'produce' },
     profile: 'producer',
     goal: 'Map the ticket.',
     outcome: 'A compact ticket map.',

@@ -9,7 +9,8 @@ entries.
 ### Changed
 
 - Replaced provider plugins and attachments with tracked repo-local projections.
-- Replaced scope controls with persistent Workframes, typed segment boundaries, and linked history.
+- Replaced the monolithic work surface with extension-owned Work Controls and separate Understanding and Ideation Controls.
+- Consolidated per-CLI source extensions into selected drivers owned by `hairness/sources`.
 - Made extension presence inert until selected by the distribution or explicit local configuration.
 
 ### Added
@@ -20,6 +21,8 @@ entries.
 - Constraints, Presentation Controls, operational session opening, provider-independent handoffs, and replayable E2E sandboxes.
 - Minimal and standard recipes discovered from explicit forge catalogue roots.
 - Evidence-based provider states and behavior evals using native Codex/Claude transports.
+- First-class CapabilitySpec, OperationRef and observe/derive/effect route validation.
+- Recipe-declared materials, capabilities, source drivers, templates, scripts and tests.
 
 ## 0.1.0-alpha.0
 

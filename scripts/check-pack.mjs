@@ -12,7 +12,7 @@ for (const required of ['bin/hairness.mjs', 'src/cli.mjs', 'schemas/protocol.sch
 for (const path of files) {
   assert.ok(!/(^|\/)(?:\.overlay|node_modules|transcripts?|\.env)(?:\/|$)/.test(path), `tarball contains forbidden path ${path}`)
   if (path.startsWith('extensions/')) assert.ok(path.startsWith('extensions/hairness/'), `tarball contains non-generic extension ${path}`)
-  if (path.startsWith('catalog/')) assert.ok(['catalog/minimal.json', 'catalog/standard.json'].includes(path), `tarball contains non-generic recipe ${path}`)
+  if (path.startsWith('catalog/')) assert.ok(['catalog/minimal.json', 'catalog/standard.json', 'catalog/forge.json'].includes(path), `tarball contains non-generic recipe ${path}`)
 }
 for (const excluded of ['STATUS.md', 'ROADMAP.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'SPEC.md', 'SECURITY.md']) assert.ok(!files.includes(excluded), `tarball contains forge-only documentation ${excluded}`)
 assert.equal(pack.name, '@hairness/hairness')

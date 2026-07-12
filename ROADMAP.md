@@ -1,47 +1,33 @@
 # Roadmap
 
-## 0.2.0-alpha.0 — Self-hosted forge
+## 0.2.0-alpha.0 — Agentic foundation
 
-Current delivery target:
+- Make Capability → Operation → Route → Result the public executable grammar.
+- Keep the kernel limited to contracts, lifecycle, storage, fan-in, artifacts and exact effect enforcement.
+- Compose Work, Understanding, Ideation, Presentation and Constraint controls as independent extensions.
+- Consolidate read-only proof under one Sources extension with selected drivers.
+- Generate minimal, standard and forge distributions from explicit recipes.
+- Project exactly 24 standard commands into repo-local Codex and Claude surfaces.
+- Preserve semantic work, artifacts and session continuity without transcripts.
+- Qualify onboarding, language, commands, workers, authority and fan-in with replayable tests.
 
-- Ship a forge with an inactive full catalogue and an explicit maintainer composition.
-- Generate standalone distributions containing selected source only.
-- Separate operational team payloads from organization forge payloads.
-- Track source-owned material provenance and reject ambiguous consumer updates.
-- Treat repositories and named checkouts as exact targets of a stable session home.
-- Normalize external methodologies through semantic ResultContracts.
-- Version repo-local Codex and Claude projections without plugins or attachment state.
-- Preserve work trajectory through Workframes and meaning through typed artifact relations.
-- Enforce inherited constraints, managed-region ownership, worker-result gates, and fan-in.
-- Open operational sessions with effective local context and no transcript dependency.
-- Replay onboarding, checkpoints, providers, workers, and artifacts in isolated E2E sandboxes.
-- Validate externally owned private compositions without shipping them in the generic package.
-- Qualify first-message language, wake-up routing, provider verification, authority revocation, Workframes resume, and worker fan-in with replayable behavior suites.
+## npm alpha
 
-## 0.2 alpha hardening
+- Complete package and clean-install smokes from the public history.
+- Complete provider fast-profile attestations and native Codex/Claude tasks.
+- Publish `@hairness/hairness@0.2.0-alpha.0` only after a separate checkpoint.
 
-- Complete 3/3 fast provider evals and Codex/Claude native UI smokes after local hook cleanup.
-- Expand managed JSON/TOML merge conformance and provider live smokes.
-- Add richer WorkPlan operation routing and recovery receipts.
-- Add reviewed source-identity renderers and freshness policies.
-- Complete external-distribution previews, overlay inventories, and explicit cutover checkpoints.
-- Harden update recovery, material migrations, and dependency review.
+## Alpha hardening
 
-## Methodology adapters
+- Expand managed output, update recovery and dependency-change conformance.
+- Add richer WorkPlan routing and partial-effect receipts.
+- Harden source freshness, identity rendering and failure budgets.
+- Prove company-owned and domain-specific forges outside the generic package.
 
-- Validate declarative bindings against selected provider-native methods.
-- Add coded adapters only where declarative invocation or normalization is insufficient.
+## Execution adapters
 
-## Source-aware cockpit
+- Define the adapter boundary for external coding and domain loops.
+- Preserve native runtime ownership while enforcing Hairness operations, authority, results and fan-in.
+- Add remote source verification only after local source ownership is proven.
 
-- Add Slack and Notion source extensions.
-- Add reviewed external effects behind operation-scoped authority.
-- Add remote artifact transport without moving source ownership upstream.
-
-## Execution ecosystem
-
-- Define adapters for external execution loops while preserving their runtime ownership.
-- Add remote extension source verification and provenance.
-- Publish the MIT npm alpha and add trusted publishing.
-
-Hairness will not become a daemon, provider runtime, project manager, transcript store, or autonomous execution loop.
+Hairness will not become a daemon, proprietary model runtime, transcript store, general project manager, or autonomous loop.

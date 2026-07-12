@@ -90,11 +90,6 @@ async function coreCommand(root, positionals, flags) {
   const [namespace, target, action, ...rest] = positionals
   if (!namespace) throw new HairnessError('usage', 'Usage: hairness <namespace> <target> [action]', { exitCode: 2 })
 
-  if (namespace === 'intent') {
-    const { extensionCommand } = await import('./distribution/registry.mjs')
-    return extensionCommand(root, 'intent', target, action, rest, flags)
-  }
-
   if (namespace === 'plan') {
     if (!target) throw new HairnessError('usage', 'Usage: hairness plan <id> show|next|reduce', { exitCode: 2 })
     const mode = action ?? 'show'
@@ -223,14 +218,6 @@ async function coreCommand(root, positionals, flags) {
     }
   }
 
-  if (namespace === 'metrics') {
-    const paths = await ensureOverlay(root)
-    const names = (await readdir(paths.runs, { withFileTypes: true })).filter((entry) => entry.isDirectory() && entry.name !== '.plans')
-    const runs = await Promise.all(names.map((entry) => readRun(root, entry.name)))
-    const byState = Object.groupBy(runs, (run) => run.state)
-    return { runs: runs.length, byState: Object.fromEntries(Object.entries(byState).map(([key, value]) => [key, value.length])) }
-  }
-
   const { extendedCommand } = await import('./distribution/commands.mjs')
   return extendedCommand(root, namespace, target, action, rest, flags)
 }
@@ -250,7 +237,7 @@ export async function runCli(argv = process.argv.slice(2), streams = { stdout: p
       const modes = new Set(['start', 'status', 'next', 'answer', 'plan', 'apply'])
       const interactive = !flags.json && process.stdin.isTTY && args[0] && !modes.has(args[0])
       const result = interactive
-        ? await interactiveCreate(args[0], flags.preset ?? 'standard', flags.role ?? 'distribution')
+        ? await interactiveCreate(args[0], flags.preset ?? 'standard')
         : await createCommand(args, flags)
       streams.stdout.write(flags.json ? `${JSON.stringify(envelope(true, result))}\n` : `${renderHuman(result)}\n`)
       return 0

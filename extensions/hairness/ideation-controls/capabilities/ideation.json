@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../../schemas/capability.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/ideation",
+  "owner": "hairness/ideation-controls",
+  "version": "0.2.0-alpha.0",
+  "summary": "Explore candidate directions and converge toward an explicit proposal.",
+  "operations": [
+    { "id": "ideate", "class": "derive", "summary": "Open several candidate directions without treating them as decisions.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["inline", "worker"], "acceptsModifiers": ["hairness.creative", "hairness.presentation"] },
+    { "id": "propose", "class": "derive", "summary": "Recommend one direction with tradeoff, risk and confidence.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["inline", "worker"], "acceptsModifiers": ["hairness.creative", "hairness.presentation"] }
+  ]
+}

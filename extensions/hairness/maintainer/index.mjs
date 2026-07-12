@@ -47,18 +47,18 @@ export async function projectStatus({ root, runtime }) {
   const next = statusItems(sections.Next ?? '')
   const blocked = statusItems(sections.Blocked ?? '')
   const required = [...now, ...next, ...blocked]
-  const work = await runtime.extensions.call('hairness/workframes', 'state').catch(() => null)
+  const work = await runtime.extensions.call('hairness/work-controls', 'state').catch(() => null)
   const activeSegment = work?.segments?.find((segment) => segment.id === work.activeSegmentId) ?? null
   const checks = [
     { name: 'now-limit', ok: now.length <= 1 },
     { name: 'next-limit', ok: next.length <= 3 },
     { name: 'unique-ids', ok: new Set(required.map((item) => item.id)).size === required.length },
     { name: 'required-fields', ok: required.every((item) => ['outcome', 'state', 'gate', 'evidence'].every((field) => item[field])) },
-    { name: 'workframes-alignment', ok: !now.length || activeSegment?.id === now[0].id },
+    { name: 'work-alignment', ok: !now.length || activeSegment?.id === now[0].id },
     { name: 'release-gates', ok: /^- /m.test(sections['Release gates'] ?? '') },
     { name: 'references', ok: /^- /m.test(sections.References ?? '') },
   ]
-  return { schemaVersion: 2, protocolVersion: '0.2', status: checks.every((check) => check.ok) ? 'ready' : 'blocked', now, next, blocked, activeSegmentId: activeSegment?.id ?? null, checks, limits: checks.filter((check) => !check.ok).map((check) => check.name), routes: checks.every((check) => check.ok) ? [] : ['align STATUS.md with the active Workframes segment'] }
+  return { schemaVersion: 2, protocolVersion: '0.2', status: checks.every((check) => check.ok) ? 'ready' : 'blocked', now, next, blocked, activeSegmentId: activeSegment?.id ?? null, checks, limits: checks.filter((check) => !check.ok).map((check) => check.name), routes: checks.every((check) => check.ok) ? [] : ['align STATUS.md with the active work segment'] }
 }
 
 export async function changeImpact({ root, runtime, files }) {
@@ -93,12 +93,16 @@ export async function handleCommand({ root, target, action, rest, flags, runtime
   if (mode === 'eval') return evalCommand({ root, runtime, action, rest, flags })
   if (mode === 'impact') return changeImpact({ root, runtime, files: flags.files?.split(',').filter(Boolean) })
   if (mode === 'status') return projectStatus({ root, runtime })
+  if (mode === 'metrics') {
+    const runs = await runtime.runs.list()
+    return { summary: `${runs.length} local run(s).`, runs, limits: [], routes: [] }
+  }
   if (mode === 'check') {
     const packageJson = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
     const distribution = await runtime.distribution.read()
     const extensions = await runtime.extensions.list()
     const status = await projectStatus({ root, runtime })
-    const checks = [{ name: 'protocol-version', ok: packageJson.version === '0.2.0-alpha.0' }, { name: distribution.role === 'forge' ? 'package-public' : 'package-private', ok: distribution.role === 'forge' ? packageJson.private === false : packageJson.private === true }, { name: 'package-license', ok: typeof packageJson.license === 'string' && packageJson.license.length > 0 }, { name: 'project-status', ok: status.status === 'ready', error: status.limits.join(', ') }, ...await decisionChecks(root), ...extensions.map((extension) => ({ name: extension.id, ok: extension.valid, error: extension.error }))]
+    const checks = [{ name: 'protocol-version', ok: packageJson.version === '0.2.0-alpha.0' }, { name: distribution.role === 'forge' ? 'package-public' : 'package-private', ok: distribution.role === 'forge' ? packageJson.private === false : packageJson.private === true }, { name: 'package-license', ok: typeof packageJson.license === 'string' && packageJson.license.length > 0 }, { name: 'project-status', ok: status.status === 'ready', error: status.limits.join(', ') }, ...await decisionChecks(root), ...extensions.map((extension) => ({ name: extension.id, ok: extension.valid || extension.ignored, error: extension.ignored ? undefined : extension.error }))]
     return { summary: checks.every((item) => item.ok) ? 'Maintenance gates are ready.' : 'Maintenance gates found blocking checks.', status: checks.every((item) => item.ok) ? 'ready' : 'blocked', checks, limits: checks.filter((item) => !item.ok).map((item) => item.error ?? item.name), routes: checks.every((item) => item.ok) ? [] : ['npm run check'] }
   }
   if (mode === 'changelog-preview') {

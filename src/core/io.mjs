@@ -33,7 +33,6 @@ export function workspacePaths(root) {
     root,
     overlay,
     config: join(overlay, 'config.json'),
-    codebases: join(overlay, 'codebases'),
     runs: join(overlay, 'runs'),
     plans: join(overlay, 'runs', '.plans'),
     artifacts: join(overlay, 'artifacts'),
@@ -41,8 +40,6 @@ export function workspacePaths(root) {
     scratch: join(overlay, 'scratch'),
     extensions: join(overlay, 'extensions'),
     build: join(overlay, 'build'),
-    sessions: join(overlay, 'session-intelligence'),
-    sessionInbox: join(overlay, 'session-intelligence', 'inbox'),
   }
 }
 
@@ -61,14 +58,12 @@ export function userPaths() {
 export async function ensureOverlay(root) {
   const paths = workspacePaths(root)
   await Promise.all([
-    paths.codebases,
     paths.runs,
     paths.plans,
     paths.staging,
     paths.scratch,
     paths.extensions,
     paths.build,
-    paths.sessionInbox,
   ].map((path) => mkdir(path, { recursive: true })))
   return paths
 }

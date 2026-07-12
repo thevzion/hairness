@@ -9,7 +9,7 @@ export async function attentionSignals({ root, runtime }) {
   const runs = await runtime.runs.list()
   const incompatible = runs.find((run) => run.incompatible)
   if (incompatible) signals.push({ state: 'blocked', priority: 80, summary: 'An incompatible local run needs explicit review.', route: `hairness run ${incompatible.id} show` })
-  if (runs.some((run) => !['succeeded', 'failed', 'invalid', 'cancelled'].includes(run.state))) signals.push({ state: 'active', priority: 55, summary: 'A local run needs attention.', route: 'hairness metrics' })
+  if (runs.some((run) => !['succeeded', 'failed', 'invalid', 'cancelled'].includes(run.state))) signals.push({ state: 'active', priority: 55, summary: 'A local run needs attention.', route: 'hairness maintain metrics' })
   return signals
 }
 

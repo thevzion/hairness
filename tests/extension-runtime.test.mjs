@@ -8,9 +8,12 @@ import { extensionCommand } from '../src/distribution/registry.mjs'
 async function writeExtension(root, base, id, options = {}) {
   const path = join(root, base, ...id.split('/'))
   await mkdir(join(path, 'commands'), { recursive: true })
+  await mkdir(join(path, 'capabilities'), { recursive: true })
   const commands = options.commands ?? []
   for (const command of commands) await writeFile(join(path, 'commands', `${command.namespace}.md`), `Run ${command.namespace}.\n`)
-  await writeFile(join(path, 'extension.json'), JSON.stringify({ schemaVersion: 2, protocolVersion: '0.2', id, version: '0.2.0-alpha.0', module: './index.mjs', dependencies: options.dependencies ?? [], services: options.services ?? [], commands, providerCommands: commands.map((command) => ({ id: `${id.replace('/', '.')}.${command.namespace}`, name: command.namespace, summary: `Run ${command.namespace}.`, kind: 'capability', classification: 'specialized', command: `hairness ${command.namespace}`, arguments: [], result: { schema: 'ContextPacket', disposition: 'response' }, capabilities: ['fixture'], instructions: `./commands/${command.namespace}.md` })) }))
+  const capabilityId = `${id.split('/')[0]}/${id.split('/')[1]}-fixture`
+  await writeFile(join(path, 'capabilities/fixture.json'), JSON.stringify({ schemaVersion: 2, protocolVersion: '0.2', id: capabilityId, owner: id, version: '0.2.0-alpha.0', summary: `Fixture capability for ${id}.`, operations: [{ id: 'run', class: 'derive', summary: 'Run the fixture.', result: { schema: 'ContextPacket', disposition: 'response' }, sources: [], effects: [], routes: ['inline'], acceptsModifiers: [] }] }))
+  await writeFile(join(path, 'extension.json'), JSON.stringify({ schemaVersion: 2, protocolVersion: '0.2', id, version: '0.2.0-alpha.0', module: './index.mjs', capabilities: ['./capabilities/fixture.json'], dependencies: options.dependencies ?? [], services: options.services ?? [], commands, providerCommands: commands.map((command) => ({ id: `${id.replace('/', '.')}.${command.namespace}`, name: command.namespace, summary: `Run ${command.namespace}.`, kind: 'capability', classification: 'specialized', command: `hairness ${command.namespace}`, arguments: [], result: { schema: 'ContextPacket', disposition: 'response' }, operation: { capability: capabilityId, id: 'run' }, instructions: `./commands/${command.namespace}.md` })) }))
   await writeFile(join(path, 'index.mjs'), options.module ?? 'export const services = {}\n')
 }
 
@@ -69,4 +72,14 @@ test('extension link and unlink preserve the external source', async () => {
   await extensionCommand(root, 'extension', 'unlink', undefined, [], { local: 'fixture/local', checkpoint: removal.checkpointId })
   await assert.rejects(access(linked))
   await access(join(source, 'extensions/fixture/local/extension.json'))
+})
+
+test('legacy local extension state is ignored and reported without blocking active owners', async () => {
+  const root = await fixture()
+  await mkdir(join(root, '.overlay'), { recursive: true })
+  await writeFile(join(root, '.overlay/config.json'), JSON.stringify({ schemaVersion: 2, protocolVersion: '0.2', extensions: { disabled: [], local: [{ id: 'legacy/missing', path: './.overlay/extensions/legacy/missing', enabled: true }] } }))
+  assert.deepEqual(await extensionCommand(root, 'beta', 'show', undefined, [], {}), { value: { ok: true } })
+  const report = await extensionCommand(root, 'extension', 'doctor', 'legacy/missing', [], {})
+  assert.equal(report.status, 'partial')
+  assert.deepEqual(report.limits, ['legacy-extension-state'])
 })

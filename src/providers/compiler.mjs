@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { HairnessError } from '../core/errors.mjs'
 import { readJson, workspacePaths, writeJsonAtomic } from '../core/io.mjs'
 import { validateContract } from '../core/contracts.mjs'
+import { capabilityIndex, loadCapabilities, resolveOperation } from '../core/capabilities.mjs'
 
 const supportedProviders = new Set(['codex', 'claude'])
 const version = '0.2.0-alpha.0'
@@ -27,7 +28,7 @@ async function extensionManifest(root, entry) {
   if (!manifest) throw new HairnessError('extension_source_missing', `${entry.id} is missing.`, { exitCode: 4 })
   await validateContract('ExtensionManifest', manifest)
   if (manifest.id !== entry.id) throw new HairnessError('extension_id_mismatch', `${entry.id} does not match ${manifest.id}.`, { exitCode: 2 })
-  return { id: entry.id, path, manifest }
+  return { id: entry.id, path, manifest, capabilities: await loadCapabilities(path, manifest) }
 }
 
 async function activeExtensions(root, includeLocal = false) {
@@ -44,6 +45,7 @@ async function activeExtensions(root, includeLocal = false) {
 
 async function projectionModel(root, includeLocal = false) {
   const active = await activeExtensions(root, includeLocal)
+  const operationIndex = capabilityIndex(active.extensions)
   const commands = []
   const modifiers = new Map()
   const guidance = []
@@ -60,6 +62,7 @@ async function projectionModel(root, includeLocal = false) {
       guidance.push({ ...item, owner: extension.id, content: (await readFile(source, 'utf8')).trim() })
     }
     for (const command of extension.manifest.providerCommands) {
+      if (command.kind !== 'bridge') resolveOperation(operationIndex, command.operation)
       const source = resolve(extension.path, command.instructions)
       if (relative(extension.path, source).startsWith('..')) throw new HairnessError('provider_instruction_escape', `${extension.id} instruction escapes its extension.`, { exitCode: 2 })
       commands.push({ ...command, owner: extension.id, instructionsText: (await readFile(source, 'utf8')).trim() })
@@ -85,7 +88,8 @@ function skillMarkdown(command, provider, modifiers) {
   const invocation = provider === 'codex' ? `$${command.name}` : `/${command.name}`
   const accepted = (command.acceptsModifiers ?? []).map((id) => modifiers.find((item) => item.id === id)).filter(Boolean)
   const modifierText = accepted.length ? `\nAccepted modifiers:\n${accepted.map((item) => `- \`--${item.argument} <${item.values.join('|')}>\` (default: \`${item.default}\`)`).join('\n')}\n` : ''
-  return `---\nname: ${command.name}\ndescription: ${command.summary}\n---\n\n# ${command.name}\n\nInvocation: \`${invocation}\`\nDeterministic route: \`${command.command} --json\`\nOwner: \`${command.owner}\`\n${modifierText}\n${command.instructionsText}\n\nA command grants no authority. Respect active constraints and checkpoints. A worker receives only its capsule and returns one typed result to the declared fan-in.\n`
+  const operation = command.operation ? `${command.operation.capability}#${command.operation.id}` : 'router'
+  return `---\nname: ${command.name}\ndescription: ${command.summary}\n---\n\n# ${command.name}\n\nInvocation: \`${invocation}\`\nDeterministic route: \`${command.command} --json\`\nOwner: \`${command.owner}\`\nOperation: \`${operation}\`\n${modifierText}\n${command.instructionsText}\n\nA command grants no authority. Respect active constraints and checkpoints. A worker receives only its capsule and returns one typed result to the declared fan-in.\n`
 }
 
 function workerFiles(provider) {
