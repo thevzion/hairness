@@ -88,8 +88,15 @@ function skillMarkdown(command, provider, modifiers) {
   const invocation = provider === 'codex' ? `$${command.name}` : `/${command.name}`
   const accepted = (command.acceptsModifiers ?? []).map((id) => modifiers.find((item) => item.id === id)).filter(Boolean)
   const modifierText = accepted.length ? `\nAccepted modifiers:\n${accepted.map((item) => `- \`--${item.argument} <${item.values.join('|')}>\` (default: \`${item.default}\`)`).join('\n')}\n` : ''
-  const operation = command.operation ? `${command.operation.capability}#${command.operation.id}` : 'router'
-  return `---\nname: ${command.name}\ndescription: ${command.summary}\n---\n\n# ${command.name}\n\nInvocation: \`${invocation}\`\nDeterministic route: \`${command.command} --json\`\nOwner: \`${command.owner}\`\nOperation: \`${operation}\`\n${modifierText}\n${command.instructionsText}\n\nA command grants no authority. Respect active constraints and checkpoints. A worker receives only its capsule and returns one typed result to the declared fan-in.\n`
+  const gateway = command.operation
+    ? command.entryPolicy === 'opening-first'
+      ? `Use the fresh SessionOpening path below first. When a refresh is required, infer a compact InvocationDraft and call \`hairness invoke start --operation ${command.operation.capability}:${command.operation.id} --draft-json - --json\`.`
+      : `Infer a compact InvocationDraft from the request and current opening. Before asking a question, call \`hairness invoke start --operation ${command.operation.capability}:${command.operation.id} --draft-json - --json\`. Add \`--auto\` only when explicitly requested. Ask only a returned gap; otherwise follow \`preview.next\` and render the typed result.`
+    : 'Resolve the intent to one active operation. Use `hairness help --json` only when ownership is unclear, then submit the operation through `hairness invoke start`.'
+  const output = `---\nname: ${command.name}\ndescription: ${command.summary}\n---\n\nInvoke with \`${invocation}\`.\n${modifierText}\n${gateway}\n\n${command.instructionsText}\n\nNo authority is implied. Keep checkpoints and worker capsules exact.\n`
+  const budget = command.kind === 'bridge' ? 2048 : 1024
+  if (Buffer.byteLength(output) > budget) throw new HairnessError('provider_instruction_budget', `${command.id} exceeds ${budget} bytes.`, { exitCode: 2 })
+  return output
 }
 
 function workerFiles(provider) {
@@ -200,12 +207,12 @@ async function expectedFiles(root, provider, local) {
 async function ensureSafeWrite(root, path, content, owner, provider, previous, check) {
   const absolute = join(root, path)
   const current = await readFile(absolute, 'utf8').catch((error) => error.code === 'ENOENT' ? null : Promise.reject(error))
-  if (current === content) return { path, owner, provider, digest: digest(content), state: 'current' }
+  if (current === content) return { path, owner, provider, digest: digest(content), byteSize: Buffer.byteLength(content), state: 'current' }
   if (check) throw new HairnessError('provider_projection_drift', `${path} is missing or stale.`, { exitCode: 5, routes: ['hairness build'] })
   if (current !== null && previous?.digest && digest(current) !== previous.digest) throw new HairnessError('review_required', `${path} was edited outside its canonical owner.`, { exitCode: 5, details: { decision: 'review-required', target: path } })
   await mkdir(dirname(absolute), { recursive: true })
   await writeFile(absolute, content)
-  return { path, owner, provider, digest: digest(content), state: current === null ? 'created' : 'updated' }
+  return { path, owner, provider, digest: digest(content), byteSize: Buffer.byteLength(content), state: current === null ? 'created' : 'updated' }
 }
 
 export async function buildProviders(root, options = {}) {
@@ -292,7 +299,7 @@ export async function buildProviders(root, options = {}) {
         if (selected.has('claude') && item.path.startsWith('.claude/')) return false
         return true
       }) : []),
-      ...outputs.map(({ path, owner, provider, digest: value }) => ({ path, owner, provider, digest: value })),
+      ...outputs.map(({ path, owner, provider, digest: value, byteSize }) => ({ path, owner, provider, digest: value, byteSize })),
     ],
     regions,
     entries: [

@@ -14,7 +14,7 @@ Owns work status, history, trace, resume, discuss, recap, plan, act and execute 
 
 ## Inputs, controls and results
 
-Uses the active scope and returns `SegmentDigest` or `WorkPlan` artifacts at semantic boundaries.
+Uses the active scope and returns `SegmentDigest` or `WorkPlan` artifacts at semantic boundaries. `work control set|clear|show` persists ordinary session, segment and frame controls; narrower scopes override broader scopes without changing authority constraints.
 
 ## State and artifacts
 

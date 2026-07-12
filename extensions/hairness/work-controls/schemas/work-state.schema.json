@@ -10,6 +10,7 @@
     "mission": { "anyOf": [{ "$ref": "#/$defs/mission" }, { "type": "null" }] },
     "activeSegmentId": { "type": ["string", "null"] },
     "methodologyBinding": { "type": ["string", "null"] },
+    "controls": { "type": "object" },
     "segments": { "type": "array", "items": { "$ref": "#/$defs/segment" } },
     "frames": { "type": "array", "items": { "$ref": "#/$defs/frame" } },
     "updatedAt": { "type": "string", "minLength": 1 }
@@ -54,6 +55,7 @@
         "relations": { "type": "array", "items": { "$ref": "#/$defs/relation" } },
         "frames": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
         "artifacts": { "type": "array", "items": { "$ref": "#/$defs/entityRef" } },
+        "controls": { "type": "object" },
         "digestArtifact": { "$ref": "#/$defs/entityRef" }, "createdAt": { "type": "string" }, "updatedAt": { "type": "string" }
       }
     },
@@ -64,7 +66,7 @@
       "properties": {
         "id": { "type": "string" }, "segmentId": { "type": "string" }, "summary": { "type": "string", "minLength": 1 },
         "posture": { "enum": ["discuss", "recap", "plan", "act", "execute"] }, "status": { "enum": ["open", "closed"] },
-        "boundary": { "$ref": "#/$defs/boundary" }, "artifacts": { "type": "array", "items": { "$ref": "#/$defs/entityRef" } },
+        "boundary": { "$ref": "#/$defs/boundary" }, "controls": { "type": "object" }, "artifacts": { "type": "array", "items": { "$ref": "#/$defs/entityRef" } },
         "sources": { "type": "array", "items": { "$ref": "#/$defs/entityRef" } }, "createdAt": { "type": "string" }, "updatedAt": { "type": "string" }
       }
     }

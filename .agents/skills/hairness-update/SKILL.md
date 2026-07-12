@@ -3,12 +3,9 @@ name: hairness-update
 description: Inspect and safely update source-owned Hairness materials.
 ---
 
-# hairness-update
+Invoke with `$hairness-update`.
 
-Invocation: `$hairness-update`
-Deterministic route: `hairness update doctor --json`
-Owner: `hairness/distribution`
-Operation: `hairness/distribution-lifecycle#inspect`
+Infer a compact InvocationDraft from the request and current opening. Before asking a question, call `hairness invoke start --operation hairness/distribution-lifecycle:inspect --draft-json - --json`. Add `--auto` only when explicitly requested. Ask only a returned gap; otherwise follow `preview.next` and render the typed result.
 
 # Hairness distribution lifecycle
 
@@ -16,4 +13,4 @@ Inspect the tracked lock before proposing an update. Never infer that consumer d
 
 An apply requires the exact checkpoint emitted by the immutable plan. Hairness does not create commits, branches, remotes, pull requests, tags, releases, or publishes.
 
-A command grants no authority. Respect active constraints and checkpoints. A worker receives only its capsule and returns one typed result to the declared fan-in.
+No authority is implied. Keep checkpoints and worker capsules exact.

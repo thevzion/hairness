@@ -12,10 +12,10 @@
   "module": "./index.mjs",
   "capabilities": ["./capabilities/work.json"],
   "dependencies": ["hairness/cockpit", "hairness/presentation-controls"],
-  "services": ["state", "set-boundary"],
-  "contributes": ["session-opening"],
+  "services": ["state", "set-boundary", "controls"],
+  "contributes": ["session-opening", "invocation-controls"],
   "relationTypes": ["continues", "depends-on", "informs", "supersedes", "blocks", "related-to"],
-  "commands": [{ "namespace": "work", "actions": ["status", "history", "trace", "resume", "mission", "segment", "frame", "method", "discuss", "new-frame", "recap", "plan", "act", "execute"] }],
+  "commands": [{ "namespace": "work", "actions": ["status", "history", "trace", "resume", "mission", "segment", "frame", "control", "method", "discuss", "new-frame", "recap", "plan", "act", "execute"] }],
   "artifactSchemas": [
     { "type": "segment-digest", "schema": "./schemas/segment-digest.schema.json" },
     { "type": "work-plan", "schema": "./schemas/work-plan.schema.json" }

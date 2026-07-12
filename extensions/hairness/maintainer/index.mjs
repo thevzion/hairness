@@ -95,7 +95,26 @@ export async function handleCommand({ root, target, action, rest, flags, runtime
   if (mode === 'status') return projectStatus({ root, runtime })
   if (mode === 'metrics') {
     const runs = await runtime.runs.list()
-    return { summary: `${runs.length} local run(s).`, runs, limits: [], routes: [] }
+    const invocations = await runtime.invocations.list()
+    const streams = await Promise.all(invocations.map((item) => runtime.invocations.events(item.id)))
+    const latencies = streams.map((events) => {
+      const start = events.find((event) => event.type === 'requested')
+      const preview = events.find((event) => event.type === 'previewed')
+      return start && preview ? Date.parse(preview.at) - Date.parse(start.at) : null
+    }).filter((value) => value !== null)
+    const build = JSON.parse(await readFile(join(root, 'hairness.build.json'), 'utf8'))
+    const instructionOutputs = build.outputs.filter((item) => item.path.endsWith('/SKILL.md'))
+    const rejected = streams.filter((events) => events.some((event) => event.type === 'result-rejected')).length
+    const acceptedFirstPass = streams.filter((events) => events.some((event) => event.type === 'result-accepted') && !events.some((event) => event.type === 'result-rejected')).length
+    const metrics = {
+      invocations: invocations.length,
+      gaps: invocations.filter((item) => item.preview.gaps.length).length,
+      resolverReuses: invocations.reduce((total, item) => total + item.preview.resolved.resolverOwners.length, 0),
+      resolutionLatencyMs: { samples: latencies.length, average: latencies.length ? Math.round(latencies.reduce((total, value) => total + value, 0) / latencies.length) : null },
+      providerInstructions: { count: instructionOutputs.length, totalBytes: instructionOutputs.reduce((total, item) => total + item.byteSize, 0), maxBytes: Math.max(0, ...instructionOutputs.map((item) => item.byteSize)) },
+      resultGate: { acceptedFirstPass, corrected: rejected },
+    }
+    return { summary: `${invocations.length} invocation(s), ${runs.length} run(s).`, metrics, runs, limits: ['Provider tool calls and model latency are recorded only by explicit eval attempts.'], routes: ['hairness maintain eval list'] }
   }
   if (mode === 'check') {
     const packageJson = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))

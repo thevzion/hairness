@@ -20,9 +20,16 @@ test('provider compiler emits the same active command set for Codex and Claude',
     'hairness-codebase', 'hairness-map-codebase', 'hairness-source', 'hairness-check-sources',
   ])
   for (const command of manifest.commands) {
-    await access(join(root, '.agents/skills', command.name, 'SKILL.md'))
-    await access(join(root, '.claude/skills', command.name, 'SKILL.md'))
+    const codex = join(root, '.agents/skills', command.name, 'SKILL.md')
+    const claude = join(root, '.claude/skills', command.name, 'SKILL.md')
+    await access(codex)
+    await access(claude)
+    const content = await readFile(codex, 'utf8')
+    assert.ok(Buffer.byteLength(content) <= (command.name === 'hairness' ? 2048 : 1024), `${command.name} instruction budget`)
+    if (command.name !== 'hairness') assert.match(content, /hairness invoke start/)
+    assert.equal(await readFile(claude, 'utf8'), content.replace(`\`$${command.name}\``, `\`/${command.name}\``))
   }
+  assert.match(await readFile(join(root, '.agents/skills/hairness-wake-up/SKILL.md'), 'utf8'), /fresh SessionOpening/)
   await assert.rejects(access(join(root, '.codex-plugin')))
   await assert.rejects(access(join(root, '.claude-plugin')))
 })

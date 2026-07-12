@@ -14,7 +14,7 @@ Owns map, explain and compare. Domain extensions supply their own subjects and s
 
 ## Inputs, controls and results
 
-Accepts a subject and focus plus explicitly supported presentation modifiers.
+Requires one typed focus and accepts explicitly supported presentation modifiers. A missing focus becomes one Hairness gap before inference.
 
 ## State and artifacts
 

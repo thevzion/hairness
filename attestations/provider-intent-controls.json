@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "suite": "intent-map-gap",
+  "provider": "codex",
+  "profile": "fast",
+  "passes": 3,
+  "openingBytes": 2430,
+  "gates": [
+    "first-call",
+    "tool-count:1",
+    "gap-only",
+    "compact"
+  ],
+  "digest": "sha256:d6c3b112fbeee1c4315e24aab869642dbc2bb8f8a1e302f1efd3d98d3f5cb89d",
+  "observedAt": "2026-07-12T15:11:45.947Z"
+}

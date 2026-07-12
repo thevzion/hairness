@@ -4,19 +4,13 @@ Current target: `0.2.0-alpha.0`
 
 ## Now
 
-- `invocation-engine`
-  - Outcome: Natural and direct requests resolve to one traceable invocation contract.
-  - State: active
-  - Gate: Preview, one-gap resolution, `--auto`, event recovery and receipt contracts pass.
-  - Evidence: Reconstructible invocation event streams and behavior tests.
-
-## Next
-
 - `provider-intent-controls`
   - Outcome: Codex and Claude use compact instructions and the same deterministic invocation path.
-  - State: planned
-  - Gate: Provider parity, budgets and native smokes pass.
-  - Evidence: Content-addressed behavior attestations.
+  - State: active
+  - Gate: Provider parity, budgets, deterministic E2E and final native smokes pass.
+  - Evidence: Content-addressed behavior attestations and replayable receipts.
+
+## Next
 
 - `initiative-delivery-controls`
   - Outcome: The forge plans and ships its own evolution through typed local artifacts and checkpoints.
