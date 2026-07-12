@@ -1,9 +1,9 @@
 ---
 id: semantic-method-normalization
 status: accepted
-owners: [hairness/workframes]
+owners: [hairness/work-controls]
 signals: [methodology, artifact]
-paths: [extensions/hairness/workframes, docs/concepts/methodology-bindings.md]
+paths: [extensions/hairness/work-controls, docs/concepts/methodology-bindings.md]
 ---
 
 # Semantic normalization of external methods

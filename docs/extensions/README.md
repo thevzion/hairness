@@ -1,49 +1,44 @@
 # Extensions
 
-Extensions are the executable owners of team and workflow capabilities. The core owns the grammar; extensions own commands, policies, contributions and behavior.
+Extensions are the executable owners of Hairness behavior.
 
 ```text
 extensions/<owner>/<name>/
 ├── extension.json
+├── capabilities/*.json
 ├── index.mjs
 ├── commands/
-├── guidance/
 ├── schemas/
-├── test-suites/
-├── tests/
-└── README.md
+├── guidance/
+├── drivers/
+└── tests/
 ```
 
-`extension.json` declares commands, methodology bindings, modifiers, relations, dependencies, services, sources, onboarding questions, attention contributions, provider instructions and artifact schemas. `index.mjs` implements only declared surfaces. A source-only extension needs no command handler.
+`extension.json` declares dependencies, capability files, provider commands, services, contributions, modifiers, relation types, artifact schemas, source drivers, and declarative onboarding questions. Each declared implementation file remains inside its owner.
 
-Handlers receive a frozen runtime. Cross-extension services require declared dependencies. Source reads use `runtime.sources.read`; extension state is restricted to `.overlay/extensions-state/<extension-id>/`.
+Capability files declare operations. Commands of kind `capability` or `preset` reference one operation. Provider instructions define provider behavior; the compiler adds only common safety guidance.
 
-Provider instructions and artifact schemas remain inside their owner directory. Provider compilation hashes instructions. Artifact promotion rejects unowned types, duplicate owners and invalid payloads.
+Handlers receive a frozen runtime. Cross-extension services require declared dependencies. Extension state is limited to `.overlay/extensions-state/<extension-id>/`. There is no generic source API: a business extension depends on `hairness/sources` and calls its declared service.
 
-## Shared ownership
-
-Shared extensions live in `extensions/` and become source-owned by the distribution. Physical presence never activates an extension; `hairness.json` selects the shared composition.
+## Shared source
 
 ```bash
 hairness extension add <owner/name> --from <path|tarball|npm-spec>
 hairness extension remove <owner/name>
 ```
 
-Both operations return a checkpoint before copying or removing source and rebuilding shared projections.
+Add inspects an explicit source, resolves dependency closure, shows a checkpoint, copies source, updates the manifest, and rebuilds projections. Copying transfers ownership to the distribution.
 
-## Local ownership
-
-Local extensions live under `.overlay/extensions/`, require explicit trust and never enter shared projections.
+## Local source
 
 ```bash
-hairness extension init --local <owner/name>
 hairness extension link --local <owner/name> --from <path>
 hairness extension unlink --local <owner/name>
 hairness build --local
 ```
 
-`init` creates a private extension. `link` references an externally owned checkout without copying it. `unlink` removes only the local reference, trust entry and local projection; it never mutates the source.
+Linking preserves external ownership. It requires explicit path trust and affects only ignored local projections. Unlink never deletes the source.
 
-Implicit registries and automatic background updates are outside protocol `0.2`. The `hairness/distribution` extension may explicitly inspect a configured path, tarball, or npm source and propose a conservative source-owned update.
+Removing or disabling an extension removes all of its active capabilities, operations, commands, services, contributions, schemas, drivers, and projections. A used dependency cannot be disabled.
 
-See the [generic extension catalogue](catalog.md).
+See the [catalogue](catalog.md).

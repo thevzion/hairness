@@ -7,7 +7,7 @@ Artifacts do not replace live proof. A ticket map can orient an implementation, 
 Scratch remains untyped and never enters context automatically.
 
 ```bash
-hairness artifact list --owner hairness/workframes
+hairness artifact list --owner hairness/work-controls
 hairness artifact list --label work
 hairness artifact related work/composable-forge-recap
 hairness artifact graph work/composable-forge-recap
