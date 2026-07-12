@@ -7,7 +7,56 @@
   "version": "0.2.0-alpha.0",
   "summary": "Address exact repository checkouts and derive bounded codebase maps.",
   "operations": [
-    { "id": "inspect", "class": "observe", "summary": "Inspect one registered codebase and exact checkout.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": ["git"], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
-    { "id": "map", "class": "derive", "summary": "Produce a bounded codebase, entrypoint or system map.", "result": { "schema": "ArtifactEnvelope", "disposition": "artifact", "artifactOwner": "hairness/codebase", "artifactType": "codebase-map" }, "sources": ["git"], "effects": [], "routes": ["inline", "worker"], "acceptsModifiers": ["hairness.presentation"] }
+    {
+      "id": "inspect",
+      "class": "observe",
+      "summary": "Inspect one registered codebase and exact checkout.",
+      "sources": [
+        "git"
+      ],
+      "effects": [],
+      "routes": [
+        "deterministic"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "map",
+      "class": "derive",
+      "summary": "Produce a bounded codebase, entrypoint or system map.",
+      "sources": [
+        "git"
+      ],
+      "effects": [],
+      "routes": [
+        "inline",
+        "worker"
+      ],
+      "acceptsModifiers": [
+        "hairness.presentation"
+      ],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ArtifactEnvelope",
+            "disposition": "artifact",
+            "artifactOwner": "hairness/codebase",
+            "artifactType": "codebase-map"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    }
   ]
 }

@@ -7,11 +7,150 @@
   "version": "0.2.0-alpha.0",
   "summary": "Keep human and agent aligned on active work, boundaries and next operations.",
   "operations": [
-    { "id": "inspect", "class": "observe", "summary": "Inspect or resume the persistent work graph.", "result": { "schema": "WorkState", "disposition": "run-only" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
-    { "id": "discuss", "class": "derive", "summary": "Discuss one bounded frame without effects.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["inline", "worker"], "acceptsModifiers": ["hairness.presentation"] },
-    { "id": "recap", "class": "derive", "summary": "Reduce active work into a typed segment digest.", "result": { "schema": "ArtifactEnvelope", "disposition": "artifact", "artifactOwner": "hairness/work-controls", "artifactType": "segment-digest" }, "sources": [], "effects": [], "routes": ["inline", "worker"], "acceptsModifiers": ["hairness.presentation"] },
-    { "id": "plan", "class": "derive", "summary": "Turn accepted decisions into a typed work plan.", "result": { "schema": "ArtifactEnvelope", "disposition": "artifact", "artifactOwner": "hairness/work-controls", "artifactType": "work-plan" }, "sources": [], "effects": [], "routes": ["inline", "worker"], "acceptsModifiers": ["hairness.presentation"] },
-    { "id": "act", "class": "effect", "summary": "Act on one accepted frame through an explicit checkpoint.", "result": { "schema": "ChangeReceipt", "disposition": "effect" }, "sources": [], "effects": ["target-mutation"], "routes": ["worker", "external"], "acceptsModifiers": [] },
-    { "id": "execute", "class": "effect", "summary": "Execute one accepted WorkPlan through bounded routes.", "result": { "schema": "ContextPacket", "disposition": "effect" }, "sources": [], "effects": ["target-mutation"], "routes": ["worker", "external"], "acceptsModifiers": [] }
+    {
+      "id": "inspect",
+      "class": "observe",
+      "summary": "Inspect or resume the persistent work graph.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "deterministic"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "WorkState",
+            "disposition": "run-only"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "discuss",
+      "class": "derive",
+      "summary": "Discuss one bounded frame without effects.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "inline",
+        "worker"
+      ],
+      "acceptsModifiers": [
+        "hairness.presentation"
+      ],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "recap",
+      "class": "derive",
+      "summary": "Reduce active work into a typed segment digest.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "inline",
+        "worker"
+      ],
+      "acceptsModifiers": [
+        "hairness.presentation"
+      ],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ArtifactEnvelope",
+            "disposition": "artifact",
+            "artifactOwner": "hairness/work-controls",
+            "artifactType": "segment-digest"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "plan",
+      "class": "derive",
+      "summary": "Turn accepted decisions into a typed work plan.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "inline",
+        "worker"
+      ],
+      "acceptsModifiers": [
+        "hairness.presentation"
+      ],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ArtifactEnvelope",
+            "disposition": "artifact",
+            "artifactOwner": "hairness/work-controls",
+            "artifactType": "work-plan"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "act",
+      "class": "effect",
+      "summary": "Act on one accepted frame through an explicit checkpoint.",
+      "sources": [],
+      "effects": [
+        "target-mutation"
+      ],
+      "routes": [
+        "worker",
+        "external"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ChangeReceipt",
+            "disposition": "effect"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "execute",
+      "class": "effect",
+      "summary": "Execute one accepted WorkPlan through bounded routes.",
+      "sources": [],
+      "effects": [
+        "target-mutation"
+      ],
+      "routes": [
+        "worker",
+        "external"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "effect"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    }
   ]
 }

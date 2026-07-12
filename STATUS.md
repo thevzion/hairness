@@ -4,19 +4,13 @@ Current target: `0.2.0-alpha.0`
 
 ## Now
 
-- `workspace-catalog-contract`
-  - Outcome: Extensions are documented, discoverable and copied through exact material graphs while local state remains explicit.
-  - State: active
-  - Gate: Extension catalogue, local scaffold, material closure and workspace boundary tests pass.
-  - Evidence: Generated catalogue, distribution receipts and stacked draft PR.
-
-## Next
-
 - `invocation-engine`
   - Outcome: Natural and direct requests resolve to one traceable invocation contract.
-  - State: planned
-  - Gate: Preview, gaps, `--auto`, receipts and recovery tests pass.
-  - Evidence: Invocation event and behavior receipts.
+  - State: active
+  - Gate: Preview, one-gap resolution, `--auto`, event recovery and receipt contracts pass.
+  - Evidence: Reconstructible invocation event streams and behavior tests.
+
+## Next
 
 - `provider-intent-controls`
   - Outcome: Codex and Claude use compact instructions and the same deterministic invocation path.
@@ -29,6 +23,12 @@ Current target: `0.2.0-alpha.0`
   - State: planned
   - Gate: Roadmap, delivery and release-candidate dogfood passes.
   - Evidence: Initiative, delivery and launch-kit receipts.
+
+- `npm-alpha`
+  - Outcome: The experimental package, documentation and release evidence are ready for a separate publication checkpoint.
+  - State: planned
+  - Gate: Clean-install, provider and package smokes pass on Node.js 22 and 24.
+  - Evidence: Content-addressed tarball, known limitations and release candidate receipt.
 
 ## Blocked
 

@@ -7,8 +7,68 @@
   "version": "0.2.0-alpha.0",
   "summary": "Orient the main session through help, onboarding and compact attention.",
   "operations": [
-    { "id": "help", "class": "observe", "summary": "Explain the active human command surface.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
-    { "id": "onboarding", "class": "observe", "summary": "Continue local onboarding one gap at a time.", "result": { "schema": "OnboardingState", "disposition": "run-only" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
-    { "id": "wake-up", "class": "observe", "summary": "Render current attention and next routes.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] }
+    {
+      "id": "help",
+      "class": "observe",
+      "summary": "Explain the active human command surface.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "deterministic"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "onboarding",
+      "class": "observe",
+      "summary": "Continue local onboarding one gap at a time.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "deterministic"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "OnboardingState",
+            "disposition": "run-only"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "wake-up",
+      "class": "observe",
+      "summary": "Render current attention and next routes.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "deterministic"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    }
   ]
 }

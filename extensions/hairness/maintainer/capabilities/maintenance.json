@@ -7,6 +7,26 @@
   "version": "0.2.0-alpha.0",
   "summary": "Check the forge, its public contracts, projections and release evidence.",
   "operations": [
-    { "id": "inspect", "class": "observe", "summary": "Inspect maintenance impact, status, tests and metrics.", "result": { "schema": "ChangeImpactReport", "disposition": "run-only" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] }
+    {
+      "id": "inspect",
+      "class": "observe",
+      "summary": "Inspect maintenance impact, status, tests and metrics.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "deterministic"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ChangeImpactReport",
+            "disposition": "run-only"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    }
   ]
 }

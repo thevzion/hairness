@@ -16,7 +16,12 @@ export async function loadCapabilities(extensionPath, manifest) {
     const value = JSON.parse(await readFile(path, 'utf8'))
     await validateContract('CapabilitySpec', value)
     if (value.owner !== manifest.id) throw new HairnessError('capability_owner_mismatch', `${value.id} declares ${value.owner}, expected ${manifest.id}.`, { exitCode: 2 })
-    for (const operation of value.operations) if (operation.inputSchema) safePath(extensionPath, operation.inputSchema, 'operation_schema_escape')
+    for (const operation of value.operations) {
+      if (operation.inputSchema) safePath(extensionPath, operation.inputSchema, 'operation_schema_escape')
+      const resultIds = operation.results.map((result) => result.id)
+      if (new Set(resultIds).size !== resultIds.length) throw new HairnessError('operation_result_conflict', `${value.id}#${operation.id} has duplicate result options.`, { exitCode: 2 })
+      if (!resultIds.includes(operation.defaultResult)) throw new HairnessError('operation_default_result_missing', `${value.id}#${operation.id} has no ${operation.defaultResult} result option.`, { exitCode: 2 })
+    }
     values.push({ ...value, source })
   }
   return values

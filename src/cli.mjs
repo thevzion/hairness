@@ -61,6 +61,24 @@ async function inputJson(flags) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
 }
 
+async function jsonFlag(flags, name) {
+  const value = flags[name]
+  if (!value || value === true) throw new HairnessError('input_required', `Provide --${name} <path|->.`, { exitCode: 2 })
+  if (value === '-') return inputJson({})
+  if (value.startsWith('{')) return JSON.parse(value)
+  return JSON.parse(await readFile(value, 'utf8'))
+}
+
+function operationReference(value) {
+  const input = String(value ?? '')
+  const separator = Math.max(input.lastIndexOf('#'), input.lastIndexOf(':'))
+  if (separator <= 0) throw new HairnessError('operation_reference_invalid', 'Use --operation <capability:operation>.', { exitCode: 2 })
+  const capability = input.slice(0, separator)
+  const id = input.slice(separator + 1)
+  if (!capability || !id) throw new HairnessError('operation_reference_invalid', 'Use --operation <capability:operation>.', { exitCode: 2 })
+  return { capability, id }
+}
+
 function envelope(ok, value) {
   return ok
     ? { schemaVersion: 2, protocolVersion: PROTOCOL_VERSION, ok: true, data: value, limits: [], routes: [] }
@@ -89,6 +107,22 @@ function renderHuman(value) {
 async function coreCommand(root, positionals, flags) {
   const [namespace, target, action, ...rest] = positionals
   if (!namespace) throw new HairnessError('usage', 'Usage: hairness <namespace> <target> [action]', { exitCode: 2 })
+
+  if (namespace === 'invoke') {
+    const { answerInvocation, cancelInvocation, resumeInvocation, showInvocation, startInvocation } = await import('./distribution/invocation.mjs')
+    const mode = target
+    if (mode === 'start') {
+      const draft = await jsonFlag(flags, 'draft-json')
+      if (flags.operation) draft.operation = operationReference(flags.operation)
+      return startInvocation(root, draft, { mode: flags.direct ? 'direct' : 'intent', auto: Boolean(flags.auto) })
+    }
+    if (!action) throw new HairnessError('usage', 'Usage: hairness invoke show|answer|resume|cancel <id>', { exitCode: 2 })
+    if (mode === 'show') return showInvocation(root, action)
+    if (mode === 'answer') return answerInvocation(root, action, await jsonFlag(flags, 'answers-json'))
+    if (mode === 'resume') return resumeInvocation(root, action, { auto: Boolean(flags.auto) })
+    if (mode === 'cancel') return cancelInvocation(root, action)
+    throw new HairnessError('unknown_command', `Unknown invoke action: ${mode}`, { exitCode: 2 })
+  }
 
   if (namespace === 'plan') {
     if (!target) throw new HairnessError('usage', 'Usage: hairness plan <id> show|next|reduce', { exitCode: 2 })

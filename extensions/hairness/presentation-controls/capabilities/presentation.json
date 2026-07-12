@@ -7,6 +7,28 @@
   "version": "0.2.0-alpha.0",
   "summary": "Change the form of a result without inventing meaning or proof.",
   "operations": [
-    { "id": "present", "class": "derive", "summary": "Choose the smallest sufficient set of views for an existing result.", "result": { "schema": "PresentationRequest", "disposition": "response" }, "sources": [], "effects": [], "routes": ["inline"], "acceptsModifiers": ["hairness.presentation"] }
+    {
+      "id": "present",
+      "class": "derive",
+      "summary": "Choose the smallest sufficient set of views for an existing result.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "inline"
+      ],
+      "acceptsModifiers": [
+        "hairness.presentation"
+      ],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "PresentationRequest",
+            "disposition": "response"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    }
   ]
 }

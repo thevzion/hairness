@@ -7,8 +7,77 @@
   "version": "0.2.0-alpha.0",
   "summary": "Make structures, concepts and alternatives understandable without inventing proof.",
   "operations": [
-    { "id": "map", "class": "derive", "summary": "Organize the relevant relationships for one focus.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["inline", "worker"], "acceptsModifiers": ["hairness.presentation"] },
-    { "id": "explain", "class": "derive", "summary": "Clarify one concept from available meaning and proof.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["inline", "worker"], "acceptsModifiers": ["hairness.presentation"] },
-    { "id": "compare", "class": "derive", "summary": "Put explicit alternatives and tradeoffs in tension.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["inline", "worker"], "acceptsModifiers": ["hairness.presentation"] }
+    {
+      "id": "map",
+      "class": "derive",
+      "summary": "Organize the relevant relationships for one focus.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "inline",
+        "worker"
+      ],
+      "acceptsModifiers": [
+        "hairness.presentation"
+      ],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "explain",
+      "class": "derive",
+      "summary": "Clarify one concept from available meaning and proof.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "inline",
+        "worker"
+      ],
+      "acceptsModifiers": [
+        "hairness.presentation"
+      ],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "compare",
+      "class": "derive",
+      "summary": "Put explicit alternatives and tradeoffs in tension.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "inline",
+        "worker"
+      ],
+      "acceptsModifiers": [
+        "hairness.presentation"
+      ],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    }
   ]
 }

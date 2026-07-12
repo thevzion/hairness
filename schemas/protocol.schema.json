@@ -28,13 +28,14 @@
     "Operation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "class", "summary", "result", "sources", "effects", "routes", "acceptsModifiers"],
+      "required": ["id", "class", "summary", "results", "defaultResult", "sources", "effects", "routes", "acceptsModifiers"],
       "properties": {
         "id": { "$ref": "#/$defs/Slug" },
         "class": { "enum": ["observe", "derive", "effect"] },
         "summary": { "$ref": "#/$defs/NonEmpty" },
         "inputSchema": { "type": "string", "pattern": "^\\./" },
-        "result": { "$ref": "#/$defs/ResultContract" },
+        "results": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/ResultOption" } },
+        "defaultResult": { "$ref": "#/$defs/Slug" },
         "sources": { "type": "array", "items": { "$ref": "#/$defs/Slug" }, "uniqueItems": true },
         "effects": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
         "routes": { "type": "array", "minItems": 1, "items": { "enum": ["deterministic", "inline", "worker", "external"] }, "uniqueItems": true },
@@ -43,11 +44,11 @@
       "allOf": [
         {
           "if": { "properties": { "class": { "enum": ["observe", "derive"] } }, "required": ["class"] },
-          "then": { "properties": { "effects": { "type": "array", "maxItems": 0 }, "result": { "type": "object", "properties": { "disposition": { "not": { "const": "effect" } } } } } }
+          "then": { "properties": { "effects": { "type": "array", "maxItems": 0 }, "results": { "type": "array", "items": { "type": "object", "properties": { "contract": { "type": "object", "properties": { "disposition": { "not": { "const": "effect" } } } } } } } } }
         },
         {
           "if": { "properties": { "class": { "const": "effect" } }, "required": ["class"] },
-          "then": { "properties": { "effects": { "type": "array", "minItems": 1 }, "result": { "type": "object", "properties": { "disposition": { "const": "effect" } } } } }
+          "then": { "properties": { "effects": { "type": "array", "minItems": 1 }, "results": { "type": "array", "items": { "type": "object", "properties": { "contract": { "type": "object", "properties": { "disposition": { "const": "effect" } } } } } } } }
         }
       ]
     },
@@ -117,6 +118,137 @@
           }
         }
       }]
+    },
+    "ResultOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "contract"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Slug" },
+        "contract": { "$ref": "#/$defs/ResultContract" }
+      }
+    },
+    "ExpectedResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "contract"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Slug" },
+        "contract": { "$ref": "#/$defs/ResultContract" },
+        "persistence": { "enum": ["none", "local", "published"] }
+      }
+    },
+    "InvocationDraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "operation", "summary", "inputs", "controls"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "operation": { "$ref": "#/$defs/OperationRef" },
+        "summary": { "$ref": "#/$defs/NonEmpty" },
+        "inputs": { "type": "object" },
+        "controls": { "type": "object" },
+        "result": { "$ref": "#/$defs/Slug" },
+        "route": { "enum": ["deterministic", "inline", "worker", "external"] },
+        "progressPolicy": { "enum": ["preview", "auto"] }
+      }
+    },
+    "InvocationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "id", "mode", "operation", "summary", "inputs", "controls", "expectedResult", "route", "progressPolicy", "createdAt"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "id": { "$ref": "#/$defs/Id" },
+        "mode": { "enum": ["intent", "direct"] },
+        "operation": { "$ref": "#/$defs/OperationRef" },
+        "summary": { "$ref": "#/$defs/NonEmpty" },
+        "inputs": { "type": "object" },
+        "controls": { "type": "object" },
+        "expectedResult": { "$ref": "#/$defs/ExpectedResult" },
+        "route": { "enum": ["deterministic", "inline", "worker", "external"] },
+        "progressPolicy": { "enum": ["preview", "auto"] },
+        "createdAt": { "$ref": "#/$defs/NonEmpty" }
+      }
+    },
+    "InvocationGap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "field", "summary", "required", "options"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "field": { "$ref": "#/$defs/DottedId" },
+        "summary": { "$ref": "#/$defs/NonEmpty" },
+        "required": { "type": "boolean" },
+        "options": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "InvocationPreview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "id", "state", "operation", "summary", "resolved", "gaps", "route", "expectedResult", "effects", "limits", "next"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "id": { "$ref": "#/$defs/Id" },
+        "state": { "enum": ["resolved", "needs-input", "needs-agent", "needs-authority", "blocked", "unsupported", "completed"] },
+        "operation": { "$ref": "#/$defs/OperationRef" },
+        "summary": { "$ref": "#/$defs/NonEmpty" },
+        "resolved": { "type": "object" },
+        "gaps": { "type": "array", "maxItems": 1, "items": { "$ref": "#/$defs/InvocationGap" } },
+        "route": { "type": "object" },
+        "expectedResult": { "$ref": "#/$defs/ExpectedResult" },
+        "effects": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "limits": { "type": "array", "items": { "type": "string" } },
+        "next": { "type": "object" }
+      }
+    },
+    "InvocationEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "invocationId", "sequence", "type", "at", "data"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "invocationId": { "$ref": "#/$defs/Id" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "type": { "enum": ["requested", "resolved", "previewed", "started", "route-dispatched", "result-submitted", "result-accepted", "result-rejected", "completed", "blocked", "cancelled"] },
+        "at": { "$ref": "#/$defs/NonEmpty" },
+        "data": { "type": "object" }
+      }
+    },
+    "InvocationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "invocationId", "status", "operation", "summary", "proof", "limits", "routes", "completedAt"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "invocationId": { "$ref": "#/$defs/Id" },
+        "status": { "enum": ["completed", "blocked", "cancelled"] },
+        "operation": { "$ref": "#/$defs/OperationRef" },
+        "summary": { "$ref": "#/$defs/NonEmpty" },
+        "outcome": {},
+        "proof": { "type": "array", "items": { "type": "string" } },
+        "limits": { "type": "array", "items": { "type": "string" } },
+        "routes": { "type": "array", "items": { "type": "string" } },
+        "completedAt": { "$ref": "#/$defs/NonEmpty" }
+      }
+    },
+    "ResolverContribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner", "field", "priority", "candidates", "proof", "limits"],
+      "properties": {
+        "owner": { "$ref": "#/$defs/ExtensionId" },
+        "field": { "$ref": "#/$defs/DottedId" },
+        "priority": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "candidates": { "type": "array", "items": {} },
+        "proof": { "type": "array", "items": { "type": "string" } },
+        "limits": { "type": "array", "items": { "type": "string" } }
+      }
     },
     "Assignment": {
       "type": "object",

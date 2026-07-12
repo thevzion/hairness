@@ -8,6 +8,7 @@ Start with the [README](../README.md) for the product and commands, then use the
 - [Architecture](architecture.md)
 - [Agentic assets](concepts/agentic-assets.md)
 - [Capabilities and operations](concepts/capabilities.md)
+- [Invocations](concepts/invocations.md)
 - [Composable controls](concepts/composable-controls.md)
 - [Main session](concepts/main-session.md)
 - [Fan-out and fan-in](concepts/fan-out-fan-in.md)

@@ -26,7 +26,7 @@ test('capability operations enforce class, route and result semantics', async ()
     owner: 'fixture/proof',
     version: '0.2.0-alpha.0',
     summary: 'Fixture proof capability.',
-    operations: [{ id: 'inspect', class: 'observe', summary: 'Inspect fixture proof.', result: { schema: 'ContextPacket', disposition: 'response' }, sources: [], effects: [], routes: ['deterministic', 'worker'], acceptsModifiers: [] }],
+    operations: [{ id: 'inspect', class: 'observe', summary: 'Inspect fixture proof.', results: [{ id: 'default', contract: { schema: 'ContextPacket', disposition: 'response' } }], defaultResult: 'default', sources: [], effects: [], routes: ['deterministic', 'worker'], acceptsModifiers: [] }],
   }
   assert.deepEqual(await validateContract('CapabilitySpec', capability), capability)
   await assert.rejects(validateContract('CapabilitySpec', { ...capability, operations: [{ ...capability.operations[0], class: 'effect', effects: [] }] }), (error) => error.code === 'contract_invalid')
