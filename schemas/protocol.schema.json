@@ -16,22 +16,64 @@
         "limits": { "type": "array", "items": { "type": "string" } }
       }
     },
+    "OperationRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "id"],
+      "properties": {
+        "capability": { "$ref": "#/$defs/ExtensionId" },
+        "id": { "$ref": "#/$defs/Slug" }
+      }
+    },
+    "Operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "class", "summary", "result", "sources", "effects", "routes", "acceptsModifiers"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Slug" },
+        "class": { "enum": ["observe", "derive", "effect"] },
+        "summary": { "$ref": "#/$defs/NonEmpty" },
+        "inputSchema": { "type": "string", "pattern": "^\\./" },
+        "result": { "$ref": "#/$defs/ResultContract" },
+        "sources": { "type": "array", "items": { "$ref": "#/$defs/Slug" }, "uniqueItems": true },
+        "effects": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "routes": { "type": "array", "minItems": 1, "items": { "enum": ["deterministic", "inline", "worker", "external"] }, "uniqueItems": true },
+        "acceptsModifiers": { "type": "array", "items": { "$ref": "#/$defs/DottedId" }, "uniqueItems": true }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "class": { "enum": ["observe", "derive"] } }, "required": ["class"] },
+          "then": { "properties": { "effects": { "type": "array", "maxItems": 0 }, "result": { "type": "object", "properties": { "disposition": { "not": { "const": "effect" } } } } } }
+        },
+        {
+          "if": { "properties": { "class": { "const": "effect" } }, "required": ["class"] },
+          "then": { "properties": { "effects": { "type": "array", "minItems": 1 }, "result": { "type": "object", "properties": { "disposition": { "const": "effect" } } } } }
+        }
+      ]
+    },
     "RouteSpec": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "protocolVersion", "id", "kind", "requirement", "resultSchema", "fanIn"],
+      "required": ["schemaVersion", "protocolVersion", "id", "operation", "kind", "requirement", "resultSchema", "fanIn"],
       "properties": {
         "schemaVersion": { "const": 2 },
         "protocolVersion": { "const": "0.2" },
         "id": { "$ref": "#/$defs/Id" },
-        "kind": { "enum": ["deterministic", "producer", "executor"] },
+        "operation": { "$ref": "#/$defs/OperationRef" },
+        "kind": { "enum": ["deterministic", "inline", "worker", "external"] },
+        "profile": { "enum": ["producer", "executor"] },
         "requirement": { "enum": ["required", "optional"] },
         "resultSchema": { "$ref": "#/$defs/NonEmpty" },
         "fanIn": { "$ref": "#/$defs/Id" },
         "workload": { "enum": ["fast", "balanced", "deep"] },
         "budget": { "type": "integer", "minimum": 1 },
         "dependsOn": { "type": "array", "items": { "$ref": "#/$defs/Id" }, "uniqueItems": true }
-      }
+      },
+      "allOf": [{
+        "if": { "properties": { "kind": { "const": "worker" } }, "required": ["kind"] },
+        "then": { "required": ["profile"], "properties": { "profile": { "enum": ["producer", "executor"] } } },
+        "else": { "not": { "required": ["profile"] }, "properties": { "profile": false } }
+      }]
     },
     "ContextPlan": {
       "type": "object",
@@ -79,11 +121,12 @@
     "Assignment": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "protocolVersion", "id", "profile", "goal", "outcome", "workload", "inputs", "targets", "exclusions", "allowedSources", "requestedEffects", "result"],
+      "required": ["schemaVersion", "protocolVersion", "id", "operation", "profile", "goal", "outcome", "workload", "inputs", "targets", "exclusions", "allowedSources", "requestedEffects", "result"],
       "properties": {
         "schemaVersion": { "const": 2 },
         "protocolVersion": { "const": "0.2" },
         "id": { "$ref": "#/$defs/Id" },
+        "operation": { "$ref": "#/$defs/OperationRef" },
         "profile": { "enum": ["producer", "executor"] },
         "goal": { "$ref": "#/$defs/NonEmpty" },
         "outcome": { "$ref": "#/$defs/NonEmpty" },
@@ -100,12 +143,13 @@
     "WorkerCapsule": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "protocolVersion", "runId", "taskName", "profile", "goal", "outcome", "inputs", "targets", "exclusions", "allowedSources", "allowedEffects", "workload", "result", "routes"],
+      "required": ["schemaVersion", "protocolVersion", "runId", "taskName", "operation", "profile", "goal", "outcome", "inputs", "targets", "exclusions", "allowedSources", "allowedEffects", "workload", "result", "routes"],
       "properties": {
         "schemaVersion": { "const": 2 },
         "protocolVersion": { "const": "0.2" },
         "runId": { "$ref": "#/$defs/Id" },
         "taskName": { "$ref": "#/$defs/NonEmpty" },
+        "operation": { "$ref": "#/$defs/OperationRef" },
         "profile": { "enum": ["producer", "executor"] },
         "goal": { "$ref": "#/$defs/NonEmpty" },
         "outcome": { "$ref": "#/$defs/NonEmpty" },
@@ -312,7 +356,7 @@
       "additionalProperties": false,
       "required": ["provider", "host", "namespace", "name", "webUrl", "acceptedRemotes"],
       "properties": {
-        "provider": { "enum": ["git", "github", "gitlab", "other"] },
+        "provider": { "$ref": "#/$defs/Slug" },
         "host": { "$ref": "#/$defs/NonEmpty" },
         "namespace": { "$ref": "#/$defs/NonEmpty" },
         "name": { "$ref": "#/$defs/NonEmpty" },
@@ -425,13 +469,29 @@
     "DistributionRecipe": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "protocolVersion", "id", "displayName", "extensions", "sources", "providers", "codebases"],
+      "required": ["schemaVersion", "protocolVersion", "id", "displayName", "role", "materials", "extensions", "capabilities", "sourceDrivers", "sources", "providers", "codebases", "templates", "scripts", "tests"],
       "properties": {
         "schemaVersion": { "const": 2 },
         "protocolVersion": { "const": "0.2" },
         "id": { "$ref": "#/$defs/Slug" },
         "displayName": { "$ref": "#/$defs/NonEmpty" },
+        "role": { "enum": ["distribution", "forge"] },
+        "materials": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["source", "target"],
+            "properties": {
+              "source": { "$ref": "#/$defs/NonEmpty" },
+              "target": { "$ref": "#/$defs/NonEmpty" }
+            }
+          }
+        },
         "extensions": { "type": "array", "items": { "$ref": "#/$defs/ExtensionId" }, "uniqueItems": true },
+        "catalogExtensions": { "type": "array", "items": { "$ref": "#/$defs/ExtensionId" }, "uniqueItems": true },
+        "capabilities": { "type": "array", "items": { "$ref": "#/$defs/ExtensionId" }, "uniqueItems": true },
+        "sourceDrivers": { "type": "array", "items": { "$ref": "#/$defs/Slug" }, "uniqueItems": true },
         "sources": {
           "type": "array",
           "items": {
@@ -445,13 +505,16 @@
           }
         },
         "providers": { "type": "array", "items": { "enum": ["codex", "claude"] }, "uniqueItems": true },
-        "codebases": { "type": "array", "items": { "$ref": "#/$defs/CodebaseContract" } }
+        "codebases": { "type": "array", "items": { "$ref": "#/$defs/CodebaseContract" } },
+        "templates": { "type": "array", "items": { "$ref": "#/$defs/NonEmpty" }, "uniqueItems": true },
+        "scripts": { "type": "array", "items": { "$ref": "#/$defs/NonEmpty" }, "uniqueItems": true },
+        "tests": { "type": "array", "items": { "$ref": "#/$defs/NonEmpty" }, "uniqueItems": true }
       }
     },
     "ProviderCommand": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "summary", "kind", "classification", "command", "arguments", "result", "capabilities", "instructions"],
+      "required": ["id", "name", "summary", "kind", "classification", "command", "arguments", "result", "instructions"],
       "properties": {
         "id": { "$ref": "#/$defs/DottedId" },
         "name": { "$ref": "#/$defs/Slug" },
@@ -461,14 +524,18 @@
         "command": { "$ref": "#/$defs/NonEmpty" },
         "arguments": { "type": "array", "items": { "type": "object" } },
         "result": { "$ref": "#/$defs/ResultContract" },
-        "capabilities": { "type": "array", "items": { "$ref": "#/$defs/Slug" }, "uniqueItems": true },
+        "operation": { "$ref": "#/$defs/OperationRef" },
         "instructions": { "type": "string", "pattern": "^\\./" },
         "fixed": { "type": "object" },
         "defaults": { "type": "object" },
         "resolve": { "type": "object" },
         "overrides": { "type": "array", "items": { "$ref": "#/$defs/Slug" }, "uniqueItems": true }
         ,"acceptsModifiers": { "type": "array", "items": { "$ref": "#/$defs/DottedId" }, "uniqueItems": true }
-      }
+      },
+      "allOf": [{
+        "if": { "properties": { "kind": { "enum": ["capability", "preset"] } }, "required": ["kind"] },
+        "then": { "required": ["operation"], "properties": { "operation": { "$ref": "#/$defs/OperationRef" } } }
+      }]
     },
     "AttentionSignal": {
       "type": "object",
@@ -489,6 +556,21 @@
         "id": { "$ref": "#/$defs/Slug" },
         "transport": { "$ref": "#/$defs/Slug" },
         "operations": { "type": "array", "items": { "$ref": "#/$defs/SourceOperation" } }
+      }
+    },
+    "SourceDriver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "id", "transport", "executable", "module", "operations"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "id": { "$ref": "#/$defs/Slug" },
+        "transport": { "$ref": "#/$defs/Slug" },
+        "executable": { "$ref": "#/$defs/NonEmpty" },
+        "module": { "type": "string", "pattern": "^\\./" },
+        "sessionOperation": { "$ref": "#/$defs/DottedId" },
+        "operations": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/SourceOperation" } }
       }
     },
     "SourceOperation": {
@@ -621,7 +703,8 @@
         "state": { "enum": ["new", "collecting", "ready", "applied", "blocked"] },
         "answers": { "type": "object" },
         "gaps": { "type": "array", "items": { "type": "object" } },
-        "actions": { "type": "array", "items": { "type": "object" } }
+        "actions": { "type": "array", "items": { "type": "object" } },
+        "extensionGapsLoaded": { "type": "boolean" }
       }
     },
     "EntityRef": {
@@ -629,7 +712,7 @@
       "additionalProperties": false,
       "required": ["kind", "id"],
       "properties": {
-        "kind": { "enum": ["artifact", "decision", "codebase", "run", "source", "session", "mission", "segment", "frame", "path"] },
+        "kind": { "$ref": "#/$defs/Slug" },
         "id": { "$ref": "#/$defs/NonEmpty" },
         "revision": { "$ref": "#/$defs/Id" }
       }
@@ -724,93 +807,8 @@
       "additionalProperties": false,
       "required": ["scope", "constraints"],
       "properties": {
-        "scope": { "enum": ["session", "segment", "frame", "operation"] },
-        "constraints": { "type": "array", "items": { "enum": ["readonly", "no-git", "no-external"] }, "uniqueItems": true }
-      }
-    },
-    "WorkMission": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "summary", "status", "createdAt", "updatedAt"],
-      "properties": {
-        "id": { "$ref": "#/$defs/Id" },
-        "summary": { "$ref": "#/$defs/NonEmpty" },
-        "status": { "enum": ["active", "closed"] },
-        "createdAt": { "$ref": "#/$defs/NonEmpty" },
-        "updatedAt": { "$ref": "#/$defs/NonEmpty" }
-      }
-    },
-    "WorkSegment": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "missionId", "summary", "status", "boundary", "relations", "frames", "artifacts", "createdAt", "updatedAt"],
-      "properties": {
-        "id": { "$ref": "#/$defs/Id" },
-        "missionId": { "$ref": "#/$defs/Id" },
-        "summary": { "$ref": "#/$defs/NonEmpty" },
-        "status": { "enum": ["active", "closed"] },
-        "boundary": { "$ref": "#/$defs/Boundary" },
-        "relations": { "type": "array", "items": { "$ref": "#/$defs/Relation" } },
-        "frames": { "type": "array", "items": { "$ref": "#/$defs/Id" }, "uniqueItems": true },
-        "artifacts": { "type": "array", "items": { "$ref": "#/$defs/EntityRef" } },
-        "digestArtifact": { "$ref": "#/$defs/EntityRef" },
-        "createdAt": { "$ref": "#/$defs/NonEmpty" },
-        "updatedAt": { "$ref": "#/$defs/NonEmpty" }
-      }
-    },
-    "WorkFrame": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "segmentId", "summary", "posture", "status", "boundary", "artifacts", "sources", "createdAt", "updatedAt"],
-      "properties": {
-        "id": { "$ref": "#/$defs/Id" },
-        "segmentId": { "$ref": "#/$defs/Id" },
-        "summary": { "$ref": "#/$defs/NonEmpty" },
-        "posture": { "enum": ["discuss", "map", "recap", "propose", "plan", "act", "execute"] },
-        "status": { "enum": ["open", "closed"] },
-        "boundary": { "$ref": "#/$defs/Boundary" },
-        "artifacts": { "type": "array", "items": { "$ref": "#/$defs/EntityRef" } },
-        "sources": { "type": "array", "items": { "$ref": "#/$defs/EntityRef" } },
-        "createdAt": { "$ref": "#/$defs/NonEmpty" },
-        "updatedAt": { "$ref": "#/$defs/NonEmpty" }
-      }
-    },
-    "WorkframeState": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["schemaVersion", "protocolVersion", "mission", "activeSegmentId", "methodologyBinding", "segments", "frames", "updatedAt"],
-      "properties": {
-        "schemaVersion": { "const": 2 },
-        "protocolVersion": { "const": "0.2" },
-        "mission": { "anyOf": [{ "$ref": "#/$defs/WorkMission" }, { "type": "null" }] },
-        "activeSegmentId": { "anyOf": [{ "$ref": "#/$defs/Id" }, { "type": "null" }] },
-        "methodologyBinding": { "anyOf": [{ "$ref": "#/$defs/DottedId" }, { "type": "null" }] },
-        "segments": { "type": "array", "items": { "$ref": "#/$defs/WorkSegment" } },
-        "frames": { "type": "array", "items": { "$ref": "#/$defs/WorkFrame" } },
-        "updatedAt": { "$ref": "#/$defs/NonEmpty" }
-      }
-    },
-    "SegmentDigest": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["summary", "decisions", "artifacts", "proof", "openEdges", "limits", "routes"],
-      "properties": {
-        "summary": { "$ref": "#/$defs/NonEmpty" },
-        "decisions": { "type": "array", "items": { "type": "string" } },
-        "artifacts": { "type": "array", "items": { "$ref": "#/$defs/EntityRef" } },
-        "proof": { "type": "array", "items": { "type": "string" } },
-        "openEdges": { "type": "array", "items": { "type": "string" } },
-        "limits": { "type": "array", "items": { "type": "string" } },
-        "routes": { "type": "array", "items": { "type": "string" } }
-      }
-    },
-    "PresentationRequest": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["mode", "maxViews"],
-      "properties": {
-        "mode": { "enum": ["auto", "compact", "visual", "explicit", "summary", "diagram", "tree", "table", "timeline", "checklist", "matrix", "trace"] },
-        "maxViews": { "type": "integer", "minimum": 1, "maximum": 3 }
+        "scope": { "$ref": "#/$defs/Slug" },
+        "constraints": { "type": "array", "items": { "$ref": "#/$defs/Slug" }, "uniqueItems": true }
       }
     },
     "EffectPolicy": {

@@ -1,0 +1,23 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/sources",
+  "version": "0.2.0-alpha.0",
+  "module": "./index.mjs",
+  "capabilities": ["./capabilities/sources.json"],
+  "dependencies": [],
+  "services": ["list", "doctor", "read"],
+  "contributes": ["session-opening", "onboarding"],
+  "sourceDrivers": [
+    "./drivers/git/driver.json",
+    "./drivers/jira/driver.json",
+    "./drivers/gitlab/driver.json",
+    "./drivers/aws/driver.json"
+  ],
+  "commands": [{ "namespace": "source", "actions": ["list", "doctor", "read"] }],
+  "providerCommands": [
+    { "id": "hairness.source", "name": "hairness-source", "summary": "Inspect or read a selected deterministic source.", "kind": "capability", "classification": "specialized", "command": "hairness source", "arguments": [{ "name": "action", "required": false }, { "name": "source", "required": false }], "result": { "schema": "SourceEvidence", "disposition": "response" }, "operation": { "capability": "hairness/sources", "id": "list" }, "instructions": "./commands/sources.md" },
+    { "id": "hairness.check-sources", "name": "hairness-check-sources", "summary": "Resolve proof gaps using selected sources before broader discovery.", "kind": "preset", "classification": "accelerator", "command": "hairness source doctor", "arguments": [{ "name": "focus", "required": false }], "result": { "schema": "DoctorReport", "disposition": "response" }, "operation": { "capability": "hairness/sources", "id": "doctor" }, "instructions": "./commands/sources.md" }
+  ]
+}

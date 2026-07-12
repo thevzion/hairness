@@ -5,6 +5,7 @@
   "id": "hairness/distribution",
   "version": "0.2.0-alpha.0",
   "module": "./index.mjs",
+  "capabilities": ["./capabilities/distribution.json"],
   "dependencies": ["hairness/cockpit"],
   "services": [],
   "contributes": ["attention"],
@@ -16,5 +17,5 @@
     { "type": "distribution-update-plan", "schema": "./schemas/update-plan.schema.json" },
     { "type": "distribution-update-receipt", "schema": "./schemas/update-receipt.schema.json" }
   ],
-  "providerCommands": [{ "id": "hairness.update", "name": "hairness-update", "summary": "Inspect and safely update source-owned Hairness materials.", "kind": "capability", "classification": "specialized", "command": "hairness update doctor", "arguments": [{ "name": "action", "required": false }], "result": { "schema": "ContextPacket", "disposition": "run-only" }, "capabilities": ["distribution"], "instructions": "./commands/update.md" }]
+  "providerCommands": [{ "id": "hairness.update", "name": "hairness-update", "summary": "Inspect and safely update source-owned Hairness materials.", "kind": "capability", "classification": "specialized", "command": "hairness update doctor", "arguments": [{ "name": "action", "required": false }], "result": { "schema": "ContextPacket", "disposition": "run-only" }, "operation": { "capability": "hairness/distribution-lifecycle", "id": "inspect" }, "instructions": "./commands/update.md" }]
 }

@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../../schemas/capability.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/maintenance",
+  "owner": "hairness/maintainer",
+  "version": "0.2.0-alpha.0",
+  "summary": "Check the forge, its public contracts, projections and release evidence.",
+  "operations": [
+    { "id": "inspect", "class": "observe", "summary": "Inspect maintenance impact, status, tests and metrics.", "result": { "schema": "ChangeImpactReport", "disposition": "run-only" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] }
+  ]
+}

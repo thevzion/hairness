@@ -10,7 +10,7 @@ let validatorPromise
 
 async function buildValidator() {
   const ajv = new Ajv2020({ allErrors: true, strict: true, validateFormats: false })
-  for (const name of ['protocol.schema.json', 'distribution.schema.json', 'extension.schema.json']) {
+  for (const name of ['protocol.schema.json', 'capability.schema.json', 'distribution.schema.json', 'extension.schema.json']) {
     const schema = JSON.parse(await readFile(join(schemaRoot, name), 'utf8'))
     ajv.addSchema(schema)
   }
@@ -28,6 +28,8 @@ export async function validateContract(name, value) {
     ? 'https://hairness.dev/schemas/0.2/distribution.schema.json'
     : name === 'ExtensionManifest'
       ? 'https://hairness.dev/schemas/0.2/extension.schema.json'
+      : name === 'CapabilitySpec'
+        ? 'https://hairness.dev/schemas/0.2/capability.schema.json'
       : `https://hairness.dev/schemas/0.2/protocol.schema.json#/$defs/${name}`
   const validate = ajv.getSchema(schemaId)
   if (!validate) throw new HairnessError('unknown_contract', `Unknown contract: ${name}`, { exitCode: 2 })

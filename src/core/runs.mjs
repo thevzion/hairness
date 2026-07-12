@@ -104,6 +104,7 @@ export async function buildWorkerCapsule(root, runId) {
     protocolVersion: '0.2',
     runId,
     taskName: assignment.id,
+    operation: assignment.operation,
     profile: assignment.profile,
     goal: assignment.goal,
     outcome: assignment.outcome,
