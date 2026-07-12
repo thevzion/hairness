@@ -1,0 +1,18 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/delivery-controls",
+  "version": "0.2.0-alpha.0",
+  "summary": "Sequential delivery plans, Git checkpoints, receipts and release candidates.",
+  "category": "forge",
+  "tags": ["delivery", "release", "self-hosting"],
+  "maturity": "experimental",
+  "readme": "./README.md",
+  "module": "./index.mjs",
+  "capabilities": ["./capabilities/delivery.json"],
+  "dependencies": ["hairness/initiative-controls", "hairness/work-controls"],
+  "commands": [{ "namespace": "delivery", "actions": ["plan", "status", "checkpoint", "receipt", "release-candidate"] }],
+  "artifactSchemas": [{ "type": "release-candidate", "schema": "./schemas/release-candidate.schema.json" }],
+  "providerCommands": [{ "id": "hairness.ship", "name": "hairness-ship", "summary": "Plan and checkpoint one sequential forge delivery.", "kind": "capability", "classification": "specialized", "command": "hairness delivery plan", "arguments": [{ "name": "initiative", "required": false }], "result": { "schema": "DeliveryPlan", "disposition": "run-only" }, "operation": { "capability": "hairness/delivery", "id": "plan" }, "instructions": "./commands/ship.md" }]
+}

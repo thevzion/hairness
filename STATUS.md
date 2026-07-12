@@ -4,25 +4,31 @@ Current target: `0.2.0-alpha.0`
 
 ## Now
 
-- `provider-intent-controls`
-  - Outcome: Codex and Claude use compact instructions and the same deterministic invocation path.
+- `initiative-delivery-controls`
+  - Outcome: The forge plans and prepares its own evolution through typed local state, checkpoints and receipts.
   - State: active
-  - Gate: Provider parity, budgets, deterministic E2E and final native smokes pass.
-  - Evidence: Content-addressed behavior attestations and replayable receipts.
+  - Gate: Initiative, sequential delivery and release-candidate dogfood pass without Git or publication effects.
+  - Evidence: Initiative state, DeliveryPlan, checkpoint and release-candidate receipts.
 
 ## Next
-
-- `initiative-delivery-controls`
-  - Outcome: The forge plans and ships its own evolution through typed local artifacts and checkpoints.
-  - State: planned
-  - Gate: Roadmap, delivery and release-candidate dogfood passes.
-  - Evidence: Initiative, delivery and launch-kit receipts.
 
 - `npm-alpha`
   - Outcome: The experimental package, documentation and release evidence are ready for a separate publication checkpoint.
   - State: planned
   - Gate: Clean-install, provider and package smokes pass on Node.js 22 and 24.
   - Evidence: Content-addressed tarball, known limitations and release candidate receipt.
+
+- `alpha-hardening`
+  - Outcome: Stabilize the public contracts from external dogfooding feedback.
+  - State: planned
+  - Gate: Repeated failures become migrations, gates or owner tests.
+  - Evidence: Compatibility notes and hardening receipts.
+
+- `execution-adapters`
+  - Outcome: Prove one external loop adapter without turning Hairness into a loop runtime.
+  - State: planned
+  - Gate: External route preserves authority, typed results and fan-in.
+  - Evidence: Adapter conformance and bounded execution receipt.
 
 ## Blocked
 

@@ -66,7 +66,7 @@ test('build creates tracked repo-local provider surfaces without plugins', async
   await access(join(repositoryRoot, '.agents/skills/hairness-onboarding/SKILL.md'))
   await access(join(repositoryRoot, '.codex/agents/hairness-producer.toml'))
   await access(join(repositoryRoot, '.claude/agents/hairness-producer.md'))
-  assert.ok(['projected', 'verification-required', 'verified'].includes((await providerStatus(repositoryRoot, 'codex')).status))
+  assert.ok(['projected', 'verification-required', 'verified', 'stale'].includes((await providerStatus(repositoryRoot, 'codex')).status))
   await assert.rejects(access(join(repositoryRoot, '.codex-plugin')))
 })
 

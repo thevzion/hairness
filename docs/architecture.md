@@ -28,9 +28,11 @@ flowchart TD
 | Distribution | active selection, defaults, source drivers, codebase contracts, provider projections | upstream control after generation |
 | Provider adapter | Codex/Claude syntax and managed output mechanics | capabilities or model runtime |
 | Provider | model, UI, tools, sandbox, native workers and threads | Hairness source ownership |
+| Mounted codebase | Git history, runtime, conventions and files | Hairness local state |
 
 The generic invocation store and event lifecycle live in the kernel. Operation lookup, preferences and trusted resolver contributions live in the distribution layer. Provider models may propose drafts but never mutate canonical invocation state directly.
-| Mounted codebase | Git history, runtime, conventions and files | Hairness local state |
+
+Forge-only Initiative and Delivery Controls sit above Work Controls. They preserve macro outcomes and sequential delivery evidence while delegating every Git or publication effect to an explicitly checkpointed native executor.
 
 ```text
 core owns grammar

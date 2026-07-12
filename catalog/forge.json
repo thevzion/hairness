@@ -8,17 +8,20 @@
   "extensions": [
     "hairness/cockpit", "hairness/distribution", "hairness/work-controls", "hairness/understanding-controls",
     "hairness/ideation-controls", "hairness/presentation-controls", "hairness/constraints",
-    "hairness/session-intelligence", "hairness/maintainer", "hairness/codebase", "hairness/sources"
+    "hairness/session-intelligence", "hairness/maintainer", "hairness/initiative-controls",
+    "hairness/delivery-controls", "hairness/codebase", "hairness/sources"
   ],
   "catalogExtensions": [
     "hairness/cockpit", "hairness/distribution", "hairness/work-controls", "hairness/understanding-controls",
     "hairness/ideation-controls", "hairness/presentation-controls", "hairness/constraints",
-    "hairness/session-intelligence", "hairness/maintainer", "hairness/codebase", "hairness/sources"
+    "hairness/session-intelligence", "hairness/maintainer", "hairness/initiative-controls",
+    "hairness/delivery-controls", "hairness/codebase", "hairness/sources"
   ],
   "capabilities": [
     "hairness/cockpit", "hairness/distribution-lifecycle", "hairness/work", "hairness/understanding",
     "hairness/ideation", "hairness/presentation", "hairness/constraints",
-    "hairness/session", "hairness/maintenance", "hairness/codebase", "hairness/sources"
+    "hairness/session", "hairness/maintenance", "hairness/initiative", "hairness/delivery",
+    "hairness/codebase", "hairness/sources"
   ],
   "sourceDrivers": ["git", "jira", "gitlab", "aws"],
   "sources": [{ "id": "git", "requirement": "required" }],

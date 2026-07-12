@@ -1,0 +1,19 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/initiative-controls",
+  "version": "0.2.0-alpha.0",
+  "summary": "Forge-local initiatives, outcomes, gates and public roadmap snapshots.",
+  "category": "forge",
+  "tags": ["roadmap", "planning", "self-hosting"],
+  "maturity": "experimental",
+  "readme": "./README.md",
+  "module": "./index.mjs",
+  "capabilities": ["./capabilities/initiative.json"],
+  "dependencies": ["hairness/work-controls"],
+  "services": ["active", "list"],
+  "contributes": ["attention"],
+  "commands": [{ "namespace": "initiative", "actions": ["status", "list", "show", "open", "close", "publish"] }],
+  "providerCommands": [{ "id": "hairness.roadmap", "name": "hairness-roadmap", "summary": "Inspect and steer the forge initiative roadmap.", "kind": "capability", "classification": "specialized", "command": "hairness initiative status", "arguments": [{ "name": "action", "required": false }], "result": { "schema": "InitiativePortfolio", "disposition": "run-only" }, "operation": { "capability": "hairness/initiative", "id": "inspect" }, "instructions": "./commands/roadmap.md" }]
+}
