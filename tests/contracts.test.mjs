@@ -18,6 +18,11 @@ test('contract validation rejects unexpected fields', async () => {
   )
 })
 
+test('host capability reports the honest provider intent path', async () => {
+  const value = await validateContract('HostCapabilities', { schemaVersion: 2, protocolVersion: '0.2', host: 'codex', level: 'guarded', intentPath: 'agent-first-call', capabilities: { sessionStart: true }, limits: ['no native command hook'] })
+  assert.equal(value.intentPath, 'agent-first-call')
+})
+
 test('capability operations enforce class, route and result semantics', async () => {
   const capability = {
     schemaVersion: 2,

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/extensions/understanding-controls/understanding-input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["focus"],
+  "properties": {
+    "focus": { "type": "string", "minLength": 1 }
+  }
+}

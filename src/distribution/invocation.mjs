@@ -10,6 +10,7 @@ import { resolvePreferences } from './preferences.mjs'
 import { uniqueCandidates } from './gaps.mjs'
 
 const routeOrder = ['deterministic', 'inline', 'worker', 'external']
+const controlScopeOrder = { session: 1, segment: 2, frame: 3 }
 
 function selectedResult(operation, requested) {
   const id = requested ?? operation.defaultResult
@@ -35,7 +36,8 @@ async function resolveDraft(root, draft, mode, existingId) {
   const operation = resolveOperation(await operationIndex(root), draft.operation)
   const preferences = await resolvePreferences(root)
   const inputs = { ...draft.inputs }
-  const controls = { ...(preferences.controls ?? {}), ...draft.controls }
+  const controlContributions = (await collectContributions(root, 'invocation-controls', { operation: draft.operation })).sort((left, right) => controlScopeOrder[left.scope] - controlScopeOrder[right.scope] || left.priority - right.priority)
+  const controls = Object.assign({}, preferences.controls ?? {}, ...controlContributions.map((item) => item.values), draft.controls)
   const { required, schema } = await requiredInputs(operation)
   const contributions = await collectContributions(root, 'input-resolver', { operation: draft.operation, inputs, controls })
   const gaps = []
@@ -65,8 +67,8 @@ async function resolveDraft(root, draft, mode, existingId) {
           : state === 'unsupported'
             ? { action: 'choose-supported-route' }
             : { action: 'execute-deterministic', route }
-  const limits = contributions.flatMap((item) => item.limits)
-  const preview = await validateContract('InvocationPreview', { schemaVersion: 2, protocolVersion: '0.2', id, state, operation: draft.operation, summary: draft.summary, resolved: { inputs, controls, resolverOwners: [...new Set(contributions.map((item) => item.owner))] }, gaps, route: { kind: route }, expectedResult, effects: operation.effects, limits, next })
+  const limits = [...contributions, ...controlContributions].flatMap((item) => item.limits)
+  const preview = await validateContract('InvocationPreview', { schemaVersion: 2, protocolVersion: '0.2', id, state, operation: draft.operation, summary: draft.summary, resolved: { inputs, controls, resolverOwners: [...new Set([...contributions, ...controlContributions].map((item) => item.owner))] }, gaps, route: { kind: route }, expectedResult, effects: operation.effects, limits, next })
   if (Buffer.byteLength(JSON.stringify(preview)) > 4096) throw new HairnessError('invocation_preview_too_large', 'InvocationPreview exceeds 4 KiB.', { exitCode: 2 })
   return { id, mode, draft: { ...draft, inputs }, request, preview, state, updatedAt: new Date().toISOString() }
 }

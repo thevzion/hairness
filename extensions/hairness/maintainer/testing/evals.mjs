@@ -6,6 +6,7 @@ const suites = {
   'cockpit-language': { prompt: 'Use the injected Hairness opening. Reply with one short sentence confirming the active language. Do not use tools.', gates: ['language', 'tool-count:0', 'compact'] },
   'cockpit-wake-up': { prompt: 'Run the Hairness wake-up behavior from the fresh opening. Return the highest-priority signal and next route. Do not refresh.', gates: ['route', 'tool-count:0', 'compact'] },
   'cockpit-help': { prompt: 'Explain the primary Hairness commands only. Keep the answer compact.', gates: ['route', 'no-exploration', 'compact'] },
+  'intent-map-gap': { prompt: '$hairness-map\nNo focus was provided. Follow the active skill without inspecting files or loading another skill: submit the draft to Hairness, then ask only the returned gap.', gates: ['first-call', 'tool-count:1', 'gap-only', 'compact'] },
 }
 const effort = { fast: 'low', balanced: 'medium', deep: 'high' }
 const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
@@ -36,12 +37,13 @@ function runCommand(file, args, { cwd, timeout = 300_000 } = {}) {
 
 async function runProvider(root, plan) {
   const started = performance.now()
-  const openingOutput = await runCommand(process.execPath, [join(root, 'bin/hairness.mjs'), 'session', 'opening', '--host', plan.provider, '--json'], { cwd: root, timeout: 5_000 })
+  const openingOutput = await runCommand(process.execPath, [join(root, 'bin/hairness.mjs'), 'opening', '--host', plan.provider, '--json'], { cwd: root, timeout: 5_000 })
   const opening = JSON.parse(openingOutput).data
+  const openingBytes = Buffer.byteLength(JSON.stringify(opening))
   const prompt = `Hairness SessionOpening:\n${JSON.stringify(opening)}\n\nUser intent:\n${plan.prompt}`
   let stdout
   if (plan.provider === 'codex') {
-    const args = ['exec', '--ephemeral', '--json', '--sandbox', 'read-only', '-C', root, '-c', `model_reasoning_effort="${effort[plan.profile]}"`]
+    const args = ['exec', '--ephemeral', '--ignore-user-config', '--json', '--sandbox', 'read-only', '-C', root, '-c', `model_reasoning_effort="${effort[plan.profile]}"`]
     if (plan.model) args.push('--model', plan.model)
     args.push(prompt)
     stdout = await runCommand('codex', args, { cwd: root })
@@ -52,11 +54,16 @@ async function runProvider(root, plan) {
     stdout = await runCommand('claude', args, { cwd: root })
   }
   const durationMs = Math.round((performance.now() - started) * 100) / 100
-  if (plan.provider !== 'codex') return { durationMs, text: JSON.parse(stdout).result ?? '', toolCount: 0 }
+  if (plan.provider !== 'codex') return { durationMs, openingBytes, text: JSON.parse(stdout).result ?? '', toolCount: 0, firstCall: null }
   const events = stdout.trim().split('\n').flatMap((line) => { try { return [JSON.parse(line)] } catch { return [] } })
   const text = events.flatMap((event) => event.type === 'item.completed' && event.item?.type === 'agent_message' ? [event.item.text] : []).at(-1) ?? ''
-  const toolCount = events.filter((event) => event.type === 'item.completed' && ['command_execution', 'mcp_tool_call', 'web_search'].includes(event.item?.type)).length
-  return { durationMs, text, toolCount }
+  const toolEvents = events.filter((event) => event.type === 'item.completed' && ['command_execution', 'mcp_tool_call', 'web_search'].includes(event.item?.type))
+  const toolCount = toolEvents.length
+  const invocationCalls = toolEvents.filter((event) => event.item?.type === 'command_execution' && /hairness(?:\.mjs)? invoke start/.test(event.item?.command ?? '')).length
+  const otherToolCalls = toolCount - invocationCalls
+  const firstTool = events.findIndex((event) => event.type === 'item.completed' && ['command_execution', 'mcp_tool_call', 'web_search'].includes(event.item?.type))
+  const questionBeforeTool = firstTool < 0 || events.slice(0, firstTool).some((event) => event.type === 'item.completed' && event.item?.type === 'agent_message' && /\?/.test(event.item.text ?? ''))
+  return { durationMs, openingBytes, text, toolCount, invocationCalls, otherToolCalls, firstCall: firstTool >= 0 && !questionBeforeTool }
 }
 
 function evaluate(plan, response) {
@@ -66,6 +73,9 @@ function evaluate(plan, response) {
     language: plan.language === 'fr' ? /[àâçéèêëîïôùûü]|\b(je|la|le|en|français)\b/i.test(text) : true,
     route: /hairness|route|onboarding|wake-up|help/i.test(text),
     'tool-count:0': toolCount === 0,
+    'tool-count:1': response.invocationCalls === 1 && response.otherToolCalls === 0,
+    'first-call': response.firstCall === true,
+    'gap-only': (text.match(/\?/g) ?? []).length <= 1,
     compact: text.length > 0 && text.length < 1200,
     'no-exploration': !/searched|explored|inspected files/.test(lower),
   }
@@ -97,7 +107,7 @@ export async function command({ root, runtime, action, rest, flags }) {
       let response; let transportLimit = null
       try { response = await runProvider(root, plan) } catch (error) { response = { durationMs: Math.round((performance.now() - started) * 100) / 100, text: '', toolCount: 0 }; transportLimit = error.code ?? 'provider-failed' }
       const gates = evaluate(plan, response)
-      const attempt = { id: `eval-attempt-${randomUUID()}`, suite, provider: plan.provider, profile: plan.profile, model: plan.model ?? 'provider-default-unresolved', durationMs: response.durationMs, responseDigest: `sha256:${hash(response.text)}`, toolCount: response.toolCount, gates, status: !transportLimit && gates.every((gate) => gate.ok) ? 'passed' : 'failed', limits: transportLimit ? [transportLimit] : [], observedAt: new Date().toISOString() }
+      const attempt = { id: `eval-attempt-${randomUUID()}`, suite, provider: plan.provider, profile: plan.profile, model: plan.model ?? 'provider-default-unresolved', durationMs: response.durationMs, openingBytes: response.openingBytes ?? null, responseDigest: `sha256:${hash(response.text)}`, toolCount: response.toolCount, invocationCalls: response.invocationCalls ?? 0, otherToolCalls: response.otherToolCalls ?? 0, firstCall: response.firstCall, gates, status: !transportLimit && gates.every((gate) => gate.ok) ? 'passed' : 'failed', limits: transportLimit ? [transportLimit] : [], observedAt: new Date().toISOString() }
       await runtime.overlay.write(`evals/attempts/${attempt.id}.json`, attempt); attempts.push(attempt)
     }
     const limits = [...new Set([...attempts.flatMap((attempt) => attempt.limits), ...(plan.model ? [] : ['Actual model could not be resolved from local preferences.'])])]

@@ -46,6 +46,8 @@ An InvocationPreview MUST remain below 4 KiB and expose resolved inputs, control
 
 Invocation events MUST be append-only and state MUST be reconstructible from them. Events and receipts MUST NOT contain transcripts, provider output, or internal reasoning.
 
+Provider projections MUST direct a main-session model to submit an InvocationDraft before asking a user question. The model MUST ask only an InvocationGap returned by Hairness. A host adapter MUST report `strict`, `guarded`, or `unsupported` and MUST NOT claim a native fast hook when it uses the agent-first-call fallback.
+
 ## 5. Main session
 
 The main session is the provider session communicating with the human. It MUST receive minimum sufficient context, current proof references, limits, and routes. It MUST NOT receive worker transcripts, hidden reasoning, or the full cockpit inside workers.

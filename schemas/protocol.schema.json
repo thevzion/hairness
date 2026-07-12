@@ -250,6 +250,19 @@
         "limits": { "type": "array", "items": { "type": "string" } }
       }
     },
+    "ControlContribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner", "scope", "priority", "values", "proof", "limits"],
+      "properties": {
+        "owner": { "$ref": "#/$defs/ExtensionId" },
+        "scope": { "enum": ["session", "segment", "frame"] },
+        "priority": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "values": { "type": "object" },
+        "proof": { "type": "array", "items": { "type": "string" } },
+        "limits": { "type": "array", "items": { "type": "string" } }
+      }
+    },
     "Assignment": {
       "type": "object",
       "additionalProperties": false,
@@ -697,6 +710,7 @@
         "result": { "$ref": "#/$defs/ResultContract" },
         "operation": { "$ref": "#/$defs/OperationRef" },
         "instructions": { "type": "string", "pattern": "^\\./" },
+        "entryPolicy": { "enum": ["invoke-first", "opening-first"] },
         "fixed": { "type": "object" },
         "defaults": { "type": "object" },
         "resolve": { "type": "object" },
@@ -840,12 +854,13 @@
     "HostCapabilities": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "protocolVersion", "host", "level", "capabilities", "limits"],
+      "required": ["schemaVersion", "protocolVersion", "host", "level", "intentPath", "capabilities", "limits"],
       "properties": {
         "schemaVersion": { "const": 2 },
         "protocolVersion": { "const": "0.2" },
         "host": { "enum": ["codex", "claude"] },
-        "level": { "enum": ["strict", "best-effort", "unsupported"] },
+        "level": { "enum": ["strict", "guarded", "unsupported"] },
+        "intentPath": { "enum": ["fast-hook", "agent-first-call", "unavailable"] },
         "capabilities": { "type": "object", "additionalProperties": { "type": "boolean" } },
         "limits": { "type": "array", "items": { "type": "string" } }
       }
@@ -921,12 +936,13 @@
     "ManagedOutput": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "owner", "provider", "digest"],
+      "required": ["path", "owner", "provider", "digest", "byteSize"],
       "properties": {
         "path": { "$ref": "#/$defs/NonEmpty" },
         "owner": { "anyOf": [{ "$ref": "#/$defs/ExtensionId" }, { "const": "protocol" }] },
         "provider": { "enum": ["codex", "claude"] },
-        "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "byteSize": { "type": "integer", "minimum": 0 }
       }
     },
     "ManagedEntry": {

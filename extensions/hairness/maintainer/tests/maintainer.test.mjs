@@ -25,6 +25,12 @@ test('provider eval planning is checkpointed and resolves local profile preferen
   assert.ok(state.has(`evals/plans/${plan.id}.json`))
 })
 
+test('provider eval transport uses the canonical opening command', async () => {
+  const source = await (await import('node:fs/promises')).readFile(new URL('../testing/evals.mjs', import.meta.url), 'utf8')
+  assert.match(source, /'opening', '--host'/)
+  assert.doesNotMatch(source, /'session', 'opening'/)
+})
+
 test('project status limits active and next work and aligns Work Controls', async () => {
   const root = await mkdtemp(join(tmpdir(), 'hairness-status-'))
   await writeFile(join(root, 'STATUS.md'), '# Status\n\n## Now\n\n- `public-ready`\n  - Outcome: Ship the generic forge.\n  - State: active\n  - Gate: Checks pass.\n  - Evidence: CI.\n\n## Next\n\n- `release`\n  - Outcome: Publish the alpha.\n  - State: planned\n  - Gate: Approval.\n  - Evidence: Receipt.\n\n## Blocked\n\n- None.\n\n## Release gates\n\n- CI passes.\n\n## References\n\n- ROADMAP.md\n')

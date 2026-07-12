@@ -11,6 +11,7 @@
       "id": "map",
       "class": "derive",
       "summary": "Organize the relevant relationships for one focus.",
+      "inputSchema": "./schemas/understanding-input.schema.json",
       "sources": [],
       "effects": [],
       "routes": [
@@ -35,6 +36,7 @@
       "id": "explain",
       "class": "derive",
       "summary": "Clarify one concept from available meaning and proof.",
+      "inputSchema": "./schemas/understanding-input.schema.json",
       "sources": [],
       "effects": [],
       "routes": [
@@ -59,6 +61,7 @@
       "id": "compare",
       "class": "derive",
       "summary": "Put explicit alternatives and tradeoffs in tension.",
+      "inputSchema": "./schemas/understanding-input.schema.json",
       "sources": [],
       "effects": [],
       "routes": [

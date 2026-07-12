@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { handleCommand } from '../index.mjs'
+import { handleCommand, invocationControls } from '../index.mjs'
 import { validateJsonSchema } from '../../../../src/core/contracts.mjs'
 
 function runtime() {
@@ -57,4 +57,18 @@ test('closing a segment accepts the canonical string artifact revision', async (
   const result = await handleCommand({ target: 'segment', action: 'close', rest: [], flags: { digest: 'work/providers-recap' }, runtime: rt })
   assert.equal(result.activeSegmentId, null)
   assert.equal(result.segments[0].digestArtifact.revision, 'r1')
+})
+
+test('controls inherit from session to segment and frame without becoming constraints', async () => {
+  const rt = runtime()
+  await handleCommand({ target: 'mission', action: 'set', rest: [], flags: { id: 'hairness', summary: 'Build Hairness.' }, runtime: rt })
+  await handleCommand({ target: 'control', action: 'set', rest: ['mode', 'inline'], flags: { scope: 'session' }, runtime: rt })
+  await handleCommand({ target: 'segment', action: 'open', rest: [], flags: { id: 'providers', summary: 'Build providers.' }, runtime: rt })
+  await handleCommand({ target: 'control', action: 'set', rest: ['budget', 'balanced'], flags: { scope: 'segment' }, runtime: rt })
+  await handleCommand({ target: 'frame', action: 'open', rest: [], flags: { id: 'codex', summary: 'Codex.', posture: 'discuss' }, runtime: rt })
+  await handleCommand({ target: 'control', action: 'set', rest: ['present', 'compact'], flags: { scope: 'frame' }, runtime: rt })
+  const result = await handleCommand({ target: 'control', action: 'show', rest: [], flags: { scope: 'frame' }, runtime: rt })
+  assert.deepEqual(result.effective, { mode: 'inline', budget: 'balanced', present: 'compact' })
+  const contributions = await invocationControls({ runtime: rt, manifest: { id: 'hairness/work-controls' } })
+  assert.deepEqual(contributions.map((item) => item.scope), ['session', 'segment', 'frame'])
 })

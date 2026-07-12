@@ -5,7 +5,7 @@ const relations = new Set(['continues', 'depends-on', 'informs', 'supersedes', '
 
 function timestamp() { return new Date().toISOString() }
 function id(prefix) { return `${prefix}-${Date.now().toString(36)}` }
-function emptyState() { return { schemaVersion: 2, protocolVersion: '0.2', mission: null, activeSegmentId: null, methodologyBinding: null, segments: [], frames: [], updatedAt: timestamp() } }
+function emptyState() { return { schemaVersion: 2, protocolVersion: '0.2', mission: null, activeSegmentId: null, methodologyBinding: null, controls: {}, segments: [], frames: [], updatedAt: timestamp() } }
 async function state(runtime) { return runtime.overlay.read('current.json', emptyState()) }
 async function save(runtime, value, event) {
   value.updatedAt = timestamp()
@@ -37,6 +37,24 @@ async function setBoundary(runtime, input) {
 export const services = {
   state: async ({ runtime }) => state(runtime),
   'set-boundary': async ({ input, runtime }) => setBoundary(runtime, input),
+  controls: async ({ runtime }) => effectiveControls(await state(runtime)),
+}
+
+function effectiveControls(value) {
+  const segment = activeSegment(value)
+  const frame = value.frames.filter((item) => item.segmentId === value.activeSegmentId && item.status === 'open').at(-1)
+  return { ...(value.controls ?? {}), ...(segment?.controls ?? {}), ...(frame?.controls ?? {}) }
+}
+
+export async function invocationControls({ runtime, manifest }) {
+  const value = await state(runtime)
+  const segment = activeSegment(value)
+  const frame = value.frames.filter((item) => item.segmentId === value.activeSegmentId && item.status === 'open').at(-1)
+  return [
+    { owner: manifest.id, scope: 'session', priority: 50, values: value.controls ?? {}, proof: [], limits: [] },
+    ...(segment ? [{ owner: manifest.id, scope: 'segment', priority: 50, values: segment.controls ?? {}, proof: [], limits: [] }] : []),
+    ...(frame ? [{ owner: manifest.id, scope: 'frame', priority: 50, values: frame.controls ?? {}, proof: [], limits: [] }] : []),
+  ]
 }
 
 async function methodCommand(action, rest, runtime) {
@@ -77,7 +95,7 @@ async function segmentCommand(action, flags, runtime) {
     if (!value.mission || value.mission.status !== 'active') throw new Error('Set an active mission first.')
     if (activeSegment(value)) throw new Error('Close the active segment before opening another.')
     const at = timestamp()
-    const segment = { id: flags.id ?? id('segment'), missionId: value.mission.id, summary: flags.summary ?? 'Active work segment.', status: 'active', boundary: boundary('segment'), relations: relationFlags(flags), frames: [], artifacts: [], createdAt: at, updatedAt: at }
+    const segment = { id: flags.id ?? id('segment'), missionId: value.mission.id, summary: flags.summary ?? 'Active work segment.', status: 'active', boundary: boundary('segment'), controls: {}, relations: relationFlags(flags), frames: [], artifacts: [], createdAt: at, updatedAt: at }
     value.segments.push(segment); value.activeSegmentId = segment.id
     return save(runtime, value, { type: 'segment.opened', id: segment.id })
   }
@@ -105,7 +123,7 @@ async function frameCommand(action, flags, runtime) {
   if (action === 'open') {
     const posture = flags.posture ?? 'discuss'
     if (!postures.has(posture)) throw new Error(`Unknown posture: ${posture}`)
-    const at = timestamp(); const frame = { id: flags.id ?? id('frame'), segmentId: segment.id, summary: flags.summary ?? 'Active frame.', posture, status: 'open', boundary: boundary('frame', segment.boundary.constraints), artifacts: [], sources: [], createdAt: at, updatedAt: at }
+    const at = timestamp(); const frame = { id: flags.id ?? id('frame'), segmentId: segment.id, summary: flags.summary ?? 'Active frame.', posture, status: 'open', boundary: boundary('frame', segment.boundary.constraints), controls: {}, artifacts: [], sources: [], createdAt: at, updatedAt: at }
     value.frames.push(frame); segment.frames.push(frame.id); segment.updatedAt = at
     return save(runtime, value, { type: 'frame.opened', id: frame.id, segmentId: segment.id })
   }
@@ -116,6 +134,25 @@ async function frameCommand(action, flags, runtime) {
     return save(runtime, value, { type: 'frame.closed', id: frame.id })
   }
   throw new Error(`Unknown frame action: ${action}`)
+}
+
+async function controlCommand(action, rest, flags, runtime) {
+  const value = await state(runtime)
+  const scope = flags.scope ?? 'session'
+  const segment = activeSegment(value)
+  const frame = value.frames.filter((item) => item.segmentId === value.activeSegmentId && item.status === 'open').at(-1)
+  const owner = scope === 'session' ? value : scope === 'segment' ? segment : scope === 'frame' ? frame : null
+  if (!owner) throw new Error(`No active ${scope} control scope.`)
+  owner.controls ??= {}
+  if (!action || action === 'show') return { scope, local: owner.controls, effective: effectiveControls(value), limits: [], routes: [] }
+  const [key, raw] = rest
+  if (!key || !/^[A-Za-z][A-Za-z0-9.-]*$/.test(key)) throw new Error('Usage: hairness work control set|clear <key> [value] --scope session|segment|frame')
+  if (action === 'set') {
+    if (raw === undefined) throw new Error('Control set requires a value.')
+    owner.controls[key] = raw
+  } else if (action === 'clear') delete owner.controls[key]
+  else throw new Error(`Unknown control action: ${action}`)
+  return save(runtime, value, { type: 'control.changed', scope, key, action })
 }
 
 function postureIntent(target, action, rest, flags, value) {
@@ -164,6 +201,7 @@ export async function handleCommand({ target, action, rest, flags, runtime }) {
   if (target === 'mission') return missionCommand(action, flags, runtime)
   if (target === 'segment') return segmentCommand(action, flags, runtime)
   if (target === 'frame') return frameCommand(action, flags, runtime)
+  if (target === 'control') return controlCommand(action, rest, flags, runtime)
   const value = await state(runtime)
   if (!target || target === 'status') return value
   if (target === 'history') return { events: await runtime.overlay.lines('events.jsonl'), limits: ['Use trace or resume for compact context.'], routes: [] }

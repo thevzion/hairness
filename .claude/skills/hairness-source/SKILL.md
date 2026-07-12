@@ -3,15 +3,12 @@ name: hairness-source
 description: Inspect or read a selected deterministic source.
 ---
 
-# hairness-source
+Invoke with `/hairness-source`.
 
-Invocation: `/hairness-source`
-Deterministic route: `hairness source --json`
-Owner: `hairness/sources`
-Operation: `hairness/sources#list`
+Infer a compact InvocationDraft from the request and current opening. Before asking a question, call `hairness invoke start --operation hairness/sources:list --draft-json - --json`. Add `--auto` only when explicitly requested. Ask only a returned gap; otherwise follow `preview.next` and render the typed result.
 
 # Sources
 
 Use selected local drivers to produce current typed evidence. Source reads are explicit, read-only and bounded to declared operations. Evidence proves current truth; durable artifacts only orient.
 
-A command grants no authority. Respect active constraints and checkpoints. A worker receives only its capsule and returns one typed result to the declared fan-in.
+No authority is implied. Keep checkpoints and worker capsules exact.

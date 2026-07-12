@@ -12,6 +12,8 @@ Hairness compiles active extension commands into files that Codex and Claude dis
 
 The shared projection is versioned. A fresh clone needs only dependency installation, onboarding, provider trust for hooks, and a new provider session.
 
+Provider commands use one semantic path on both hosts: infer a compact draft, submit it to `hairness invoke start`, ask only a returned gap, then render the typed result. Hairness does not claim a deterministic prompt-interception hook where the provider exposes none. In that case `host doctor` reports the honest `guarded` `agent-first-call` path; `strict` is reserved for a verified native fast hook.
+
 Provider state is evidence-based: `projected` means files exist, `verification-required` means onboarding is applied but a new trusted task has not executed the hook, and `verified` requires a compatible local SessionStart receipt. `blocked` and `stale` are never reported as ready.
 
 ```bash

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFile, rm } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { answerInvocation, cancelInvocation, resumeInvocation, showInvocation, startInvocation } from '../src/distribution/invocation.mjs'
 import { temporaryWorkspace } from './helpers.mjs'
@@ -62,4 +62,19 @@ test('--auto never bypasses effect authority and cancellation is terminal', asyn
   const receipt = await cancelInvocation(root, preview.id)
   assert.equal(receipt.status, 'cancelled')
   await assert.rejects(resumeInvocation(root, preview.id, { auto: true }), (error) => error.code === 'invocation_terminal')
+})
+
+test('extension-owned scoped controls resolve before explicit operation controls', async () => {
+  const root = await temporaryWorkspace()
+  process.env.HAIRNESS_HOME = join(root, 'home')
+  const extension = join(root, 'extensions/fixture/artifacts')
+  const manifest = JSON.parse(await readFile(join(extension, 'extension.json'), 'utf8'))
+  manifest.contributes = ['invocation-controls']
+  await writeFile(join(extension, 'extension.json'), JSON.stringify(manifest))
+  await writeFile(join(extension, 'index.mjs'), "export async function invocationControls({ manifest }) { return [{ owner: manifest.id, scope: 'session', priority: 50, values: { mode: 'inline', present: 'compact' }, proof: [], limits: [] }] }\n")
+  await mkdir(join(root, 'home'), { recursive: true })
+  await writeFile(join(root, 'home/trust.json'), JSON.stringify({ schemaVersion: 2, protocolVersion: '0.2', workspaces: { [root]: { trusted: true } }, extensions: {} }))
+  const preview = await startInvocation(root, { ...draft('produce', { topic: 'billing' }), controls: { present: 'visual' } })
+  assert.deepEqual(preview.resolved.controls, { mode: 'inline', present: 'visual' })
+  assert.deepEqual(preview.resolved.resolverOwners, ['fixture/artifacts'])
 })

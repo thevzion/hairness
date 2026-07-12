@@ -11,6 +11,7 @@ import { createExtensionRuntime } from '../core/extension-runtime/index.mjs'
 import { readJson, userPaths, workspacePaths, writeJsonAtomic } from '../core/io.mjs'
 import { readPlan, reduceStoredPlan, writePlan } from '../core/plans.mjs'
 import { buildWorkerCapsule, createRun, readRun, readRunResult, submitRunResult, transitionRun } from '../core/runs.mjs'
+import { invocationEvents, listInvocations } from '../core/invocations.mjs'
 import { validateContract, validateJsonSchema } from '../core/contracts.mjs'
 import { capabilityIndex, loadCapabilities, resolveOperation, validateOperationProfile } from '../core/capabilities.mjs'
 import { resolvePreferences } from './preferences.mjs'
@@ -181,6 +182,7 @@ async function runtimeFor(root, owner, stack = []) {
       capsule: (id) => buildWorkerCapsule(root, id), checkpoint: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
     },
     plans: { read: (id) => readPlan(root, id), write: async (value) => writePlan(root, await validatePlanOperations(root, value)), reduce: (id) => reduceStoredPlan(root, id) },
+    invocations: { list: () => listInvocations(root), events: (id) => invocationEvents(root, id) },
     artifacts: {
       read: (id, revision) => readArtifact(root, id, revision), history: (id) => artifactHistory(root, id),
       stage: async (runId, value) => { await validateArtifactPayload(root, value); return stageArtifact(root, runId, value) }, promote: (runId) => promoteArtifact(root, runId),
@@ -251,13 +253,14 @@ export async function collectContributions(root, contribution, input, stack = []
       'session-renderer': module.renderSessionOpening,
       'provider-hooks': module.providerHooks,
       'input-resolver': module.invocationResolvers,
+      'invocation-controls': module.invocationControls,
     }
     const handler = handlers[contribution]
     if (typeof handler !== 'function') throw new HairnessError('extension_contribution_missing', `${value.manifest.id} does not export ${contribution}.`, { exitCode: 2 })
     const values = await handler({ root, input, manifest: value.manifest, runtime: await runtimeFor(root, value.manifest.id, stack) })
     if (contribution === 'session-renderer') output.push({ owner: value.manifest.id, value: values })
     else for (const item of values ?? []) {
-      const contract = contribution === 'attention' ? 'AttentionSignal' : contribution === 'authority-policy' ? 'EffectPolicy' : contribution === 'session-opening' ? 'SessionContribution' : contribution === 'input-resolver' ? 'ResolverContribution' : null
+      const contract = contribution === 'attention' ? 'AttentionSignal' : contribution === 'authority-policy' ? 'EffectPolicy' : contribution === 'session-opening' ? 'SessionContribution' : contribution === 'input-resolver' ? 'ResolverContribution' : contribution === 'invocation-controls' ? 'ControlContribution' : null
       output.push(contract ? await validateContract(contract, item) : item)
     }
   }

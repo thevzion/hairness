@@ -3,13 +3,10 @@ name: hairness-codebase
 description: Inspect or route work for a registered codebase.
 ---
 
-# hairness-codebase
+Invoke with `/hairness-codebase`.
 
-Invocation: `/hairness-codebase`
-Deterministic route: `hairness codebase --json`
-Owner: `hairness/codebase`
-Operation: `hairness/codebase#inspect`
+Infer a compact InvocationDraft from the request and current opening. Before asking a question, call `hairness invoke start --operation hairness/codebase:inspect --draft-json - --json`. Add `--auto` only when explicitly requested. Ask only a returned gap; otherwise follow `preview.next` and render the typed result.
 
 Resolve the codebase and action, then run the matching `hairness codebase` route. Treat live source evidence as current truth.
 
-A command grants no authority. Respect active constraints and checkpoints. A worker receives only its capsule and returns one typed result to the declared fan-in.
+No authority is implied. Keep checkpoints and worker capsules exact.

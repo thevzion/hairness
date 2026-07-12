@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { HairnessError } from './errors.mjs'
 import { appendJsonLine, assertSafeId, readJson, workspacePaths, writeJsonAtomic } from './io.mjs'
@@ -68,4 +68,9 @@ export async function writeInvocationReceipt(root, receipt) {
   await validateContract('InvocationReceipt', receipt)
   await writeJsonAtomic(paths(root, receipt.invocationId).receipt, receipt)
   return receipt
+}
+
+export async function listInvocations(root) {
+  const entries = await readdir(workspacePaths(root).invocations, { withFileTypes: true }).catch((error) => error.code === 'ENOENT' ? [] : Promise.reject(error))
+  return Promise.all(entries.filter((entry) => entry.isDirectory()).map((entry) => readInvocation(root, entry.name)))
 }
