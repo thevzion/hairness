@@ -13,6 +13,8 @@ This matrix is generated from extension manifests. Categories organize discovery
 | `hairness/codebase` | ecosystem | Codebase contracts, mounts, inspection and typed maps. | official | no | yes | yes |
 | `hairness/sources` | ecosystem | Read-only source drivers, evidence, redaction and freshness. | official | no | yes | yes |
 | `hairness/constraints` | execution-safety | Inherited constraints that can tighten but never grant authority. | official | no | yes | yes |
+| `hairness/delivery-controls` | forge | Sequential delivery plans, Git checkpoints, receipts and release candidates. | experimental | no | no | yes |
+| `hairness/initiative-controls` | forge | Forge-local initiatives, outcomes, gates and public roadmap snapshots. | experimental | no | no | yes |
 | `hairness/maintainer` | forge | Forge maintenance, impact analysis and replayable qualification. | official | no | no | yes |
 | `hairness/cockpit` | interaction | Main-session routing, help, onboarding and compact attention. | official | yes | yes | yes |
 

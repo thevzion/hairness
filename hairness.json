@@ -52,6 +52,14 @@
       "path": "./extensions/hairness/maintainer"
     },
     {
+      "id": "hairness/initiative-controls",
+      "path": "./extensions/hairness/initiative-controls"
+    },
+    {
+      "id": "hairness/delivery-controls",
+      "path": "./extensions/hairness/delivery-controls"
+    },
+    {
       "id": "hairness/codebase",
       "path": "./extensions/hairness/codebase"
     },

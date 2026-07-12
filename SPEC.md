@@ -48,6 +48,8 @@ Invocation events MUST be append-only and state MUST be reconstructible from the
 
 Provider projections MUST direct a main-session model to submit an InvocationDraft before asking a user question. The model MUST ask only an InvocationGap returned by Hairness. A host adapter MUST report `strict`, `guarded`, or `unsupported` and MUST NOT claim a native fast hook when it uses the agent-first-call fallback.
 
+A forge MAY preserve initiatives and delivery plans as extension-owned local state. Publishing a roadmap snapshot, mutating Git, opening or merging a pull request, tagging, releasing, publishing a package, or posting externally MUST remain an explicit effect outside the planning handler and MUST return a typed receipt.
+
 ## 5. Main session
 
 The main session is the provider session communicating with the human. It MUST receive minimum sufficient context, current proof references, limits, and routes. It MUST NOT receive worker transcripts, hidden reasoning, or the full cockpit inside workers.

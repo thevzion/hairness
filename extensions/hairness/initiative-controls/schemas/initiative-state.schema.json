@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/extensions/initiative-controls/initiative-state.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "protocolVersion", "initiatives", "updatedAt"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "protocolVersion": { "const": "0.2" },
+    "initiatives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "outcome", "state", "gate", "evidence", "links", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "outcome": { "type": "string", "minLength": 1 },
+          "state": { "enum": ["active", "planned", "blocked", "closed"] },
+          "gate": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "array", "items": { "type": "string" } },
+          "links": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "createdAt": { "type": "string" },
+          "updatedAt": { "type": "string" }
+        }
+      }
+    },
+    "updatedAt": { "type": "string" }
+  }
+}

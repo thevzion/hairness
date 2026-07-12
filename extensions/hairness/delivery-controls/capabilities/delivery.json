@@ -1,0 +1,15 @@
+{
+  "$schema": "../../../../schemas/capability.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/delivery",
+  "owner": "hairness/delivery-controls",
+  "version": "0.2.0-alpha.0",
+  "summary": "Prepare sequential delivery without owning Git or release side effects.",
+  "operations": [
+    { "id": "inspect", "class": "observe", "summary": "Inspect delivery plans and receipts.", "results": [{ "id": "default", "contract": { "schema": "DeliveryState", "disposition": "run-only" } }], "defaultResult": "default", "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
+    { "id": "plan", "class": "derive", "summary": "Build a sequential delivery plan from one initiative.", "results": [{ "id": "default", "contract": { "schema": "DeliveryPlan", "disposition": "run-only" } }], "defaultResult": "default", "sources": [], "effects": [], "routes": ["deterministic", "inline"], "acceptsModifiers": [] },
+    { "id": "ship", "class": "effect", "summary": "Execute one explicitly checkpointed delivery step.", "results": [{ "id": "default", "contract": { "schema": "ChangeReceipt", "disposition": "effect" } }], "defaultResult": "default", "sources": ["git"], "effects": ["git:write", "remote:write"], "routes": ["worker", "external"], "acceptsModifiers": [] },
+    { "id": "release-candidate", "class": "derive", "summary": "Produce a typed release candidate and launch kit from accepted receipts.", "results": [{ "id": "default", "contract": { "schema": "ArtifactEnvelope", "disposition": "artifact", "artifactOwner": "hairness/delivery-controls", "artifactType": "release-candidate" } }], "defaultResult": "default", "sources": [], "effects": [], "routes": ["worker"], "acceptsModifiers": [] }
+  ]
+}

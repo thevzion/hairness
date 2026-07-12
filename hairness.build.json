@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "protocolVersion": "0.2",
   "implementationVersion": "0.2.0-alpha.0",
-  "sourceDigest": "sha256:c3e98dd652427963036271ac0184ccd565f98fe16186f3c3a685666037cda39c",
+  "sourceDigest": "sha256:bc8335fb9b36e8c41c283ee22cda97f8b7e364f8b1eaabfceabe66551dd23509",
   "composition": "hairness",
   "role": "forge",
   "local": false,
@@ -20,6 +20,8 @@
     "hairness/constraints",
     "hairness/session-intelligence",
     "hairness/maintainer",
+    "hairness/initiative-controls",
+    "hairness/delivery-controls",
     "hairness/codebase",
     "hairness/sources"
   ],
@@ -123,6 +125,16 @@
       "id": "hairness.maintain",
       "name": "hairness-maintain",
       "owner": "hairness/maintainer"
+    },
+    {
+      "id": "hairness.roadmap",
+      "name": "hairness-roadmap",
+      "owner": "hairness/initiative-controls"
+    },
+    {
+      "id": "hairness.ship",
+      "name": "hairness-ship",
+      "owner": "hairness/delivery-controls"
     },
     {
       "id": "hairness.codebase",
@@ -285,6 +297,20 @@
       "provider": "codex",
       "digest": "sha256:e490249dba323d078fb7581cf56213f9044f54a62dc53ad035450f7c93a05b50",
       "byteSize": 674
+    },
+    {
+      "path": ".agents/skills/hairness-roadmap/SKILL.md",
+      "owner": "hairness/initiative-controls",
+      "provider": "codex",
+      "digest": "sha256:94bbe83e429ceb262e3c434cd4cae1f25182866939cc9bdd608ed6574903cefb",
+      "byteSize": 752
+    },
+    {
+      "path": ".agents/skills/hairness-ship/SKILL.md",
+      "owner": "hairness/delivery-controls",
+      "provider": "codex",
+      "digest": "sha256:0641c77e60691e6d13c0eeeae3a9c18871325ec6f3aa87adbbe5404fbc4bd864",
+      "byteSize": 770
     },
     {
       "path": ".agents/skills/hairness-codebase/SKILL.md",
@@ -467,6 +493,20 @@
       "provider": "claude",
       "digest": "sha256:25ce7a134d07022fd20b283419a7d4e07291cf7d06a23a8baf75e07adc4ffa08",
       "byteSize": 674
+    },
+    {
+      "path": ".claude/skills/hairness-roadmap/SKILL.md",
+      "owner": "hairness/initiative-controls",
+      "provider": "claude",
+      "digest": "sha256:f932cfce2ce078d45dfc9cb8f8b4f448587bc405ab6ba0c1b777d591681dc574",
+      "byteSize": 752
+    },
+    {
+      "path": ".claude/skills/hairness-ship/SKILL.md",
+      "owner": "hairness/delivery-controls",
+      "provider": "claude",
+      "digest": "sha256:c6154e1b5860d517c057a1217e5fb8a738d9e9d913f4b50261f66ca95a674001",
+      "byteSize": 770
     },
     {
       "path": ".claude/skills/hairness-codebase/SKILL.md",

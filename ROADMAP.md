@@ -14,6 +14,7 @@
 - Add one deterministic Invocation Engine for natural and direct provider commands.
 - Persist invocation trajectory and inherited controls without transcripts.
 - Dogfood initiative, delivery and release-candidate extensions in the forge.
+- Keep roadmap publication, Git delivery and release effects checkpointed outside extension handlers.
 
 ## npm alpha
 

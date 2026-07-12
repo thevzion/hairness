@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/extensions/delivery-controls/delivery-state.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "protocolVersion", "plans", "receipts", "updatedAt"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "protocolVersion": { "const": "0.2" },
+    "plans": { "type": "array", "items": { "$ref": "#/$defs/plan" } },
+    "receipts": { "type": "array", "items": { "$ref": "#/$defs/receipt" } },
+    "updatedAt": { "type": "string" }
+  },
+  "$defs": {
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "initiativeId", "state", "steps", "exclusions", "createdAt", "updatedAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "initiativeId": { "type": "string" },
+        "state": { "enum": ["planned", "in-progress", "ready", "blocked", "completed"] },
+        "steps": { "type": "array", "items": { "enum": ["check", "commit", "push", "pull-request", "ci", "release-candidate"] }, "minItems": 1, "uniqueItems": true },
+        "exclusions": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["planId", "summary", "proof", "observedAt"],
+      "properties": {
+        "planId": { "type": "string" },
+        "summary": { "type": "string", "minLength": 1 },
+        "proof": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "observedAt": { "type": "string" }
+      }
+    }
+  }
+}
