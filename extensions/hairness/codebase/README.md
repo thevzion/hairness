@@ -26,7 +26,7 @@ Inspection is read-only. A map never confers target authority.
 
 ## Providers
 
-Projects `hairness-codebase` and `hairness-map-codebase` to Codex and Claude.
+Projects `hairness-codebase` as the namespace guide. Codebase map routes remain available internally and through structure-oriented intents.
 
 ## Tests and maturity
 

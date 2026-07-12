@@ -53,6 +53,10 @@ test('artifact promotion is atomic and revisioned', async () => {
     createdAt: new Date(0).toISOString(),
   }
   await stageArtifact(root, 'run-1', envelope)
+  const markdown = await readFile(join(root, '.overlay/artifacts/.staging/run-1/artifact.md'), 'utf8')
+  assert.ok(markdown.indexOf('## Summary') < markdown.indexOf('## Payload JSON'))
+  assert.match(markdown, /## Dashboard/)
+  assert.match(markdown, /Ticket map\./)
   await promoteArtifact(root, 'run-1')
   assert.deepEqual(await readArtifact(root, envelope.id), envelope)
   assert.deepEqual(await artifactHistory(root, envelope.id), { id: envelope.id, current: 'r1', revisions: ['r1'] })

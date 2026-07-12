@@ -15,5 +15,5 @@
   "services": ["active", "list"],
   "contributes": ["attention"],
   "commands": [{ "namespace": "initiative", "actions": ["status", "list", "show", "open", "close", "publish"] }],
-  "providerCommands": [{ "id": "hairness.roadmap", "name": "hairness-roadmap", "summary": "Inspect and steer the forge initiative roadmap.", "kind": "capability", "classification": "specialized", "command": "hairness initiative status", "arguments": [{ "name": "action", "required": false }], "result": { "schema": "InitiativePortfolio", "disposition": "run-only" }, "operation": { "capability": "hairness/initiative", "id": "inspect" }, "instructions": "./commands/roadmap.md" }]
+  "providerCommands": []
 }

@@ -10,7 +10,7 @@ export default {
     const draft = await write('fixtures/discuss.json', { schemaVersion: 2, protocolVersion: '0.2', summary: 'Discuss the active subject.', inputs: {}, controls: { present: 'compact' } })
     const preview = await command(['invoke', 'start', '--operation', 'hairness/work:discuss', '--draft-json', draft, '--direct', '--auto'])
     ok(checks, 'discussion-routed-inline', preview.state === 'needs-agent' && preview.route.kind === 'inline')
-    const recap = await command(['work', 'recap'])
+    const recap = await command(['work', 'save-recap'])
     ok(checks, 'recap-producer-bounded', recap.status === 'ready' && recap.capsule.profile === 'producer')
   },
 }

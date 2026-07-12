@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "protocolVersion": "0.2",
   "implementationVersion": "0.2.0-alpha.0",
-  "sourceDigest": "sha256:bc8335fb9b36e8c41c283ee22cda97f8b7e364f8b1eaabfceabe66551dd23509",
+  "sourceDigest": "sha256:01fbfe9d1d56c0c93ed126834a671a96af102618547f972d6c66d47e542653e4",
   "composition": "hairness",
   "role": "forge",
   "local": false,
@@ -29,132 +29,169 @@
     {
       "id": "hairness.root",
       "name": "hairness",
-      "owner": "hairness/cockpit"
+      "owner": "hairness/cockpit",
+      "surface": "bridge"
     },
     {
       "id": "hairness.help",
       "name": "hairness-help",
-      "owner": "hairness/cockpit"
+      "owner": "hairness/cockpit",
+      "surface": "namespace",
+      "resultId": "default"
     },
     {
       "id": "hairness.onboarding",
       "name": "hairness-onboarding",
-      "owner": "hairness/cockpit"
+      "owner": "hairness/cockpit",
+      "surface": "specialized",
+      "resultId": "default"
     },
     {
       "id": "hairness.wake-up",
       "name": "hairness-wake-up",
-      "owner": "hairness/cockpit"
-    },
-    {
-      "id": "hairness.update",
-      "name": "hairness-update",
-      "owner": "hairness/distribution"
+      "owner": "hairness/cockpit",
+      "surface": "specialized",
+      "resultId": "default"
     },
     {
       "id": "hairness.work",
       "name": "hairness-work",
-      "owner": "hairness/work-controls"
+      "owner": "hairness/work-controls",
+      "surface": "namespace",
+      "resultId": "dashboard"
     },
     {
-      "id": "hairness.discuss",
-      "name": "hairness-discuss",
-      "owner": "hairness/work-controls"
+      "id": "hairness.x.show-method",
+      "name": "hairness-x-show-method",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "dashboard"
     },
     {
-      "id": "hairness.recap",
-      "name": "hairness-recap",
-      "owner": "hairness/work-controls"
+      "id": "hairness.x.show-work",
+      "name": "hairness-x-show-work",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "dashboard"
     },
     {
-      "id": "hairness.plan",
-      "name": "hairness-plan",
-      "owner": "hairness/work-controls"
+      "id": "hairness.x.open-frame",
+      "name": "hairness-x-open-frame",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "default"
     },
     {
-      "id": "hairness.act",
-      "name": "hairness-act",
-      "owner": "hairness/work-controls"
+      "id": "hairness.x.discuss",
+      "name": "hairness-x-discuss",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "default"
     },
     {
-      "id": "hairness.execute",
-      "name": "hairness-execute",
-      "owner": "hairness/work-controls"
+      "id": "hairness.x.make-recap",
+      "name": "hairness-x-make-recap",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "response"
     },
     {
-      "id": "hairness.map",
-      "name": "hairness-map",
-      "owner": "hairness/understanding-controls"
+      "id": "hairness.x.save-recap",
+      "name": "hairness-x-save-recap",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "artifact"
     },
     {
-      "id": "hairness.explain",
-      "name": "hairness-explain",
-      "owner": "hairness/understanding-controls"
+      "id": "hairness.x.make-plan",
+      "name": "hairness-x-make-plan",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "response"
     },
     {
-      "id": "hairness.compare",
-      "name": "hairness-compare",
-      "owner": "hairness/understanding-controls"
+      "id": "hairness.x.save-plan",
+      "name": "hairness-x-save-plan",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "artifact"
     },
     {
-      "id": "hairness.ideate",
-      "name": "hairness-ideate",
-      "owner": "hairness/ideation-controls"
+      "id": "hairness.x.show-next",
+      "name": "hairness-x-show-next",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "dashboard"
     },
     {
-      "id": "hairness.propose",
-      "name": "hairness-propose",
-      "owner": "hairness/ideation-controls"
+      "id": "hairness.x.ask-next",
+      "name": "hairness-x-ask-next",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "dashboard"
     },
     {
-      "id": "hairness.constraint",
-      "name": "hairness-constraint",
-      "owner": "hairness/constraints"
+      "id": "hairness.x.plan-system-wire",
+      "name": "hairness-x-plan-system-wire",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "response"
     },
     {
-      "id": "hairness.session",
-      "name": "hairness-session",
-      "owner": "hairness/session-intelligence"
+      "id": "hairness.x.plan-system-shape",
+      "name": "hairness-x-plan-system-shape",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "response"
     },
     {
-      "id": "hairness.handoff",
-      "name": "hairness-handoff",
-      "owner": "hairness/session-intelligence"
+      "id": "hairness.x.do-frame",
+      "name": "hairness-x-do-frame",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "default"
     },
     {
-      "id": "hairness.maintain",
-      "name": "hairness-maintain",
-      "owner": "hairness/maintainer"
+      "id": "hairness.x.do-plan",
+      "name": "hairness-x-do-plan",
+      "owner": "hairness/work-controls",
+      "surface": "intent",
+      "resultId": "default"
     },
     {
-      "id": "hairness.roadmap",
-      "name": "hairness-roadmap",
-      "owner": "hairness/initiative-controls"
+      "id": "hairness.x.show-structure",
+      "name": "hairness-x-show-structure",
+      "owner": "hairness/understanding-controls",
+      "surface": "intent",
+      "resultId": "default"
     },
     {
-      "id": "hairness.ship",
-      "name": "hairness-ship",
-      "owner": "hairness/delivery-controls"
+      "id": "hairness.x.propose",
+      "name": "hairness-x-propose",
+      "owner": "hairness/ideation-controls",
+      "surface": "intent",
+      "resultId": "default"
     },
     {
       "id": "hairness.codebase",
       "name": "hairness-codebase",
-      "owner": "hairness/codebase"
-    },
-    {
-      "id": "hairness.map-codebase",
-      "name": "hairness-map-codebase",
-      "owner": "hairness/codebase"
+      "owner": "hairness/codebase",
+      "surface": "namespace",
+      "resultId": "default"
     },
     {
       "id": "hairness.source",
       "name": "hairness-source",
-      "owner": "hairness/sources"
+      "owner": "hairness/sources",
+      "surface": "namespace",
+      "resultId": "default"
     },
     {
-      "id": "hairness.check-sources",
-      "name": "hairness-check-sources",
-      "owner": "hairness/sources"
+      "id": "hairness.x.check-sources",
+      "name": "hairness-x-check-sources",
+      "owner": "hairness/sources",
+      "surface": "intent",
+      "resultId": "default"
     }
   ],
   "outputs": [
@@ -162,183 +199,169 @@
       "path": ".agents/skills/hairness/SKILL.md",
       "owner": "hairness/cockpit",
       "provider": "codex",
-      "digest": "sha256:f28458af632599614c75217f2f08b9d328e2042df48c772a6fd7f4f9a73ebf62",
-      "byteSize": 492
+      "digest": "sha256:92177a3077da64956518432f36e60e42390b4c7939ac852ee4c10be40bfadfc4",
+      "byteSize": 485
     },
     {
       "path": ".agents/skills/hairness-help/SKILL.md",
       "owner": "hairness/cockpit",
       "provider": "codex",
-      "digest": "sha256:15b3ce207932c44c6dbc77ad14bd77402da4588ab3893bc451f146e086e7401a",
-      "byteSize": 649
+      "digest": "sha256:4eef3f2956e7cc17d2f45a803c05ba91ccc17ca559614d76e88366af42ffad7a",
+      "byteSize": 582
     },
     {
       "path": ".agents/skills/hairness-onboarding/SKILL.md",
       "owner": "hairness/cockpit",
       "provider": "codex",
-      "digest": "sha256:fea97da1dd444dcbb3b5e10982d25e8e49d2222b47115ce56d504f0aceaf3e00",
-      "byteSize": 655
+      "digest": "sha256:0dc0645de1f78b689255ff11edc9485f3bf4ffbc35dcb63265fab387e55709c8",
+      "byteSize": 627
     },
     {
       "path": ".agents/skills/hairness-wake-up/SKILL.md",
       "owner": "hairness/cockpit",
       "provider": "codex",
-      "digest": "sha256:4a42506b69c36e8ee1b74cca7358a5bcbbb71ad2f70d9b11e933ec06ed5a8107",
-      "byteSize": 694
-    },
-    {
-      "path": ".agents/skills/hairness-update/SKILL.md",
-      "owner": "hairness/distribution",
-      "provider": "codex",
-      "digest": "sha256:b65a3fff8acb1656977da7c0827fed18065e01d68e90ba9c5e6ee74c59c2d016",
-      "byteSize": 956
+      "digest": "sha256:1753112c57650c3f531533ea8650dbb2fcdbd54653bcc52b30fc7bed858f7f3c",
+      "byteSize": 731
     },
     {
       "path": ".agents/skills/hairness-work/SKILL.md",
       "owner": "hairness/work-controls",
       "provider": "codex",
-      "digest": "sha256:f2eec2bf9d892c08453b610213112b0de27874580466237bdcd4b00c4f61facb",
-      "byteSize": 830
+      "digest": "sha256:02cb2b41845c12f07a0ba1e63b0ed9fb0114ceae5918597a2e6a46270408c3a6",
+      "byteSize": 772
     },
     {
-      "path": ".agents/skills/hairness-discuss/SKILL.md",
+      "path": ".agents/skills/hairness-x-show-method/SKILL.md",
       "owner": "hairness/work-controls",
       "provider": "codex",
-      "digest": "sha256:6b4f12d5132fccd1d1b36566e8bb76f1679b45b22b01d967ec8cf23c28fd7a62",
-      "byteSize": 963
+      "digest": "sha256:db630599b6d7d7e9fcd2d9353225304e6ea88d343b097e0887f3edfbc72ef22b",
+      "byteSize": 850
     },
     {
-      "path": ".agents/skills/hairness-recap/SKILL.md",
+      "path": ".agents/skills/hairness-x-show-work/SKILL.md",
       "owner": "hairness/work-controls",
       "provider": "codex",
-      "digest": "sha256:49b4c996437815151665a6bc823f5cdee434297bcbb1a72d95b9f137b0d71cca",
-      "byteSize": 974
+      "digest": "sha256:75df55a4081b87fcf70e39bda131478f08d8d5e625652412e27e64a8488e03bb",
+      "byteSize": 862
     },
     {
-      "path": ".agents/skills/hairness-plan/SKILL.md",
+      "path": ".agents/skills/hairness-x-open-frame/SKILL.md",
       "owner": "hairness/work-controls",
       "provider": "codex",
-      "digest": "sha256:84a2be916b5726ccb6a39ad143ff3bd93e1d12b21fafaaf54befa24094525295",
-      "byteSize": 962
+      "digest": "sha256:0c4d54bdb476e89c33299cd5fc6be491366368a202717adce70640df435b18b7",
+      "byteSize": 850
     },
     {
-      "path": ".agents/skills/hairness-act/SKILL.md",
+      "path": ".agents/skills/hairness-x-discuss/SKILL.md",
       "owner": "hairness/work-controls",
       "provider": "codex",
-      "digest": "sha256:88badf6f6848847b039cb363c3043437b8c9007913384a281ef2c1657e842526",
-      "byteSize": 823
+      "digest": "sha256:3693eebe2fc5065b2e2bc5d946297b00af53dbfbb6833c05d68da7f07280affd",
+      "byteSize": 915
     },
     {
-      "path": ".agents/skills/hairness-execute/SKILL.md",
+      "path": ".agents/skills/hairness-x-make-recap/SKILL.md",
       "owner": "hairness/work-controls",
       "provider": "codex",
-      "digest": "sha256:7a2152b5fc8106d7460871a11e69c3e9f42c751ec4d16bc1fd957bbdca3bd131",
-      "byteSize": 830
+      "digest": "sha256:73a0ec2f593b04159fbc37e4258580224f834994da1eb7f38424c421e47608c9",
+      "byteSize": 920
     },
     {
-      "path": ".agents/skills/hairness-map/SKILL.md",
+      "path": ".agents/skills/hairness-x-save-recap/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "codex",
+      "digest": "sha256:e5ec69c2af4d01da7f7c0c924c91645308eec1e41f086339424d079c19a4fc0c",
+      "byteSize": 926
+    },
+    {
+      "path": ".agents/skills/hairness-x-make-plan/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "codex",
+      "digest": "sha256:a2dafcf20bb24b2805ff8237cfee156deafa07da8c7ea67357968bd3719f4fb4",
+      "byteSize": 916
+    },
+    {
+      "path": ".agents/skills/hairness-x-save-plan/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "codex",
+      "digest": "sha256:5d5b6b848677829421834ef66263ed0c9baffe947b606b76580d95f9a230fc70",
+      "byteSize": 915
+    },
+    {
+      "path": ".agents/skills/hairness-x-show-next/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "codex",
+      "digest": "sha256:80d6303b4dc54333cfa0a5682381ac6701c7230b73cba2318e2280d49bbf3dd1",
+      "byteSize": 837
+    },
+    {
+      "path": ".agents/skills/hairness-x-ask-next/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "codex",
+      "digest": "sha256:f9b881541df779c13095b9818965ee7427531c75531cd6aa28f133546805b7d7",
+      "byteSize": 846
+    },
+    {
+      "path": ".agents/skills/hairness-x-plan-system-wire/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "codex",
+      "digest": "sha256:7b358976dcbc22e09cb636d3dccf170a4784bd939d12b57d1f3f657b10a2f70f",
+      "byteSize": 982
+    },
+    {
+      "path": ".agents/skills/hairness-x-plan-system-shape/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "codex",
+      "digest": "sha256:7565335d8d10a1147de2314e75943a1f3b1067e246586a19fdda6d0c2742ba4c",
+      "byteSize": 972
+    },
+    {
+      "path": ".agents/skills/hairness-x-do-frame/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "codex",
+      "digest": "sha256:fa086680b21eac488bec44a03490533d4c2ddac2ec3089ed8b5fb965e31241f3",
+      "byteSize": 884
+    },
+    {
+      "path": ".agents/skills/hairness-x-do-plan/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "codex",
+      "digest": "sha256:23cbdd9f304d61126d0830b9ba6d44bc8c3bd0c91423c2c754d8e3c19fd72ae6",
+      "byteSize": 880
+    },
+    {
+      "path": ".agents/skills/hairness-x-show-structure/SKILL.md",
       "owner": "hairness/understanding-controls",
       "provider": "codex",
-      "digest": "sha256:caf28337688399e60a385821356c24304ca440ef0aef85bbf7a955cffe918881",
-      "byteSize": 968
+      "digest": "sha256:aded432b253fa09c09e4a1b394d172a752e938b0e4ae6f33b2fd53e4a5111eb6",
+      "byteSize": 916
     },
     {
-      "path": ".agents/skills/hairness-explain/SKILL.md",
-      "owner": "hairness/understanding-controls",
-      "provider": "codex",
-      "digest": "sha256:9cc21c454c3b72266f6eed4b7f46fab61edfddddf03b541a194479582f585592",
-      "byteSize": 978
-    },
-    {
-      "path": ".agents/skills/hairness-compare/SKILL.md",
-      "owner": "hairness/understanding-controls",
-      "provider": "codex",
-      "digest": "sha256:d4af9eb2459bc79dce745fba4aeb4e16b73a71088d72c314665b7fcfe389f62c",
-      "byteSize": 975
-    },
-    {
-      "path": ".agents/skills/hairness-ideate/SKILL.md",
+      "path": ".agents/skills/hairness-x-propose/SKILL.md",
       "owner": "hairness/ideation-controls",
       "provider": "codex",
-      "digest": "sha256:249b27147cc06f57aa7a15f82e589055a197fce94e64c663b8dade715726e726",
-      "byteSize": 1009
-    },
-    {
-      "path": ".agents/skills/hairness-propose/SKILL.md",
-      "owner": "hairness/ideation-controls",
-      "provider": "codex",
-      "digest": "sha256:714c8ed6b9a1dbdbd20c3a67a9e55c082f217bfcd7153000397e98434ef96338",
-      "byteSize": 1002
-    },
-    {
-      "path": ".agents/skills/hairness-constraint/SKILL.md",
-      "owner": "hairness/constraints",
-      "provider": "codex",
-      "digest": "sha256:6024fc012002e9a4b1aed59c7dff719289960dc672591298dcc5838b46396b62",
-      "byteSize": 805
-    },
-    {
-      "path": ".agents/skills/hairness-session/SKILL.md",
-      "owner": "hairness/session-intelligence",
-      "provider": "codex",
-      "digest": "sha256:7a426d17dd9305a49bac3a615a8b45ddff8d24ab3645e22e855a51d3d5e21291",
-      "byteSize": 638
-    },
-    {
-      "path": ".agents/skills/hairness-handoff/SKILL.md",
-      "owner": "hairness/session-intelligence",
-      "provider": "codex",
-      "digest": "sha256:8a02172a51e224cf6614d444c7e4f882d5ae97df8ff8b632c369caeb30e9268e",
-      "byteSize": 653
-    },
-    {
-      "path": ".agents/skills/hairness-maintain/SKILL.md",
-      "owner": "hairness/maintainer",
-      "provider": "codex",
-      "digest": "sha256:e490249dba323d078fb7581cf56213f9044f54a62dc53ad035450f7c93a05b50",
-      "byteSize": 674
-    },
-    {
-      "path": ".agents/skills/hairness-roadmap/SKILL.md",
-      "owner": "hairness/initiative-controls",
-      "provider": "codex",
-      "digest": "sha256:94bbe83e429ceb262e3c434cd4cae1f25182866939cc9bdd608ed6574903cefb",
-      "byteSize": 752
-    },
-    {
-      "path": ".agents/skills/hairness-ship/SKILL.md",
-      "owner": "hairness/delivery-controls",
-      "provider": "codex",
-      "digest": "sha256:0641c77e60691e6d13c0eeeae3a9c18871325ec6f3aa87adbbe5404fbc4bd864",
-      "byteSize": 770
+      "digest": "sha256:0d405c1a077c0bf1869b2b11aaed0f8659777a1ff32fb0c0b44c34a5a69f262b",
+      "byteSize": 915
     },
     {
       "path": ".agents/skills/hairness-codebase/SKILL.md",
       "owner": "hairness/codebase",
       "provider": "codex",
-      "digest": "sha256:6a41eddf1c20379a235df4a4295150be56436e2bb422c460bd36282038edfac8",
-      "byteSize": 645
-    },
-    {
-      "path": ".agents/skills/hairness-map-codebase/SKILL.md",
-      "owner": "hairness/codebase",
-      "provider": "codex",
-      "digest": "sha256:20c0b8ae18d7b214969f2ed6577392bac7b6b6102bbf1c25a7d941731502e77d",
-      "byteSize": 795
+      "digest": "sha256:e7bf6c17ff9620c9cf6a0c80a04753e211dc436ed95e4c5c56f8c575b5c6b598",
+      "byteSize": 594
     },
     {
       "path": ".agents/skills/hairness-source/SKILL.md",
       "owner": "hairness/sources",
       "provider": "codex",
-      "digest": "sha256:b1f6c85e70136c551a9e55b7273137d539da7236da3b0d5ec0bb6e94ad625f96",
-      "byteSize": 718
+      "digest": "sha256:f08d40c626752a22b468000cf7ad33a6238ce7d7629942952ffc68e1d22d55b9",
+      "byteSize": 659
     },
     {
-      "path": ".agents/skills/hairness-check-sources/SKILL.md",
+      "path": ".agents/skills/hairness-x-check-sources/SKILL.md",
       "owner": "hairness/sources",
       "provider": "codex",
-      "digest": "sha256:41bddab3969b8463f57fcdd7f63753c7ef0dde15f8e1495d8365dd1fdd0199ad",
-      "byteSize": 753
+      "digest": "sha256:25a0b1c2a6461c4efc7995d02e15bd683e3d618cf24ddda5d10c19647a00663c",
+      "byteSize": 738
     },
     {
       "path": ".codex/agents/hairness-producer.toml",
@@ -358,183 +381,169 @@
       "path": ".claude/skills/hairness/SKILL.md",
       "owner": "hairness/cockpit",
       "provider": "claude",
-      "digest": "sha256:d8a17b44311ed3f890c95be00012e4cf93aa5d2019c042779b6c1cfe8f5a3c72",
-      "byteSize": 492
+      "digest": "sha256:77864ab0458a1e526670d41162e150e1b4daea9a19d7d0ce38319a7ab28d426d",
+      "byteSize": 485
     },
     {
       "path": ".claude/skills/hairness-help/SKILL.md",
       "owner": "hairness/cockpit",
       "provider": "claude",
-      "digest": "sha256:9a5dcbeb64a694aac9aff4102ab5dc4c213efe003df3a9ac5fc6e733a22106f0",
-      "byteSize": 649
+      "digest": "sha256:9c907f1ccb79ff7a63bb4326182d655ecf374ba57c2ab1c6913a17e84f8b9563",
+      "byteSize": 582
     },
     {
       "path": ".claude/skills/hairness-onboarding/SKILL.md",
       "owner": "hairness/cockpit",
       "provider": "claude",
-      "digest": "sha256:081b097a178e8f327625a7fe55e3b44881f7314a993b909f69eae5dbbee174ab",
-      "byteSize": 655
+      "digest": "sha256:fad1a6eb8d472535b1de19eaa237b00d202b8ceb8ec6600c8b855b88c0ca1eb1",
+      "byteSize": 627
     },
     {
       "path": ".claude/skills/hairness-wake-up/SKILL.md",
       "owner": "hairness/cockpit",
       "provider": "claude",
-      "digest": "sha256:0472e9e1935c5d0d5609b4c15076ecb70db756ee602cbeb71343c64af770ecc3",
-      "byteSize": 694
-    },
-    {
-      "path": ".claude/skills/hairness-update/SKILL.md",
-      "owner": "hairness/distribution",
-      "provider": "claude",
-      "digest": "sha256:85a44f1f4d1980a124fd8b71ea6078458393e10878390898ab0174a1dba7e8cf",
-      "byteSize": 956
+      "digest": "sha256:2034298ad80e24318ccf4393390bbe4350c57585dc7fee22928b8a9b9dc7ff8a",
+      "byteSize": 731
     },
     {
       "path": ".claude/skills/hairness-work/SKILL.md",
       "owner": "hairness/work-controls",
       "provider": "claude",
-      "digest": "sha256:4a7f98e9fea3a7b1584d7aac7bebfdbd74229791257949d9ea8d70b5248e75d8",
-      "byteSize": 830
+      "digest": "sha256:7e831ab45a3a784c2eac22278200fe391453f6285e363d1d11031c4eb2cf5a2a",
+      "byteSize": 772
     },
     {
-      "path": ".claude/skills/hairness-discuss/SKILL.md",
+      "path": ".claude/skills/hairness-x-show-method/SKILL.md",
       "owner": "hairness/work-controls",
       "provider": "claude",
-      "digest": "sha256:dbf2d522535ba6e442d0213e4cb6cc2d97c95bc307cc6858da621ba11a085144",
-      "byteSize": 963
+      "digest": "sha256:2106abc3c834ad9e597719b799d90362b74fa66664c060620beb10a6d1b00857",
+      "byteSize": 850
     },
     {
-      "path": ".claude/skills/hairness-recap/SKILL.md",
+      "path": ".claude/skills/hairness-x-show-work/SKILL.md",
       "owner": "hairness/work-controls",
       "provider": "claude",
-      "digest": "sha256:3145522bad3e1d7f8d6190743fb11a9e4c5450a6ff75b139d423d0b2d00b7b3c",
-      "byteSize": 974
+      "digest": "sha256:fdd10e94000301b3d254b4dc014e61f59850166a8862257d165dad04bfeabdc2",
+      "byteSize": 862
     },
     {
-      "path": ".claude/skills/hairness-plan/SKILL.md",
+      "path": ".claude/skills/hairness-x-open-frame/SKILL.md",
       "owner": "hairness/work-controls",
       "provider": "claude",
-      "digest": "sha256:ed881830df43af55d741f8fa6bcf4e015f393bd50922a8437810d4f17d588be6",
-      "byteSize": 962
+      "digest": "sha256:b2bda4a12daad2f433ae44fa9d0fe02c1dcb89dfad817f29cfa064656195649a",
+      "byteSize": 850
     },
     {
-      "path": ".claude/skills/hairness-act/SKILL.md",
+      "path": ".claude/skills/hairness-x-discuss/SKILL.md",
       "owner": "hairness/work-controls",
       "provider": "claude",
-      "digest": "sha256:5845d6d5655c6e70e81b27c31cbb75b65a18ae4fe6a68c277a73ec1554e529b8",
-      "byteSize": 823
+      "digest": "sha256:bd4ed42e7e0dea0f60e91c486bca0b2a384cd6db29ee12621511fca91cb3ef20",
+      "byteSize": 915
     },
     {
-      "path": ".claude/skills/hairness-execute/SKILL.md",
+      "path": ".claude/skills/hairness-x-make-recap/SKILL.md",
       "owner": "hairness/work-controls",
       "provider": "claude",
-      "digest": "sha256:a92e99dc475fce0a74c90326424b140adb03f2e00f0d60f95b2b3658659f3ca1",
-      "byteSize": 830
+      "digest": "sha256:a9c3d6326ef63f9bf8002c29582c76fa6708e58794f1461f7c8f4ef562cf5677",
+      "byteSize": 920
     },
     {
-      "path": ".claude/skills/hairness-map/SKILL.md",
+      "path": ".claude/skills/hairness-x-save-recap/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "claude",
+      "digest": "sha256:8ba8c4ce86782ac014b4f6e754ab9e96a96e72fcebcced3652632f5bb9c7cd75",
+      "byteSize": 926
+    },
+    {
+      "path": ".claude/skills/hairness-x-make-plan/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "claude",
+      "digest": "sha256:2953368f0207488360d4e253273e50de76a9b7b9af4379b033e4bc38d751dc63",
+      "byteSize": 916
+    },
+    {
+      "path": ".claude/skills/hairness-x-save-plan/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "claude",
+      "digest": "sha256:61c34343c96614347a16bc80ac8a9e6495ee70f27fecc0e378846875ff942755",
+      "byteSize": 915
+    },
+    {
+      "path": ".claude/skills/hairness-x-show-next/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "claude",
+      "digest": "sha256:fbfaa7c5ae94c0a5aed809ac79f25710ebf167c7381fa9e3b6675f30a808017f",
+      "byteSize": 837
+    },
+    {
+      "path": ".claude/skills/hairness-x-ask-next/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "claude",
+      "digest": "sha256:3a2adeacadb40be0da8c457410b1a90bb44da1681f79401666ffa4df644928c2",
+      "byteSize": 846
+    },
+    {
+      "path": ".claude/skills/hairness-x-plan-system-wire/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "claude",
+      "digest": "sha256:5ebb55ad891402d3d748318e3698df5a3f27568c2cde05da8320f1be50202eaf",
+      "byteSize": 982
+    },
+    {
+      "path": ".claude/skills/hairness-x-plan-system-shape/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "claude",
+      "digest": "sha256:aa68effd29634db1c9beef52730b5eab8e4e9ad81a0ef7debb3e8c9b8ffc67da",
+      "byteSize": 972
+    },
+    {
+      "path": ".claude/skills/hairness-x-do-frame/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "claude",
+      "digest": "sha256:b3014b90f8b6798a82f0d214783da495ea24a7c7458cc992bd6776de010bee04",
+      "byteSize": 884
+    },
+    {
+      "path": ".claude/skills/hairness-x-do-plan/SKILL.md",
+      "owner": "hairness/work-controls",
+      "provider": "claude",
+      "digest": "sha256:3d01bbd6a5c72d16ba5fbed3265f2b37331a954012b6ac01c86aee3f83607d20",
+      "byteSize": 880
+    },
+    {
+      "path": ".claude/skills/hairness-x-show-structure/SKILL.md",
       "owner": "hairness/understanding-controls",
       "provider": "claude",
-      "digest": "sha256:6b80637e1ddd19c1cf382d8b23b4f72dc96f1eedb3cad29c437198ebe729a6ee",
-      "byteSize": 968
+      "digest": "sha256:1593e6639b538611c61d11862cad7160b2a4d0b3309b7206c9d9ba6f0dfc1315",
+      "byteSize": 916
     },
     {
-      "path": ".claude/skills/hairness-explain/SKILL.md",
-      "owner": "hairness/understanding-controls",
-      "provider": "claude",
-      "digest": "sha256:7c4f463b84b85e22c9743a9adf45a17e740401a60df72e92e0c30dc1ae2905c3",
-      "byteSize": 978
-    },
-    {
-      "path": ".claude/skills/hairness-compare/SKILL.md",
-      "owner": "hairness/understanding-controls",
-      "provider": "claude",
-      "digest": "sha256:cc40086d4b484336fb81e25bf6becc33e810ad11fae4797dbf3e8ba8222fea1d",
-      "byteSize": 975
-    },
-    {
-      "path": ".claude/skills/hairness-ideate/SKILL.md",
+      "path": ".claude/skills/hairness-x-propose/SKILL.md",
       "owner": "hairness/ideation-controls",
       "provider": "claude",
-      "digest": "sha256:cd19e32e5279618e5ca406f4ab07a9c0f428832e4b11ca2739dddaf4a92fc7ac",
-      "byteSize": 1009
-    },
-    {
-      "path": ".claude/skills/hairness-propose/SKILL.md",
-      "owner": "hairness/ideation-controls",
-      "provider": "claude",
-      "digest": "sha256:5eeaf68259b7eb5f6af0e21b9e4b95f0eca4daad9dc3329fa5b346e883afff1a",
-      "byteSize": 1002
-    },
-    {
-      "path": ".claude/skills/hairness-constraint/SKILL.md",
-      "owner": "hairness/constraints",
-      "provider": "claude",
-      "digest": "sha256:705cda5e96faa5db01e3106a4207fab7f7feaf592f932bea7307d8724ec02237",
-      "byteSize": 805
-    },
-    {
-      "path": ".claude/skills/hairness-session/SKILL.md",
-      "owner": "hairness/session-intelligence",
-      "provider": "claude",
-      "digest": "sha256:57c24ff592ae22ccc286d3acc7dbaf8f0f114b525d7687eb42fdafa3e42a03c4",
-      "byteSize": 638
-    },
-    {
-      "path": ".claude/skills/hairness-handoff/SKILL.md",
-      "owner": "hairness/session-intelligence",
-      "provider": "claude",
-      "digest": "sha256:2ed7938f1164dab9cb77da9043c30385981f1856b54a356f2989504da5e3ddb7",
-      "byteSize": 653
-    },
-    {
-      "path": ".claude/skills/hairness-maintain/SKILL.md",
-      "owner": "hairness/maintainer",
-      "provider": "claude",
-      "digest": "sha256:25ce7a134d07022fd20b283419a7d4e07291cf7d06a23a8baf75e07adc4ffa08",
-      "byteSize": 674
-    },
-    {
-      "path": ".claude/skills/hairness-roadmap/SKILL.md",
-      "owner": "hairness/initiative-controls",
-      "provider": "claude",
-      "digest": "sha256:f932cfce2ce078d45dfc9cb8f8b4f448587bc405ab6ba0c1b777d591681dc574",
-      "byteSize": 752
-    },
-    {
-      "path": ".claude/skills/hairness-ship/SKILL.md",
-      "owner": "hairness/delivery-controls",
-      "provider": "claude",
-      "digest": "sha256:c6154e1b5860d517c057a1217e5fb8a738d9e9d913f4b50261f66ca95a674001",
-      "byteSize": 770
+      "digest": "sha256:407fe62642ba59300083ae147de448cc09ed5f67614c0eb8b380a193e2c4aff1",
+      "byteSize": 915
     },
     {
       "path": ".claude/skills/hairness-codebase/SKILL.md",
       "owner": "hairness/codebase",
       "provider": "claude",
-      "digest": "sha256:dd2ad126fa1ebf2c170c2ef94e53ca36e3ee6e862174f9c18e2bfa3b4add3c76",
-      "byteSize": 645
-    },
-    {
-      "path": ".claude/skills/hairness-map-codebase/SKILL.md",
-      "owner": "hairness/codebase",
-      "provider": "claude",
-      "digest": "sha256:ee340630a763c2792e4c34753bdade93a7599f113a0633efa39286b5f2670dce",
-      "byteSize": 795
+      "digest": "sha256:6eb10a3d4a3a5a68008b61aac8c76a5aab2e31b2e2a9263e3152c7e5f78090e8",
+      "byteSize": 594
     },
     {
       "path": ".claude/skills/hairness-source/SKILL.md",
       "owner": "hairness/sources",
       "provider": "claude",
-      "digest": "sha256:63534586386666b3d3579f49dcb2c1aae0ab96e617b0b5dd85552e177116a7cd",
-      "byteSize": 718
+      "digest": "sha256:a4d2f77025e8acc4380a842261a9ee51d0634430968fcf0b459700fcb295fc23",
+      "byteSize": 659
     },
     {
-      "path": ".claude/skills/hairness-check-sources/SKILL.md",
+      "path": ".claude/skills/hairness-x-check-sources/SKILL.md",
       "owner": "hairness/sources",
       "provider": "claude",
-      "digest": "sha256:b8be4a5e1d55e4f4f8a090b3f9935d237e5c1df0e14ed0b9fa6485f0718f0921",
-      "byteSize": 753
+      "digest": "sha256:7fa559678164abb4a5d5a2966bf53542922b1a98327602b4f7a7769f8ff6d48e",
+      "byteSize": 738
     },
     {
       "path": ".claude/agents/hairness-producer.md",
@@ -556,7 +565,7 @@
       "target": "AGENTS.md",
       "id": "agent-contract",
       "owner": "hairness/cockpit",
-      "digest": "sha256:b9821655517d1b9630307a7de9f692b95728b9c2c278545436201b8ee4d3f203"
+      "digest": "sha256:7ceebea21f5b026846696fffc630ef8b811d88d62437b63b5ab4f7c9c2770578"
     },
     {
       "target": "AGENTS.md",
@@ -568,7 +577,7 @@
       "target": "CLAUDE.md",
       "id": "agent-contract",
       "owner": "hairness/cockpit",
-      "digest": "sha256:b9821655517d1b9630307a7de9f692b95728b9c2c278545436201b8ee4d3f203"
+      "digest": "sha256:7ceebea21f5b026846696fffc630ef8b811d88d62437b63b5ab4f7c9c2770578"
     },
     {
       "target": "CLAUDE.md",

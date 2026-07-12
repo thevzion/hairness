@@ -26,7 +26,7 @@ Ideation cannot invent proof or grant effects.
 
 ## Providers
 
-Projects `hairness-ideate` and `hairness-propose` to Codex and Claude.
+Projects `hairness-x-propose` as the provider-facing recommendation intent. `ideate` remains available as an internal route.
 
 ## Tests and maturity
 

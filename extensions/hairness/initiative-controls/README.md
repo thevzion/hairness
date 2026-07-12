@@ -26,7 +26,7 @@ Open and close mutate owner-scoped local state. Publishing a versioned snapshot 
 
 ## Providers
 
-Projects `hairness-roadmap` in forge compositions.
+No standalone provider command is projected in the alpha surface. Roadmap inspection remains available through deterministic CLI routes.
 
 ## Tests and maturity
 

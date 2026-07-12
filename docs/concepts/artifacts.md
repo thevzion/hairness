@@ -13,4 +13,4 @@ hairness artifact related work/composable-forge-recap
 hairness artifact graph work/composable-forge-recap
 ```
 
-`artifact.json` is canonical. Generated Markdown carries Hairness frontmatter and must not be edited directly.
+`artifact.json` is canonical. Generated Markdown carries Hairness frontmatter and must not be edited directly. The Markdown projection is intentionally human-first: summary, dashboard, decisions, steps, proof, limits and routes appear before the raw `Payload JSON` section. Agents may read it for orientation, but source-owned JSON and live sources remain the proof boundary.

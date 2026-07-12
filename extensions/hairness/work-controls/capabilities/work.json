@@ -24,6 +24,36 @@
             "schema": "WorkState",
             "disposition": "run-only"
           }
+        },
+        {
+          "id": "dashboard",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "open-frame",
+      "class": "effect",
+      "summary": "Open one bounded frame in the active work segment.",
+      "sources": [],
+      "effects": [
+        "hairness-state:write"
+      ],
+      "routes": [
+        "deterministic"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ChangeReceipt",
+            "disposition": "effect"
+          }
         }
       ],
       "defaultResult": "default"
@@ -67,7 +97,14 @@
       ],
       "results": [
         {
-          "id": "default",
+          "id": "response",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        },
+        {
+          "id": "artifact",
           "contract": {
             "schema": "ArtifactEnvelope",
             "disposition": "artifact",
@@ -76,7 +113,7 @@
           }
         }
       ],
-      "defaultResult": "default"
+      "defaultResult": "response"
     },
     {
       "id": "plan",
@@ -93,7 +130,14 @@
       ],
       "results": [
         {
-          "id": "default",
+          "id": "response",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        },
+        {
+          "id": "artifact",
           "contract": {
             "schema": "ArtifactEnvelope",
             "disposition": "artifact",
@@ -102,7 +146,7 @@
           }
         }
       ],
-      "defaultResult": "default"
+      "defaultResult": "response"
     },
     {
       "id": "act",

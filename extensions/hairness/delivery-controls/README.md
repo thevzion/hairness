@@ -26,7 +26,7 @@ The handler never stages, commits, pushes, opens or merges a PR, tags, releases 
 
 ## Providers
 
-Projects `hairness-ship` in forge compositions.
+No standalone provider command is projected in the alpha surface. Delivery remains available through deterministic CLI routes and accepted work plans.
 
 ## Tests and maturity
 

@@ -26,7 +26,7 @@ Diverged consumer source returns `review-required`. The extension never automate
 
 ## Providers
 
-Projects `hairness-update`; creation remains available through the deterministic CLI.
+No standalone provider command is projected in the alpha surface. Update and creation remain available through deterministic CLI routes.
 
 ## Tests and maturity
 

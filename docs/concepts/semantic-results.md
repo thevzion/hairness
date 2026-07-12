@@ -11,3 +11,8 @@ ResultContract combines output schema and disposition:
 | `effect` | Exact authority, target, lock, and receipt |
 
 The rule is deliberately conservative: persist meaning at semantic boundaries, not every model output.
+
+Operations may expose several named results. Provider intent commands choose
+one through `draft.result`: `make-*` selects a response result, while `save-*`
+selects an artifact result. Progress policy and persistence policy are
+separate; `--auto` never converts a response into an artifact.

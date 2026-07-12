@@ -14,9 +14,166 @@ async function save(runtime, value, event) {
   return runtime.overlay.write('current.json', value)
 }
 function activeSegment(value) { return value.segments.find((segment) => segment.id === value.activeSegmentId) ?? null }
+function activeFrame(value) { return value.frames.filter((frame) => frame.segmentId === value.activeSegmentId && frame.status === 'open').at(-1) ?? null }
 function boundary(scope, constraints = []) { return { scope, constraints: [...new Set(constraints)] } }
 function relationFlags(flags) {
   return [...relations].flatMap((type) => flags[type] ? [{ type, target: { kind: 'segment', id: flags[type] } }] : [])
+}
+
+function contextPacket(intent, summary, results, limits = [], routes = [], proof = [], effects = [], tests = []) {
+  const value = {
+    schemaVersion: 2,
+    protocolVersion: '0.2',
+    planId: `work-${Date.now().toString(36)}`,
+    intent,
+    status: 'succeeded',
+    summary,
+    results,
+    proof,
+    effects,
+    tests,
+    limits,
+    routes,
+    byteSize: 0,
+  }
+  value.byteSize = Buffer.byteLength(JSON.stringify(value))
+  return value
+}
+
+function workLinks(value) {
+  const segment = activeSegment(value)
+  const frame = activeFrame(value)
+  return [
+    'hairness work status --json',
+    segment ? `hairness work resume ${segment.id} --json` : 'hairness work segment open --summary <summary> --json',
+    frame ? `hairness work trace ${frame.segmentId} --json` : null,
+  ].filter(Boolean)
+}
+
+function dashboardResult(value, view = 'work') {
+  const segment = activeSegment(value)
+  const frame = activeFrame(value)
+  const controls = effectiveControls(value)
+  const result = {
+    view,
+    mission: value.mission ? { id: value.mission.id, summary: value.mission.summary, status: value.mission.status } : null,
+    activeWork: segment ? { id: segment.id, summary: segment.summary, status: segment.status, boundary: segment.boundary } : null,
+    activeFrame: frame ? { id: frame.id, summary: frame.summary, posture: frame.posture, boundary: frame.boundary } : null,
+    controls,
+    artifacts: segment?.artifacts ?? [],
+  }
+  if (view === 'method') {
+    result.method = value.methodologyBinding ?? null
+    result.methodShape = ['mission', 'work segment', 'frame', 'recap', 'work-plan', 'checkpoint']
+  }
+  if (view === 'next') {
+    result.next = segment
+      ? ['hairness-x-discuss', 'hairness-x-check-sources', 'hairness-x-make-recap', 'hairness-x-make-plan']
+      : ['hairness work mission set', 'hairness work segment open']
+  }
+  if (view === 'question') {
+    result.question = segment
+      ? 'Quel intent doit-on résoudre maintenant dans ce work segment ?'
+      : 'Quel work segment faut-il ouvrir ?'
+  }
+  return result
+}
+
+function dashboardPacket(value, view = 'work') {
+  const result = dashboardResult(value, view)
+  const summary = view === 'method'
+    ? 'Active method and work-segment shape.'
+    : view === 'next'
+      ? 'Next routes for the active work.'
+      : view === 'question'
+        ? 'One next question for the active work.'
+        : 'Active work dashboard.'
+  return contextPacket(
+    `show ${view}`,
+    summary,
+    [result],
+    ['Generated as a provider-facing dashboard; live sources still prove current truth.'],
+    workLinks(value),
+  )
+}
+
+function frameSummaries(value, segmentId) {
+  return value.frames.filter((frame) => frame.segmentId === segmentId).map((frame) => `${frame.id}: ${frame.summary} (${frame.posture}/${frame.status})`)
+}
+
+function targetShape(kind, flags = {}) {
+  const summary = flags.shape ?? flags.focus ?? (kind === 'system-shape' ? 'Target system shape to validate.' : 'Target system wiring to validate.')
+  return {
+    summary,
+    scope: flags.scope ? String(flags.scope).split(',').filter(Boolean) : [],
+    oldOwner: flags.oldOwner ?? flags['old-owner'] ?? null,
+    targetOwner: flags.targetOwner ?? flags['target-owner'] ?? null,
+    legacyKept: flags.legacyKept ? String(flags.legacyKept).split(',').filter(Boolean) : flags['legacy-kept'] ? String(flags['legacy-kept']).split(',').filter(Boolean) : [],
+    legacyDeleted: flags.legacyDeleted ? String(flags.legacyDeleted).split(',').filter(Boolean) : flags['legacy-deleted'] ? String(flags['legacy-deleted']).split(',').filter(Boolean) : [],
+    compatibility: flags.compatibility ? String(flags.compatibility).split(',').filter(Boolean) : [],
+    proof: flags.proof ? String(flags.proof).split(',').filter(Boolean) : [],
+    checkpoint: flags.checkpoint ?? null,
+  }
+}
+
+function workPlanPayload(kind, value, flags = {}) {
+  const segment = activeSegment(value)
+  if (!segment) throw new Error('Open a segment first.')
+  const frames = frameSummaries(value, segment.id)
+  const shape = targetShape(kind, flags)
+  const goal = flags.goal ?? flags.focus ?? segment.summary
+  return {
+    segmentId: segment.id,
+    executionBoundary: `segment:${segment.id}`,
+    originalFrame: activeFrame(value)?.id ?? null,
+    framesConsidered: frames,
+    coherence: 'Fits the active mission, segment boundary and inherited controls until contradicted by fresher proof.',
+    alreadyDone: (segment.artifacts ?? []).map((artifact) => `${artifact.id}@${artifact.revision}`),
+    goal,
+    scope: flags.scope ? String(flags.scope).split(',').filter(Boolean) : [segment.summary],
+    nonGoals: flags.nonGoals ? String(flags.nonGoals).split(',').filter(Boolean) : flags['non-goals'] ? String(flags['non-goals']).split(',').filter(Boolean) : [],
+    targetShape: shape,
+    ownershipChanges: [shape.oldOwner || shape.targetOwner ? `${shape.oldOwner ?? 'current owner'} -> ${shape.targetOwner ?? 'target owner'}` : null].filter(Boolean),
+    compatibility: shape.compatibility,
+    decisionBatch: ['Confirm the target shape before executor effects.', 'Keep provider commands chat-first unless a save-* intent requests an artifact.'],
+    steps: flags.steps ? String(flags.steps).split('|').filter(Boolean) : ['Resolve proof gaps.', 'Confirm target shape and compatibility.', 'Execute each accepted route through its owning operation.'],
+    validation: flags.validation ? String(flags.validation).split(',').filter(Boolean) : [],
+    risks: flags.risks ? String(flags.risks).split(',').filter(Boolean) : [],
+    checkpoints: shape.checkpoint ? [shape.checkpoint] : ['executor checkpoint before mutation'],
+    openQuestions: flags.questions ? String(flags.questions).split('|').filter(Boolean) : [],
+    constraints: segment.boundary.constraints,
+  }
+}
+
+function recapPacket(value) {
+  const segment = activeSegment(value)
+  if (!segment) throw new Error('Open a segment first.')
+  return contextPacket(
+    'make recap',
+    `Recap for active work segment ${segment.id}.`,
+    [{
+      segmentId: segment.id,
+      summary: segment.summary,
+      frames: frameSummaries(value, segment.id),
+      decisions: [],
+      artifacts: segment.artifacts,
+      proof: [],
+      openEdges: [],
+    }],
+    ['Chat recap only. Use hairness-x-save-recap to persist a SegmentDigest artifact.'],
+    ['hairness-x-save-recap', 'hairness-x-make-plan'],
+  )
+}
+
+function planPacket(kind, value, flags = {}) {
+  const payload = workPlanPayload(kind, value, flags)
+  return contextPacket(
+    kind === 'system-wire' ? 'plan system wire' : kind === 'system-shape' ? 'plan system shape' : 'make plan',
+    `Draft work plan for segment ${payload.segmentId}.`,
+    [payload],
+    ['Chat plan only. Use hairness-x-save-plan to persist a WorkPlan artifact.'],
+    ['hairness-x-save-plan', 'hairness-x-do-plan'],
+  )
 }
 
 async function setBoundary(runtime, input) {
@@ -162,7 +319,7 @@ function postureIntent(target, action, rest, flags, value) {
   return { schemaVersion: 2, protocolVersion: '0.2', intent: { action: target, focus, mode: flags.mode ?? (target === 'discuss' ? 'discuss' : 'auto'), budget: flags.budget ?? (['plan', 'execute'].includes(target) ? 'deep' : 'balanced'), presentation: flags.present ?? 'auto' }, work: { missionId: value.mission?.id ?? null, segmentId: value.activeSegmentId }, status: mutation ? 'needs-checkpoint' : 'needs-inference', summary: `Resolved ${target} inside the active work trajectory.`, authority: [], limits: [mutation ? 'Mutation requires a WorkPlan and explicit checkpoint.' : 'Inference remains in the main session.'].filter(Boolean), routes: [] }
 }
 
-async function artifactProducer(kind, runtime, value) {
+async function artifactProducer(kind, runtime, value, flags = {}) {
   const segment = activeSegment(value)
   if (!segment) throw new Error('Open a segment first.')
   const stamp = Date.now().toString(36)
@@ -175,7 +332,7 @@ async function artifactProducer(kind, runtime, value) {
   await runtime.plans.write({ schemaVersion: 2, protocolVersion: '0.2', id: planId, intent: { schemaVersion: 2, protocolVersion: '0.2', id: `${planId}-intent`, summary: kind === 'recap' ? `Digest segment ${segment.id}.` : `Plan accepted work for segment ${segment.id}.`, outcome: `A typed ${type} artifact.`, targets: [], limits: [] }, routes: [route], fanIn: { id: fanIn, mode: 'mechanical' } })
   const payload = kind === 'recap'
     ? { segmentId: segment.id, summary: segment.summary, decisions: [], artifacts: segment.artifacts, proof: [], openEdges: [], limits: [], routes: [] }
-    : { segmentId: segment.id, goal: segment.summary, steps: ['Resolve the accepted implementation routes.'], validation: [], constraints: segment.boundary.constraints }
+    : workPlanPayload(flags.planKind ?? 'default', value, flags)
   const assignment = { schemaVersion: 2, protocolVersion: '0.2', id: `produce-${type}`, operation, profile: 'producer', goal: kind === 'recap' ? 'Reduce the active segment into its minimum durable meaning.' : 'Turn accepted segment decisions into one executable bounded plan.', outcome: `Artifact work/${segment.id}-${kind} of type ${type}.`, workload: route.workload, budget: 1, inputs: [{ mission: value.mission }, { segment }, { frames: value.frames.filter((frame) => frame.segmentId === segment.id) }, { artifactContract: { id: `work/${segment.id}-${kind}`, type, owner: 'hairness/work-controls', metadata: { labels: ['work'], signals: [kind], relations: [{ type: 'informs', target: { kind: 'segment', id: segment.id } }], freshness: { policy: 'manual' }, provenance: { kind: 'extension', id: 'hairness/work-controls', version: '0.2.0-alpha.0' } }, requiredPayload: payload } }], targets: [], exclusions: ['target mutation', 'Git mutation', 'external source mutation', 'nested subagents', 'transcript storage'], allowedSources: ['artifact:read', 'work:read'], requestedEffects: [], result: { schema: 'ArtifactEnvelope', disposition: 'artifact', artifactOwner: 'hairness/work-controls', artifactType: type } }
   await runtime.runs.create({ id: runId, planId, assignment })
   await runtime.runs.transition(runId, 'ready')
@@ -215,8 +372,20 @@ export async function handleCommand({ target, action, rest, flags, runtime }) {
     return { summary: selected.summary, status: selected.status, mission: value.mission, segment: selected, frames: value.frames.filter((item) => item.segmentId === selected.id), artifacts: selected.artifacts, proof: [], limits: ['Artifact bodies are not included. Revalidate volatile sources.'], routes: selected.status === 'closed' ? [`hairness work segment open --continues ${selected.id}`] : [] }
   }
   if (target === 'method') return methodCommand(action, rest, runtime)
+  if (target === 'show-method') return dashboardPacket(value, 'method')
+  if (target === 'show-work') return dashboardPacket(value, 'work')
+  if (target === 'show-next') return dashboardPacket(value, 'next')
+  if (target === 'ask-next') return dashboardPacket(value, 'question')
+  if (target === 'open-frame') return frameCommand('open', { ...flags, summary: [action, ...rest].filter(Boolean).join(' ') || flags.focus || flags.summary }, runtime)
   if (target === 'new-frame') return frameCommand('open', { ...flags, summary: [action, ...rest].filter(Boolean).join(' ') || flags.focus }, runtime)
-  if (target === 'recap' || target === 'plan') return artifactProducer(target, runtime, value)
+  if (target === 'make-recap' || target === 'recap') return recapPacket(value)
+  if (target === 'save-recap') return artifactProducer('recap', runtime, value, flags)
+  if (target === 'make-plan' || target === 'plan') return planPacket(flags.planKind ?? 'default', value, flags)
+  if (target === 'save-plan') return artifactProducer('plan', runtime, value, flags)
+  if (target === 'plan-system-wire') return planPacket('system-wire', value, { ...flags, focus: [action, ...rest].filter(Boolean).join(' ') || flags.focus })
+  if (target === 'plan-system-shape') return planPacket('system-shape', value, { ...flags, focus: [action, ...rest].filter(Boolean).join(' ') || flags.focus })
+  if (target === 'do-frame') return postureIntent('act', action, rest, flags, value)
+  if (target === 'do-plan') return executePlan(action, flags, runtime, value)
   if (target === 'execute') return executePlan(action, flags, runtime, value)
   if (postures.has(target)) return postureIntent(target, action, rest, flags, value)
   throw new Error(`Unknown work action: ${target}`)

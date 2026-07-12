@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, rmdir, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { HairnessError } from '../core/errors.mjs'
@@ -62,7 +62,13 @@ async function projectionModel(root, includeLocal = false) {
       guidance.push({ ...item, owner: extension.id, content: (await readFile(source, 'utf8')).trim() })
     }
     for (const command of extension.manifest.providerCommands) {
-      if (command.kind !== 'bridge') resolveOperation(operationIndex, command.operation)
+      if (command.kind !== 'bridge') {
+        const operation = resolveOperation(operationIndex, command.operation)
+        const resultId = command.resultId ?? operation.defaultResult
+        const result = operation.results.find((item) => item.id === resultId)
+        if (!result) throw new HairnessError('provider_command_result_missing', `${command.id} references missing result ${resultId}.`, { exitCode: 2 })
+        if (JSON.stringify(result.contract) !== JSON.stringify(command.result)) throw new HairnessError('provider_command_result_mismatch', `${command.id} result ${resultId} does not match its operation contract.`, { exitCode: 2 })
+      }
       const source = resolve(extension.path, command.instructions)
       if (relative(extension.path, source).startsWith('..')) throw new HairnessError('provider_instruction_escape', `${extension.id} instruction escapes its extension.`, { exitCode: 2 })
       commands.push({ ...command, owner: extension.id, instructionsText: (await readFile(source, 'utf8')).trim() })
@@ -87,13 +93,26 @@ async function projectionModel(root, includeLocal = false) {
 function skillMarkdown(command, provider, modifiers) {
   const invocation = provider === 'codex' ? `$${command.name}` : `/${command.name}`
   const accepted = (command.acceptsModifiers ?? []).map((id) => modifiers.find((item) => item.id === id)).filter(Boolean)
-  const modifierText = accepted.length ? `\nAccepted modifiers:\n${accepted.map((item) => `- \`--${item.argument} <${item.values.join('|')}>\` (default: \`${item.default}\`)`).join('\n')}\n` : ''
+  const modifierText = accepted.length ? `\nModifiers: ${accepted.map((item) => {
+    const values = item.values.length > 6 ? `${item.values.slice(0, 6).join('|')}|...` : item.values.join('|')
+    return `\`--${item.argument} <${values}>\` default \`${item.default}\``
+  }).join('; ')}.\n` : ''
+  const resultText = command.resultId ? ` Set \`draft.result\`=\`${command.resultId}\`.` : ''
+  const fixedText = command.fixed ? `\nFixed: \`${JSON.stringify(command.fixed)}\`.\n` : ''
+  const defaultText = command.defaults ? `\nDefaults: \`${JSON.stringify(command.defaults)}\` unless overridden.\n` : ''
+  const surfaceText = {
+    bridge: 'Surface: bridge.',
+    namespace: 'Surface: namespace guide.',
+    intent: 'Surface: intent; chat-first.',
+    specialized: 'Surface: specialized; use only for its exact purpose.',
+  }[command.surface]
   const gateway = command.operation
     ? command.entryPolicy === 'opening-first'
-      ? `Use the fresh SessionOpening path below first. When a refresh is required, infer a compact InvocationDraft and call \`hairness invoke start --operation ${command.operation.capability}:${command.operation.id} --draft-json - --json\`.`
-      : `Infer a compact InvocationDraft from the request and current opening. Before asking a question, call \`hairness invoke start --operation ${command.operation.capability}:${command.operation.id} --draft-json - --json\`. Add \`--auto\` only when explicitly requested. Ask only a returned gap; otherwise follow \`preview.next\` and render the typed result.`
+      ? `Use fresh SessionOpening first. If refresh is needed, build compact InvocationDraft.${resultText} Call \`hairness invoke start --operation ${command.operation.capability}:${command.operation.id} --draft-json - --json\`.`
+      : `Build compact InvocationDraft.${resultText} Call \`hairness invoke start --operation ${command.operation.capability}:${command.operation.id} --draft-json - --json\` before questions. \`--auto\` advances progress only. Ask returned gaps; else follow \`preview.next\`.`
     : 'Resolve the intent to one active operation. Use `hairness help --json` only when ownership is unclear, then submit the operation through `hairness invoke start`.'
-  const output = `---\nname: ${command.name}\ndescription: ${command.summary}\n---\n\nInvoke with \`${invocation}\`.\n${modifierText}\n${gateway}\n\n${command.instructionsText}\n\nNo authority is implied. Keep checkpoints and worker capsules exact.\n`
+  const instructions = command.instructionsText.replace(/^# .+\n\n?/, '')
+  const output = `---\nname: ${command.name}\ndescription: ${command.summary}\n---\n\nInvoke with \`${invocation}\`.\n${surfaceText}\nRoute: \`${command.command}\`.\n${modifierText}${fixedText}${defaultText}${gateway}\n\n${instructions}\n\nNo authority implied.\n`
   const budget = command.kind === 'bridge' ? 2048 : 1024
   if (Buffer.byteLength(output) > budget) throw new HairnessError('provider_instruction_budget', `${command.id} exceeds ${budget} bytes.`, { exitCode: 2 })
   return output
@@ -236,7 +255,12 @@ export async function buildProviders(root, options = {}) {
       const current = await readFile(absolute, 'utf8').catch(() => null)
       if (current !== null && digest(current) !== prior.digest) throw new HairnessError('review_required', `${prior.path} is stale but was edited.`, { exitCode: 5 })
       if (options.check && current !== null) throw new HairnessError('provider_projection_drift', `${prior.path} is a stale owned output.`, { exitCode: 5, routes: ['hairness build'] })
-      if (!options.check) await rm(absolute, { force: true })
+      if (!options.check) {
+        await rm(absolute, { force: true })
+        await rmdir(dirname(absolute)).catch((error) => {
+          if (!['ENOENT', 'ENOTEMPTY', 'EEXIST'].includes(error.code)) throw error
+        })
+      }
     }
     for (const [path, content, owner] of files) {
       const prior = previous.outputs?.find((item) => item.path === path)
@@ -291,7 +315,7 @@ export async function buildProviders(root, options = {}) {
     local: Boolean(options.local),
     providers: options.provider ? [...new Set([...(previous.providers ?? []), ...providers])] : providers,
     extensions: sharedModel.extensions.map((item) => item.id),
-    commands: sharedModel.commands.map(({ id, name, owner }) => ({ id, name, owner })),
+    commands: sharedModel.commands.map(({ id, name, owner, surface, resultId }) => ({ id, name, owner, surface, ...(resultId ? { resultId } : {}) })),
     outputs: [
       ...(options.provider ? (previous.outputs ?? []).filter((item) => {
         const selected = new Set(providers)

@@ -29,6 +29,8 @@ intent surface and gives agents deterministic routes to current context,
 sources, constraints, artifacts, and typed results. The provider keeps its
 model, UI, sandbox, tools, and native workers.
 
+**Repositories are targets. Hairness is the agent's home.**
+
 **Shared reality. Shared cognition. Safe leverage.**
 
 ## Control the main session
@@ -38,41 +40,40 @@ brings intent, taste, priorities, and decisions. The agent brings synthesis,
 reach, continuity, and execution. Hairness keeps both grounded without turning
 the conversation into infrastructure work.
 
-Provider commands are the human interface:
+Provider commands are a lossy native projection of Hairness's richer internal
+model. Providers expose “skills” or slash commands; Hairness distinguishes the
+bridge, namespace guides, human intent commands, operations, and CLI routes:
 
 ```text
-hairness                         route an intent
-hairness-help                    show the active surface
-hairness-onboarding              configure one decision at a time
-hairness-wake-up                 show current attention
+hairness                         bridge: route an intent
+hairness-help                    namespace guide: show the active surface
+hairness-work                    namespace guide: active work
+hairness-source                  namespace guide: deterministic proof
+hairness-codebase                namespace guide: registered repositories
 
-hairness-work                    inspect or steer persistent work
-hairness-discuss                 reason without effects
-hairness-recap                   preserve a segment digest
-hairness-plan                    produce an accepted work plan
-hairness-act                     apply one bounded frame
-hairness-execute                 execute an accepted plan
-
-hairness-map                     organize known relationships
-hairness-explain                 clarify a concept
-hairness-compare                 put options in tension
-hairness-ideate                  explore possibilities
-hairness-propose                 converge on a recommendation
-
-hairness-codebase                inspect mounted repositories
-hairness-map-codebase            map a codebase with a bounded producer
-hairness-source                  read selected deterministic sources
-hairness-check-sources           resolve proof gaps
-hairness-constraint              narrow the allowed boundary
-hairness-session                 inspect local session continuity
-hairness-handoff                 preserve meaning without a transcript
-hairness-update                  propose source-owned updates
-hairness-maintain                maintain and qualify a forge
+hairness-x-show-method           show the method and work-segment shape
+hairness-x-show-work             show the active-work dashboard
+hairness-x-open-frame            open one bounded frame
+hairness-x-discuss               discuss without effects
+hairness-x-check-sources         resolve proof gaps
+hairness-x-show-structure        map the structure needed to understand
+hairness-x-make-recap            draft a chat recap
+hairness-x-save-recap            persist a SegmentDigest
+hairness-x-make-plan             draft an enriched work plan
+hairness-x-save-plan             persist a WorkPlan
+hairness-x-propose               recommend one direction
+hairness-x-show-next             show next routes
+hairness-x-ask-next              ask the next unblocking question
+hairness-x-plan-system-wire      plan system wiring
+hairness-x-plan-system-shape     plan target shape / reshape-system
+hairness-x-do-frame              act through a checkpoint
+hairness-x-do-plan               execute an accepted plan
 ```
 
-Forge distributions also add `hairness-roadmap` and `hairness-ship` for typed
-initiative and delivery planning. Codex invokes `$hairness-…`; Claude invokes
-`/hairness-…`. Every name resolves to the same extension-owned operation.
+Codex invokes `$hairness-…`; Claude invokes `/hairness-…`. `make-*` stays in
+chat. `save-*` asks for an artifact. `--auto` advances progress only; it never
+changes persistence or authority. The CLI remains the deterministic machine
+surface for exact routes such as `hairness work status --json`.
 
 ## Hairness in action
 
@@ -82,7 +83,7 @@ already known, and the human is asked only for an irreducible decision.
 ### Resolve one real gap
 
 ```text
-Human: $hairness-map
+Human: $hairness-x-show-structure
 Hairness: What should be mapped?
 Human: The provider projection flow.
 Agent: [submits the resolved invocation and renders the typed map]
@@ -95,9 +96,10 @@ This behavior is covered by the
 ### Preserve meaning, not conversation noise
 
 ```text
-Human: $hairness-recap --present compact
-Agent: [produces a bounded SegmentDigest]
-Hairness: decisions, proof, limits, open edges and next routes
+Human: $hairness-x-make-recap --present compact
+Agent: [renders a chat-first recap dashboard]
+Human: save it
+Agent: [uses $hairness-x-save-recap and prepares a bounded SegmentDigest]
 ```
 
 The result passes its owner schema and fan-in before it reaches the main
@@ -107,7 +109,7 @@ session. See the
 ### Stop before an effect
 
 ```text
-Human: $hairness-act --auto
+Human: $hairness-x-do-frame --auto
 Hairness: resolved the target and constraints; needs authority
 Agent: [shows the exact checkpoint instead of mutating the target]
 ```

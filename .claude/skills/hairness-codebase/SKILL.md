@@ -1,12 +1,13 @@
 ---
 name: hairness-codebase
-description: Inspect or route work for a registered codebase.
+description: Guide registered codebase inspection, mounts and map routes.
 ---
 
 Invoke with `/hairness-codebase`.
-
-Infer a compact InvocationDraft from the request and current opening. Before asking a question, call `hairness invoke start --operation hairness/codebase:inspect --draft-json - --json`. Add `--auto` only when explicitly requested. Ask only a returned gap; otherwise follow `preview.next` and render the typed result.
+Surface: namespace guide.
+Route: `hairness codebase`.
+Build compact InvocationDraft. Set `draft.result`=`default`. Call `hairness invoke start --operation hairness/codebase:inspect --draft-json - --json` before questions. `--auto` advances progress only. Ask returned gaps; else follow `preview.next`.
 
 Resolve the codebase and action, then run the matching `hairness codebase` route. Treat live source evidence as current truth.
 
-No authority is implied. Keep checkpoints and worker capsules exact.
+No authority implied.

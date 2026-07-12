@@ -6,7 +6,7 @@ const suites = {
   'cockpit-language': { prompt: 'Use the injected Hairness opening. Reply with one short sentence confirming the active language. Do not use tools.', gates: ['language', 'tool-count:0', 'compact'] },
   'cockpit-wake-up': { prompt: 'Run the Hairness wake-up behavior from the fresh opening. Return the highest-priority signal and next route. Do not refresh.', gates: ['route', 'tool-count:0', 'compact'] },
   'cockpit-help': { prompt: 'Explain the primary Hairness commands only. Keep the answer compact.', gates: ['route', 'no-exploration', 'compact'] },
-  'intent-map-gap': { prompt: '$hairness-map\nNo focus was provided. Follow the active skill without inspecting files or loading another skill: submit the draft to Hairness, then ask only the returned gap.', gates: ['first-call', 'tool-count:1', 'gap-only', 'compact'] },
+  'intent-map-gap': { prompt: '$hairness-x-show-structure\nNo focus was provided. Follow the active skill without inspecting files or loading another skill: submit the draft to Hairness, then ask only the returned gap.', gates: ['first-call', 'tool-count:1', 'gap-only', 'compact'] },
 }
 const effort = { fast: 'low', balanced: 'medium', deep: 'high' }
 const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex')

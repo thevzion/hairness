@@ -1,14 +1,13 @@
 ---
 name: hairness-work
-description: Inspect and steer the persistent Hairness work trajectory.
+description: Guide the Work Controls namespace and route active-work intents.
 ---
 
 Invoke with `/hairness-work`.
+Surface: namespace guide.
+Route: `hairness work status`.
+Build compact InvocationDraft. Set `draft.result`=`dashboard`. Call `hairness invoke start --operation hairness/work:inspect --draft-json - --json` before questions. `--auto` advances progress only. Ask returned gaps; else follow `preview.next`.
 
-Infer a compact InvocationDraft from the request and current opening. Before asking a question, call `hairness invoke start --operation hairness/work:inspect --draft-json - --json`. Add `--auto` only when explicitly requested. Ask only a returned gap; otherwise follow `preview.next` and render the typed result.
+Keep mission, segment, frame, boundaries and accepted artifacts aligned. Chat-first: `make-*` responds, `save-*` prepares artifacts, `--auto` only advances progress. Dashboards show status, result, links, proof, limits and next. Effects require an explicit checkpoint; the work graph never grants authority.
 
-# Work Controls
-
-Use the persistent work graph only to keep mission, segment, frame, boundaries and accepted artifacts aligned. `discuss` stays read-only. `recap` and `plan` may prepare one bounded producer. `act` and `execute` require an explicit current checkpoint and never infer authority from the work graph.
-
-No authority is implied. Keep checkpoints and worker capsules exact.
+No authority implied.

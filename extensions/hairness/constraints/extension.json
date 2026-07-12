@@ -15,7 +15,5 @@
   "contributes": ["authority-policy"],
   "services": ["effective"],
   "commands": [{ "namespace": "constraint", "actions": ["show", "set", "clear"] }],
-  "providerCommands": [
-    { "id": "hairness.constraint", "name": "hairness-constraint", "summary": "Inspect or change inherited session, segment and frame constraints.", "kind": "capability", "classification": "specialized", "command": "hairness constraint show", "arguments": [{ "name": "action", "required": false }, { "name": "constraint", "required": false }, { "name": "scope", "required": false }], "result": { "schema": "Boundary", "disposition": "run-only" }, "operation": { "capability": "hairness/constraints", "id": "inspect" }, "instructions": "./commands/constraints.md" }
-  ]
+  "providerCommands": []
 }

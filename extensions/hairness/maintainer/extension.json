@@ -20,5 +20,5 @@
   ],
   "onboarding": [{ "id": "maintenance.gitWarnings", "phase": "maintenance", "question": "Show attention for branches without upstream or unpushed commits?", "options": [{ "value": "on", "label": "Show Git attention" }, { "value": "off", "label": "Do not show it" }], "preferenceKey": "maintenance.gitWarnings" }],
   "commands": [{ "namespace": "maintain", "actions": ["check", "impact", "status", "metrics", "changelog-preview", "test", "eval"] }],
-  "providerCommands": [{ "id": "hairness.maintain", "name": "hairness-maintain", "summary": "Check Hairness owners, projections, package boundaries, and documentation impact.", "kind": "capability", "classification": "specialized", "command": "hairness maintain check", "arguments": [{ "name": "action", "required": false }], "result": { "schema": "ChangeImpactReport", "disposition": "run-only" }, "operation": { "capability": "hairness/maintenance", "id": "inspect" }, "instructions": "./commands/hairness-maintain.md" }]
+  "providerCommands": []
 }

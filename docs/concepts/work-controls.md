@@ -21,6 +21,19 @@ flowchart LR
 
 Frames are not artifacts. They reference sources, runs, decisions, and artifacts. Recap and plan create typed semantic boundaries. Act and execute still require effective constraints and explicit authority.
 
+Provider-facing work controls are chat-first:
+
+- `hairness-x-make-recap` and `hairness-x-make-plan` return response dashboards.
+- `hairness-x-save-recap` and `hairness-x-save-plan` request durable artifacts.
+- `--auto` advances invocation progress but never changes persistence.
+
+`WorkPlan` is the durable Plan Segment. It carries execution boundary, original frame, frames considered, coherence, already-done evidence, goal, scope and non-goals, target shape, ownership changes, compatibility, decision batch, steps, validation, risks, checkpoints and open questions.
+
+The old `reshape-system` flavor is represented as target-shape controls:
+scope, old owner, target owner, legacy kept/deleted, compatibility, proof and
+checkpoint. `hairness-x-plan-system-shape` produces that shape in chat;
+`hairness-x-save-plan` persists it after acceptance.
+
 ```text
 Work Controls preserve trajectory.
 Artifacts preserve meaning.

@@ -53,6 +53,19 @@ test('invocation state is rebuilt from its append-only event stream', async () =
   assert.equal(after.state, before.state)
 })
 
+test('named result controls persistence and --auto only advances progress', async () => {
+  const root = await temporaryWorkspace()
+  process.env.HAIRNESS_HOME = join(root, 'home')
+  const response = await startInvocation(root, { ...draft('produce', { topic: 'billing' }), result: 'response' }, { mode: 'direct', auto: true })
+  assert.equal(response.expectedResult.id, 'response')
+  assert.equal(response.expectedResult.persistence, 'none')
+  assert.equal(response.state, 'needs-agent')
+  const artifact = await startInvocation(root, { ...draft('produce', { topic: 'billing' }), result: 'artifact' }, { mode: 'direct', auto: true })
+  assert.equal(artifact.expectedResult.id, 'artifact')
+  assert.equal(artifact.expectedResult.persistence, 'local')
+  assert.equal(artifact.state, 'needs-agent')
+})
+
 test('--auto never bypasses effect authority and cancellation is terminal', async () => {
   const root = await temporaryWorkspace()
   process.env.HAIRNESS_HOME = join(root, 'home')

@@ -1,10 +1,11 @@
 
-<!-- hairness:begin id="agent-contract" owner="hairness/cockpit" schema="1" digest="sha256:b9821655517d1b9630307a7de9f692b95728b9c2c278545436201b8ee4d3f203" -->
+<!-- hairness:begin id="agent-contract" owner="hairness/cockpit" schema="1" digest="sha256:7ceebea21f5b026846696fffc630ef8b811d88d62437b63b5ab4f7c9c2770578" -->
 ## Hairness agent contract
 
 - Use the injected SessionOpening directly. If it is absent, run `hairness opening --json` exactly once before broad exploration and obey its language instruction.
 - For wake-up, reuse the fresh opening's three attention signals without tools. Run `hairness wake-up --json` exactly once only when the opening is absent, stale, or the user explicitly requests refresh.
 - Express work through the active command surface when a routed capability exists.
+- Render provider responses as compact dashboards when local state, sources, artifacts or routes matter: status, result, links, proof, limits, next route.
 - Artifacts orient; live sources prove current truth.
 - Treat checkpoints, worker capsules, inherited constraints, targets, and exclusions as hard boundaries.
 - Do not infer authority from a command, mount, artifact, extension, or prior operation.

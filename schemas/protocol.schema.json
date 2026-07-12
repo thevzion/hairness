@@ -698,24 +698,26 @@
     "ProviderCommand": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "summary", "kind", "classification", "command", "arguments", "result", "instructions"],
+      "required": ["id", "name", "summary", "kind", "classification", "surface", "command", "arguments", "result", "instructions"],
       "properties": {
         "id": { "$ref": "#/$defs/DottedId" },
         "name": { "$ref": "#/$defs/Slug" },
         "summary": { "$ref": "#/$defs/NonEmpty" },
         "kind": { "enum": ["capability", "preset", "bridge"] },
         "classification": { "enum": ["primary", "accelerator", "specialized"] },
+        "surface": { "enum": ["bridge", "namespace", "intent", "specialized"] },
         "command": { "$ref": "#/$defs/NonEmpty" },
         "arguments": { "type": "array", "items": { "type": "object" } },
         "result": { "$ref": "#/$defs/ResultContract" },
+        "resultId": { "$ref": "#/$defs/Slug" },
         "operation": { "$ref": "#/$defs/OperationRef" },
         "instructions": { "type": "string", "pattern": "^\\./" },
         "entryPolicy": { "enum": ["invoke-first", "opening-first"] },
         "fixed": { "type": "object" },
         "defaults": { "type": "object" },
         "resolve": { "type": "object" },
-        "overrides": { "type": "array", "items": { "$ref": "#/$defs/Slug" }, "uniqueItems": true }
-        ,"acceptsModifiers": { "type": "array", "items": { "$ref": "#/$defs/DottedId" }, "uniqueItems": true }
+        "overrides": { "type": "array", "items": { "$ref": "#/$defs/Slug" }, "uniqueItems": true },
+        "acceptsModifiers": { "type": "array", "items": { "$ref": "#/$defs/DottedId" }, "uniqueItems": true }
       },
       "allOf": [{
         "if": { "properties": { "kind": { "enum": ["capability", "preset"] } }, "required": ["kind"] },
@@ -976,11 +978,13 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "name", "owner"],
+            "required": ["id", "name", "owner", "surface"],
             "properties": {
               "id": { "$ref": "#/$defs/DottedId" },
               "name": { "$ref": "#/$defs/Slug" },
-              "owner": { "$ref": "#/$defs/ExtensionId" }
+              "owner": { "$ref": "#/$defs/ExtensionId" },
+              "surface": { "enum": ["bridge", "namespace", "intent", "specialized"] },
+              "resultId": { "$ref": "#/$defs/Slug" }
             }
           }
         },

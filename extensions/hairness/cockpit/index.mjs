@@ -54,7 +54,8 @@ export async function handleCommand({ namespace, flags, runtime }) {
     const extensions = await runtime.extensions.list()
     const commands = extensions.flatMap((extension) => extension.providerCommands ?? []).sort((a, b) => a.name.localeCompare(b.name))
     const groups = Object.groupBy(commands, (command) => command.classification ?? 'specialized')
-    return { summary: `${distribution.displayName} exposes ${commands.length} provider commands.`, providerInvocations: { codex: '$<command>', claude: '/<command>' }, primary: groups.primary ?? [], accelerators: groups.accelerator ?? [], specialized: flags?.all ? groups.specialized ?? [] : [], limits: flags?.all ? [] : ['Use --all to show specialized commands.'], routes: ['hairness wake-up'] }
+    const surfaces = Object.groupBy(commands, (command) => command.surface ?? 'specialized')
+    return { summary: `${distribution.displayName} exposes ${commands.length} provider commands.`, providerInvocations: { codex: '$<command>', claude: '/<command>' }, surfaces, primary: groups.primary ?? [], accelerators: groups.accelerator ?? [], specialized: flags?.all ? groups.specialized ?? [] : [], limits: flags?.all ? [] : ['Provider commands are projections; CLI routes remain the machine interface.', 'Use --all to show specialized commands.'], routes: ['hairness wake-up'] }
   }
   const signals = (await runtime.extensions.collect('attention', { intent: flags?.intent ?? null })).sort((a, b) => b.priority - a.priority).slice(0, 20)
   return { summary: signals.length ? signals[0].summary : 'Hairness is ready; no active attention signal.', status: signals.some((signal) => signal.state === 'blocked') ? 'blocked' : 'ready', attention: signals, next: signals[0]?.route ?? 'hairness help', limits: [], routes: signals[0] ? [signals[0].route] : [] }

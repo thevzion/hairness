@@ -14,5 +14,5 @@
   "dependencies": ["hairness/initiative-controls", "hairness/work-controls"],
   "commands": [{ "namespace": "delivery", "actions": ["plan", "status", "checkpoint", "receipt", "release-candidate"] }],
   "artifactSchemas": [{ "type": "release-candidate", "schema": "./schemas/release-candidate.schema.json" }],
-  "providerCommands": [{ "id": "hairness.ship", "name": "hairness-ship", "summary": "Plan and checkpoint one sequential forge delivery.", "kind": "capability", "classification": "specialized", "command": "hairness delivery plan", "arguments": [{ "name": "initiative", "required": false }], "result": { "schema": "DeliveryPlan", "disposition": "run-only" }, "operation": { "capability": "hairness/delivery", "id": "plan" }, "instructions": "./commands/ship.md" }]
+  "providerCommands": []
 }

@@ -31,14 +31,54 @@ test('work controls persist one mission, segment and frame', async () => {
   assert.equal(rt.events.length, 3)
 })
 
-test('recap creates one bounded producer for its declared operation', async () => {
+test('save-recap creates one bounded producer for its declared operation', async () => {
   const rt = runtime()
   await handleCommand({ target: 'mission', action: 'set', rest: [], flags: { id: 'hairness', summary: 'Build Hairness.' }, runtime: rt })
   await handleCommand({ target: 'segment', action: 'open', rest: [], flags: { id: 'providers', summary: 'Build providers.' }, runtime: rt })
-  const result = await handleCommand({ target: 'recap', rest: [], flags: {}, runtime: rt })
+  const result = await handleCommand({ target: 'save-recap', rest: [], flags: {}, runtime: rt })
   assert.equal(result.status, 'ready')
   assert.deepEqual(rt.planRecords[0].routes[0].operation, { capability: 'hairness/work', id: 'recap' })
   assert.equal(rt.runsCreated[0].assignment.inputs.at(-1).artifactContract.owner, 'hairness/work-controls')
+})
+
+test('show-work and show-method return compact response dashboards', async () => {
+  const rt = runtime()
+  await handleCommand({ target: 'mission', action: 'set', rest: [], flags: { id: 'hairness', summary: 'Build Hairness.' }, runtime: rt })
+  await handleCommand({ target: 'segment', action: 'open', rest: [], flags: { id: 'providers', summary: 'Build providers.' }, runtime: rt })
+  const work = await handleCommand({ target: 'show-work', rest: [], flags: {}, runtime: rt })
+  assert.equal(work.status, 'succeeded')
+  assert.equal(work.results[0].view, 'work')
+  assert.equal(work.results[0].activeWork.id, 'providers')
+  const method = await handleCommand({ target: 'show-method', rest: [], flags: {}, runtime: rt })
+  assert.equal(method.results[0].view, 'method')
+  assert.deepEqual(method.results[0].methodShape, ['mission', 'work segment', 'frame', 'recap', 'work-plan', 'checkpoint'])
+})
+
+test('plan-system-shape carries reshape-system target controls', async () => {
+  const rt = runtime()
+  await handleCommand({ target: 'mission', action: 'set', rest: [], flags: { id: 'hairness', summary: 'Build Hairness.' }, runtime: rt })
+  await handleCommand({ target: 'segment', action: 'open', rest: [], flags: { id: 'providers', summary: 'Build providers.' }, runtime: rt })
+  const result = await handleCommand({ target: 'plan-system-shape', rest: [], flags: { scope: 'provider,work', 'old-owner': 'legacy', 'target-owner': 'work-controls', compatibility: 'codex,claude', proof: 'tests', checkpoint: 'cp-1' }, runtime: rt })
+  const plan = result.results[0]
+  assert.equal(plan.targetShape.oldOwner, 'legacy')
+  assert.equal(plan.targetShape.targetOwner, 'work-controls')
+  assert.deepEqual(plan.targetShape.compatibility, ['codex', 'claude'])
+  assert.deepEqual(plan.targetShape.proof, ['tests'])
+  assert.deepEqual(plan.checkpoints, ['cp-1'])
+})
+
+test('save-plan prepares an enriched work-plan artifact payload', async () => {
+  const rt = runtime()
+  await handleCommand({ target: 'mission', action: 'set', rest: [], flags: { id: 'hairness', summary: 'Build Hairness.' }, runtime: rt })
+  await handleCommand({ target: 'segment', action: 'open', rest: [], flags: { id: 'providers', summary: 'Build providers.' }, runtime: rt })
+  const result = await handleCommand({ target: 'save-plan', rest: [], flags: { planKind: 'system-shape', scope: 'provider', validation: 'npm-test' }, runtime: rt })
+  assert.equal(result.status, 'ready')
+  const payload = rt.runsCreated[0].assignment.inputs.at(-1).artifactContract.requiredPayload
+  await validateJsonSchema(new URL('../schemas/work-plan.schema.json', import.meta.url), payload, 'work-plan')
+  assert.equal(payload.executionBoundary, 'segment:providers')
+  assert.deepEqual(payload.scope, ['provider'])
+  assert.deepEqual(payload.validation, ['npm-test'])
+  assert.ok(payload.targetShape)
 })
 
 test('closing a segment requires a typed digest', async () => {

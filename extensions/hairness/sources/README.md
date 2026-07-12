@@ -26,7 +26,7 @@ Bundled drivers are read-only. Provider connectors remain best-effort adapters.
 
 ## Providers
 
-Projects `hairness-source` and `hairness-check-sources` to Codex and Claude.
+Projects `hairness-source` as the namespace guide and `hairness-x-check-sources` as the provider-facing proof intent.
 
 ## Tests and maturity
 

@@ -26,7 +26,7 @@ Maintenance commands plan Git and release work but do not perform it.
 
 ## Providers
 
-Projects `hairness-maintain` and forge guidance to Codex and Claude.
+Projects forge guidance to Codex and Claude. Maintainer checks remain available through deterministic CLI routes.
 
 ## Tests and maturity
 
