@@ -22,7 +22,7 @@ test('required codebase absence blocks while recommended absence stays partial',
   base.codebases = [contract('required-app', 'required'), contract('recommended-docs', 'recommended')]
   await writeFile(manifestPath, JSON.stringify(base))
   await mkdir(join(root, '.overlay'), { recursive: true })
-  const runtime = { distribution: { read: async () => base }, sources: { read: async () => { throw new Error('not mounted') } } }
+  const runtime = { distribution: { read: async () => base }, extensions: { call: async () => { throw new Error('not mounted') } } }
   const required = await codebaseCommand({ root, target: 'required-app', action: 'doctor', rest: [], flags: {}, runtime })
   const recommended = await codebaseCommand({ root, target: 'recommended-docs', action: 'doctor', rest: [], flags: {}, runtime })
   assert.equal(required.status, 'blocked')
@@ -38,7 +38,7 @@ test('local codebase contracts mount and unmount without touching the checkout',
   const runtime = {
     contracts: { validate: validateContract },
     distribution: { read: async () => distribution },
-    sources: { read: async (_source, operation, input) => ({ data: operation === 'identity' ? { path: input.path, remote } : { path: input.path, branch: 'main', dirty: 0 } }) },
+    extensions: { call: async (_owner, _service, request) => ({ data: request.operation === 'identity' ? { path: request.input.path, remote } : { path: request.input.path, branch: 'main', dirty: 0 } }) },
   }
   const flags = { local: 'private-repo', path: checkout, remote }
   const plan = await codebaseCommand({ root, target: 'add', action: undefined, rest: [], flags, runtime })
@@ -54,9 +54,9 @@ test('local codebase contracts mount and unmount without touching the checkout',
   assert.equal(named.baseline.realpath, await realpath(secondCheckout))
   const listed = await codebaseCommand({ root, target: 'list', action: undefined, rest: [], flags: {}, runtime })
   assert.equal(listed.codebases[0].scope, 'local')
-  runtime.sources.read = async (_source, operation, input) => {
-    if (operation === 'identity') throw new Error('origin missing')
-    return { data: { path: input.path, branch: 'main', dirty: 0 } }
+  runtime.extensions.call = async (_owner, _service, request) => {
+    if (request.operation === 'identity') throw new Error('origin missing')
+    return { data: { path: request.input.path, branch: 'main', dirty: 0 } }
   }
   const pending = await codebaseCommand({ root, target: 'private-repo', action: 'doctor', rest: [], flags: {}, runtime })
   assert.equal(pending.status, 'partial')

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "aws",
+  "transport": "aws",
+  "executable": "aws",
+  "module": "./index.mjs",
+  "operations": [
+    { "id": "version", "access": "read", "summary": "Read the AWS CLI version." },
+    { "id": "profiles", "access": "read", "summary": "List local profile names without credentials." },
+    { "id": "identity", "access": "read", "summary": "Read the active STS caller identity." }
+  ]
+}

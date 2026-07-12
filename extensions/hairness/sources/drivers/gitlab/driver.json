@@ -1,19 +1,16 @@
 {
-  "$schema": "../../../schemas/extension.schema.json",
   "schemaVersion": 2,
   "protocolVersion": "0.2",
-  "id": "hairness/gitlab",
-  "version": "0.2.0-alpha.0",
+  "id": "gitlab",
+  "transport": "glab",
+  "executable": "glab",
   "module": "./index.mjs",
-  "dependencies": ["hairness/source-controls"],
-  "commands": [],
-  "providerCommands": [],
-  "sources": [{ "id": "gitlab", "transport": "glab", "operations": [
+  "operations": [
     { "id": "identity", "access": "read", "summary": "Verify the local GitLab CLI identity." },
     { "id": "project", "access": "read", "summary": "Read one GitLab project." },
     { "id": "mr", "access": "read", "summary": "Read one merge request." },
     { "id": "discussions", "access": "read", "summary": "Read merge request discussions." },
     { "id": "approvals", "access": "read", "summary": "Read merge request approvals." },
     { "id": "pipelines", "access": "read", "summary": "Read project pipelines." }
-  ] }]
+  ]
 }

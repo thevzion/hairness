@@ -2,6 +2,10 @@ import { createHash, randomUUID } from 'node:crypto'
 import { access, lstat, mkdir, readFile, readlink, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 
+function source(runtime, operation, input) {
+  return runtime.extensions.call('hairness/sources', 'read', { source: 'git', operation, input })
+}
+
 function normalizeRemote(value = '') {
   return value.replace(/^ssh:\/\/git@/, 'git@').replace(/:22\//, ':').replace(/\/$/, '').replace(/\.git$/, '')
 }
@@ -54,8 +58,8 @@ function operationId(kind, value) {
 
 async function targetState(runtime, path, acceptedRemotes) {
   const canonical = await realpath(path)
-  const status = await runtime.sources.read('git', 'status', { path: canonical }).then((value) => value.data)
-  const identity = await runtime.sources.read('git', 'identity', { path: canonical }).then((value) => value.data).catch(() => null)
+  const status = await source(runtime, 'status', { path: canonical }).then((value) => value.data)
+  const identity = await source(runtime, 'identity', { path: canonical }).then((value) => value.data).catch(() => null)
   const remote = identity?.remote ?? null
   const remoteMatch = remote ? acceptedRemotes.map(normalizeRemote).includes(normalizeRemote(remote)) : false
   if (remote && !remoteMatch) throw new Error(`Git remote does not match the codebase contract: ${remote}`)
@@ -129,8 +133,8 @@ async function inspect({ root, input, runtime }) {
   if (!path) return { id, checkout, scope, contract, path: null, mounted: false, git: null, remoteMatch: false }
   try { await access(path) } catch { return { id, checkout, scope, contract, path, mounted: false, git: null, remoteMatch: false } }
   const [identity, status] = await Promise.all([
-    runtime.sources.read('git', 'identity', { path }).then((value) => value.data).catch(() => null),
-    runtime.sources.read('git', 'status', { path }).then((value) => value.data).catch(() => null),
+    source(runtime, 'identity', { path }).then((value) => value.data).catch(() => null),
+    source(runtime, 'status', { path }).then((value) => value.data).catch(() => null),
   ])
   const accepted = contract.repository.acceptedRemotes.map(normalizeRemote)
   const remoteMatch = Boolean(identity?.remote && accepted.includes(normalizeRemote(identity.remote)))
@@ -154,11 +158,12 @@ async function mapCodebase({ root, runtime, kind, id, focus, workload }) {
   const targetSet = { id: `targets-${planId}`, targets: baselines, digest: `sha256:${createHash('sha256').update(JSON.stringify(baselines)).digest('hex')}` }
   await runtime.contracts.validate('TargetSet', targetSet)
   const intent = { schemaVersion: 2, protocolVersion: '0.2', id: planId, summary: `Map ${kind} context.`, outcome: `A compact ${kind} artifact.`, targets: states.map((state) => state.path), limits: ['No target mutation.'] }
-  const route = { schemaVersion: 2, protocolVersion: '0.2', id: runId, kind: 'producer', requirement: 'required', resultSchema: 'ArtifactEnvelope', fanIn, workload }
+  const operation = { capability: 'hairness/codebase', id: 'map' }
+  const route = { schemaVersion: 2, protocolVersion: '0.2', id: runId, operation, kind: 'worker', profile: 'producer', requirement: 'required', resultSchema: 'ArtifactEnvelope', fanIn, workload }
   await runtime.plans.write({ schemaVersion: 2, protocolVersion: '0.2', id: planId, intent, routes: [route], fanIn: { id: fanIn, mode: 'mechanical' } })
   const artifactType = kind === 'map' ? 'codebase-map' : `${kind}-map`
   await runtime.runs.create({ id: runId, planId, assignment: {
-    schemaVersion: 2, protocolVersion: '0.2', id: `produce-${artifactId.replace('/', '-')}`, profile: 'producer',
+    schemaVersion: 2, protocolVersion: '0.2', id: `produce-${artifactId.replace('/', '-')}`, operation, profile: 'producer',
     goal: `Map ${kind}${id ? ` for ${id}` : ''}${focus ? `: ${focus}` : ''}.`, outcome: `Artifact ${artifactId} with precise references, proof, doubts, and limits.`,
     workload, budget: 1, inputs: [{ codebases: states }, { targetSet }, { artifactId, artifactType }], targets: states.map((state) => state.path),
     exclusions: ['filesystem mutation', 'Git mutation', 'raw source dumps', 'nested subagents'], allowedSources: ['git:status', 'filesystem:read'], requestedEffects: [], result: { schema: 'ArtifactEnvelope', disposition: 'artifact', artifactOwner: 'hairness/codebase', artifactType },
@@ -168,6 +173,54 @@ async function mapCodebase({ root, runtime, kind, id, focus, workload }) {
 }
 
 export const services = { inspect }
+
+async function discoverCodebase(root, contract) {
+  const candidates = [join(resolve(root, '..'), contract.id), ...(contract.discovery?.paths ?? []).map(resolve)]
+  for (const candidate of candidates) {
+    try { await lstat(join(candidate, '.git')); return candidate } catch {}
+  }
+  return null
+}
+
+async function onboardingCodebases(root, distribution, answers) {
+  const values = {}
+  for (const contract of distribution.codebases) {
+    const answer = answers[`codebase.${contract.id}`]
+    if (!answer || answer === 'later') continue
+    const path = answer === 'detect' ? await discoverCodebase(root, contract) : resolve(answer)
+    if (path) values[contract.id] = { path, requirement: contract.requirement, contract }
+  }
+  return values
+}
+
+export async function onboardingContributions({ root, phase, input, runtime }) {
+  const distribution = await runtime.distribution.read()
+  if (phase === 'questions') return {
+    questions: distribution.codebases.map((codebase) => ({
+      id: `codebase.${codebase.id}`,
+      question: `Where is ${codebase.displayName}?`,
+      allowCustom: true,
+      codebase: codebase.id,
+      requirement: codebase.requirement,
+      options: [{ value: 'detect', label: 'Detect locally' }, { value: 'later', label: 'Configure later' }],
+    })),
+  }
+  const codebases = await onboardingCodebases(root, distribution, input.answers)
+  if (phase === 'plan') return {
+    actions: Object.entries(codebases).map(([id, value]) => ({ type: 'mount-codebase', target: value.path, codebase: id })),
+    data: { codebases: Object.fromEntries(Object.entries(codebases).map(([id, value]) => [id, { path: value.path, requirement: value.requirement }])) },
+  }
+  if (phase !== 'apply') return {}
+  const mounts = {}
+  const limits = []
+  for (const [id, value] of Object.entries(codebases)) {
+    const state = await targetState(runtime, value.path, value.contract.repository.acceptedRemotes)
+    await placeMount(root, id, 'default', state.canonical)
+    mounts[id] = { default: { path: `./.overlay/codebases/${id}/default` } }
+    if (!state.remote) limits.push(`${id}-remote-pending`)
+  }
+  return { config: { codebases: { local: [], mounts } }, limits }
+}
 
 export async function attentionSignals({ root, runtime }) {
   const signals = []
