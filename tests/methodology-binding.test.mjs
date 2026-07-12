@@ -10,7 +10,7 @@ function stream() { let value = ''; return { write(chunk) { value += chunk }, re
 
 test('methodology output stays scratch until normalized into a semantic artifact', async () => {
   const binding = { id: 'fixture.method', providers: ['codex'], capabilities: ['mapping'], result: { schema: 'RunResult', disposition: 'scratch' } }
-  const manifest = { schemaVersion: 2, protocolVersion: '0.2', id: 'fixture/method', version: '0.2.0-alpha.0', module: './index.mjs', capabilities: [], commands: [], providerCommands: [], methodologyBindings: [binding] }
+  const manifest = { schemaVersion: 2, protocolVersion: '0.2', id: 'fixture/method', version: '0.2.0-alpha.0', summary: 'Fixture methodology.', category: 'cognition', tags: ['fixture'], maturity: 'experimental', readme: './README.md', module: './index.mjs', capabilities: [], commands: [], providerCommands: [], methodologyBindings: [binding] }
   await validateContract('ExtensionManifest', manifest)
 
   const root = await temporaryWorkspace()

@@ -48,7 +48,7 @@ flowchart LR
   update["Explicit update proposal"] --> generated
 ```
 
-A recipe declares every copied material. A generated distribution contains selected extensions and drivers only. A forge can retain dormant generic catalogue source, but only manifest-selected extensions execute.
+A recipe selects named material sets. Hairness resolves their declared dependency graph, rejects cycles and target conflicts, and copies the exact resulting entries. A generated distribution contains selected extensions and drivers only. A forge can retain dormant generic catalogue source, but only manifest-selected extensions execute.
 
 ## State
 
@@ -72,5 +72,7 @@ Git tracked
 ├── workspace and local-extension trust
 └── canonical-realpath locks
 ```
+
+Tracked `.hairness/` state belongs to the distribution. Ignored `.overlay/` state belongs to the local workspace. Personal preferences and trust live in `~/.hairness/`. None of these locations activates an extension by presence.
 
 No provider transcript or hidden reasoning crosses these boundaries.

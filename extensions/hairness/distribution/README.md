@@ -1,3 +1,33 @@
 # hairness/distribution
 
-Owns provenance inspection and conservative source-owned updates. It delegates file comparison and application to the bounded distribution engine and never automates Git.
+## Value and use cases
+
+Creates standalone source-owned distributions and plans conservative upstream updates.
+
+## Selection and setup
+
+Selected by every recipe. Provenance and selected materials are pinned in `hairness.lock.json`.
+
+## Capabilities and operations
+
+Owns distribution inspection, update checks, plans and typed update receipts.
+
+## Inputs, controls and results
+
+Updates accept an explicit source and scope and return a plan before any file mutation.
+
+## State and artifacts
+
+The lock is canonical provenance. Update plans and receipts are typed artifacts.
+
+## Effects and safety
+
+Diverged consumer source returns `review-required`. The extension never automates Git or publication.
+
+## Providers
+
+Projects `hairness-update`; creation remains available through the deterministic CLI.
+
+## Tests and maturity
+
+Official alpha. Tests cover payload boundaries, safe updates and divergence refusal.

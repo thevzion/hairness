@@ -4,14 +4,7 @@
   "id": "forge",
   "displayName": "Self-hosting forge",
   "role": "forge",
-  "materials": [
-    { "source": "bin", "target": "bin" },
-    { "source": "schemas", "target": "schemas" },
-    { "source": "src", "target": "src" },
-    { "source": "catalog", "target": "catalog" },
-    { "source": "docs", "target": "docs" },
-    { "source": "templates", "target": "templates" }
-  ],
+  "materialSets": ["forge"],
   "extensions": [
     "hairness/cockpit", "hairness/distribution", "hairness/work-controls", "hairness/understanding-controls",
     "hairness/ideation-controls", "hairness/presentation-controls", "hairness/constraints",
@@ -32,6 +25,6 @@
   "providers": ["codex", "claude"],
   "codebases": [],
   "templates": ["distribution-readme", "hairness-notice", "forge-status"],
-  "scripts": ["check-providers.mjs", "check.mjs", "conformance.mjs", "extension-ownership-gate.mjs", "run-tests.mjs", "check-commits.mjs", "check-pack.mjs", "impact-gate.mjs"],
+  "scripts": ["check-providers.mjs", "check.mjs", "conformance.mjs", "extension-ownership-gate.mjs", "run-tests.mjs", "check-commits.mjs", "check-pack.mjs", "generate-extension-catalog.mjs", "impact-gate.mjs"],
   "tests": ["smoke"]
 }

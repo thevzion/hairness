@@ -4,15 +4,7 @@
   "id": "standard",
   "displayName": "Standard cockpit",
   "role": "distribution",
-  "materials": [
-    { "source": "bin", "target": "bin" },
-    { "source": "schemas", "target": "schemas" },
-    { "source": "src/cli.mjs", "target": "src/cli.mjs" },
-    { "source": "src/prologue.mjs", "target": "src/prologue.mjs" },
-    { "source": "src/core", "target": "src/core" },
-    { "source": "src/distribution", "target": "src/distribution" },
-    { "source": "src/providers", "target": "src/providers" }
-  ],
+  "materialSets": ["runtime"],
   "extensions": [
     "hairness/cockpit",
     "hairness/distribution",

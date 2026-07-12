@@ -13,7 +13,8 @@ async function writeExtension(root, base, id, options = {}) {
   for (const command of commands) await writeFile(join(path, 'commands', `${command.namespace}.md`), `Run ${command.namespace}.\n`)
   const capabilityId = `${id.split('/')[0]}/${id.split('/')[1]}-fixture`
   await writeFile(join(path, 'capabilities/fixture.json'), JSON.stringify({ schemaVersion: 2, protocolVersion: '0.2', id: capabilityId, owner: id, version: '0.2.0-alpha.0', summary: `Fixture capability for ${id}.`, operations: [{ id: 'run', class: 'derive', summary: 'Run the fixture.', result: { schema: 'ContextPacket', disposition: 'response' }, sources: [], effects: [], routes: ['inline'], acceptsModifiers: [] }] }))
-  await writeFile(join(path, 'extension.json'), JSON.stringify({ schemaVersion: 2, protocolVersion: '0.2', id, version: '0.2.0-alpha.0', module: './index.mjs', capabilities: ['./capabilities/fixture.json'], dependencies: options.dependencies ?? [], services: options.services ?? [], commands, providerCommands: commands.map((command) => ({ id: `${id.replace('/', '.')}.${command.namespace}`, name: command.namespace, summary: `Run ${command.namespace}.`, kind: 'capability', classification: 'specialized', command: `hairness ${command.namespace}`, arguments: [], result: { schema: 'ContextPacket', disposition: 'response' }, operation: { capability: capabilityId, id: 'run' }, instructions: `./commands/${command.namespace}.md` })) }))
+  await writeFile(join(path, 'extension.json'), JSON.stringify({ schemaVersion: 2, protocolVersion: '0.2', id, version: '0.2.0-alpha.0', summary: `Fixture extension for ${id}.`, category: 'ecosystem', tags: ['fixture'], maturity: 'experimental', readme: './README.md', module: './index.mjs', capabilities: ['./capabilities/fixture.json'], dependencies: options.dependencies ?? [], services: options.services ?? [], commands, providerCommands: commands.map((command) => ({ id: `${id.replace('/', '.')}.${command.namespace}`, name: command.namespace, summary: `Run ${command.namespace}.`, kind: 'capability', classification: 'specialized', command: `hairness ${command.namespace}`, arguments: [], result: { schema: 'ContextPacket', disposition: 'response' }, operation: { capability: capabilityId, id: 'run' }, instructions: `./commands/${command.namespace}.md` })) }))
+  await writeFile(join(path, 'README.md'), `# ${id}\n`)
   await writeFile(join(path, 'index.mjs'), options.module ?? 'export const services = {}\n')
 }
 
@@ -72,6 +73,18 @@ test('extension link and unlink preserve the external source', async () => {
   await extensionCommand(root, 'extension', 'unlink', undefined, [], { local: 'fixture/local', checkpoint: removal.checkpointId })
   await assert.rejects(access(linked))
   await access(join(source, 'extensions/fixture/local/extension.json'))
+})
+
+test('local extension scaffold is disabled, documented and explicit', async () => {
+  const root = await fixture()
+  const created = await extensionCommand(root, 'extension', 'init', undefined, [], { local: 'fixture/scaffold' })
+  assert.equal(created.status, 'disabled')
+  const manifest = JSON.parse(await readFile(join(root, '.overlay/extensions/fixture/scaffold/extension.json'), 'utf8'))
+  assert.equal(manifest.maturity, 'experimental')
+  assert.equal(manifest.readme, './README.md')
+  assert.match(await readFile(join(root, '.overlay/extensions/fixture/scaffold/README.md'), 'utf8'), /## Effects and safety/)
+  const config = JSON.parse(await readFile(join(root, '.overlay/config.json'), 'utf8'))
+  assert.equal(config.extensions.local.find((entry) => entry.id === 'fixture/scaffold').enabled, false)
 })
 
 test('legacy local extension state is ignored and reported without blocking active owners', async () => {
