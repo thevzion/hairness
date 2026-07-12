@@ -4,31 +4,31 @@ Current target: `0.2.0-alpha.0`
 
 ## Now
 
-- `agentic-foundation-reset`
-  - Outcome: Capability → Operation → Route → Result is the single executable grammar and every behavior has an extension owner.
+- `workspace-catalog-contract`
+  - Outcome: Extensions are documented, discoverable and copied through exact material graphs while local state remains explicit.
   - State: active
-  - Gate: Clean-break schemas, 24-command parity, selected-only distributions, Node 22/24, package and native provider smokes pass.
-  - Evidence: CI receipts, generated distribution checks, provider build manifest and draft PR.
+  - Gate: Extension catalogue, local scaffold, material closure and workspace boundary tests pass.
+  - Evidence: Generated catalogue, distribution receipts and stacked draft PR.
 
 ## Next
 
-- `npm-alpha`
-  - Outcome: The verified MIT alpha is available from npm with public provenance.
+- `invocation-engine`
+  - Outcome: Natural and direct requests resolve to one traceable invocation contract.
   - State: planned
-  - Gate: Public CI is green and the publication checkpoint is approved.
-  - Evidence: Package provenance and clean install receipts.
+  - Gate: Preview, gaps, `--auto`, receipts and recovery tests pass.
+  - Evidence: Invocation event and behavior receipts.
 
-- `alpha-hardening`
-  - Outcome: Provider behavior, managed outputs and recovery routes are release-grade.
+- `provider-intent-controls`
+  - Outcome: Codex and Claude use compact instructions and the same deterministic invocation path.
   - State: planned
-  - Gate: Milestone behavior suites and native provider smokes pass.
-  - Evidence: Content-addressed eval attestations and CI receipts.
+  - Gate: Provider parity, budgets and native smokes pass.
+  - Evidence: Content-addressed behavior attestations.
 
-- `execution-adapters`
-  - Outcome: External execution loops can implement Hairness operations without losing their native runtime.
+- `initiative-delivery-controls`
+  - Outcome: The forge plans and ships its own evolution through typed local artifacts and checkpoints.
   - State: planned
-  - Gate: One adapter proves authority, typed result, recovery and fan-in without runtime capture.
-  - Evidence: Adapter conformance suite and provider-native smoke.
+  - Gate: Roadmap, delivery and release-candidate dogfood passes.
+  - Evidence: Initiative, delivery and launch-kit receipts.
 
 ## Blocked
 

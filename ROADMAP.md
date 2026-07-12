@@ -10,6 +10,10 @@
 - Project exactly 24 standard commands into repo-local Codex and Claude surfaces.
 - Preserve semantic work, artifacts and session continuity without transcripts.
 - Qualify onboarding, language, commands, workers, authority and fan-in with replayable tests.
+- Resolve recipes through exact material graphs and make extension authoring locally testable.
+- Add one deterministic Invocation Engine for natural and direct provider commands.
+- Persist invocation trajectory and inherited controls without transcripts.
+- Dogfood initiative, delivery and release-candidate extensions in the forge.
 
 ## npm alpha
 
@@ -23,6 +27,12 @@
 - Add richer WorkPlan routing and partial-effect receipts.
 - Harden source freshness, identity rendering and failure budgets.
 - Prove company-owned and domain-specific forges outside the generic package.
+
+## Community catalogue and packs
+
+- Index community-owned extensions by immutable source, commit and digest.
+- Add reusable pack manifests only after real cross-extension compositions repeat.
+- Keep marketplace discovery separate from trust, authority and source ownership.
 
 ## Execution adapters
 

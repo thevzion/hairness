@@ -89,7 +89,7 @@ Locks MUST use canonical target realpaths and be acquired atomically. A dirty ta
 
 ## 9. Extension contract
 
-An extension MUST contain a validated `extension.json`, its declared capability files, and only its owned implementation, schemas, instructions, contributions, and tests. Capability and instruction paths MUST remain inside the extension.
+An extension MUST contain a validated `extension.json`, its declared README and capability files, and only its owned implementation, schemas, instructions, contributions, and tests. It MUST declare a summary, discovery category, tags, and maturity. Category metadata MUST NOT change the stable `<owner>/<name>` ID or physical path. Declared paths MUST remain inside the extension.
 
 Cross-extension service calls MUST declare dependencies. Cycles, duplicate command owners, duplicate operation IDs, duplicate artifact types, missing exports, and unselected modifiers MUST block doctor and build.
 
@@ -137,7 +137,7 @@ Adapters MUST translate only host syntax. Providers retain model execution, nati
 
 ## 14. Distributions and lifecycle
 
-A DistributionRecipe MUST declare its role, materials, active extensions, capabilities, source drivers, source requirements, providers, codebases, templates, scripts, and tests. Create MUST be recipe-driven and MUST NOT branch on private owners.
+A MaterialSet MUST declare an owner, dependency sets, and exact source-to-target entries. A DistributionRecipe MUST declare its role, material sets, active extensions, capabilities, source drivers, source requirements, providers, codebases, templates, scripts, and tests. Create MUST resolve a deterministic MaterialGraph from declared dependencies, MUST reject cycles and conflicting targets, and MUST NOT infer dependencies by parsing source code or branch on private owners.
 
 `minimal` MUST contain only kernel, cockpit, and distribution lifecycle. `standard` MAY add team controls and selected Git support. `forge` MAY add maintainer behavior and a dormant generic catalogue.
 
@@ -151,7 +151,7 @@ Update MUST be explicit and conservative. Intact owned material MAY update mecha
 
 A CodebaseContract MUST identify one repository, accepted remotes, requirement, and tests. A mount MUST identify a named local checkout and capture canonical realpath, remote, branch, HEAD, and dirty baseline. Mounting MUST NOT grant authority or mutate the checkout.
 
-`.overlay/` MUST remain unversioned and MAY hold local config, mounts, runs, artifacts, scratch, local extensions, local projections, and owner-scoped state. `~/.hairness/` MAY hold preferences, trust, and global realpath locks.
+`.hairness/` MAY contain only tracked distribution-owned policies and explicitly published artifacts. `.overlay/` MUST remain unversioned and MAY hold local config, mounts, runs, artifacts, scratch, local extensions, local projections, and owner-scoped state. `~/.hairness/` MAY hold preferences, trust, and global realpath locks. Presence in any state directory MUST NOT activate an extension or grant authority.
 
 Hairness MUST NOT store secrets, credentials, auth artifacts, customer data, private production data, transcripts, or hidden reasoning.
 

@@ -1,9 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { access, mkdtemp, readFile } from 'node:fs/promises'
+import { access, mkdtemp, readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { answerCreate, applyCreate, planCreate, startCreate } from '../src/bootstrap/create.mjs'
+import { answerCreate, applyCreate, planCreate, resolveMaterialGraph, startCreate } from '../src/bootstrap/create.mjs'
 import { buildProviders } from '../src/providers/compiler.mjs'
 
 test('create collects one gap at a time and materializes standalone sources', async () => {
@@ -35,6 +35,16 @@ test('create collects one gap at a time and materializes standalone sources', as
   await access(join(target, '.agents/skills/hairness-work/SKILL.md'))
   await assert.rejects(access(join(target, '.git')))
   assert.doesNotMatch(await readFile(join(target, 'src/cli.mjs'), 'utf8'), /Users\/alexisrobert\/Projects\/hairness/)
+  assert.deepEqual(await readdir(join(target, 'schemas')).then((names) => names.sort()), ['capability.schema.json', 'distribution.schema.json', 'extension.schema.json', 'protocol.schema.json'])
+  const lock = JSON.parse(await readFile(join(target, 'hairness.lock.json'), 'utf8'))
+  assert.ok(lock.materials.some((material) => material.scope === 'material-set:runtime'))
+})
+
+test('material graph resolves declared set dependencies without duplicate targets', async () => {
+  const graph = await resolveMaterialGraph({ materialSets: ['forge'] })
+  assert.deepEqual(graph.sets, ['runtime', 'forge'])
+  assert.equal(new Set(graph.entries.map((entry) => entry.target)).size, graph.entries.length)
+  assert.ok(graph.entries.some((entry) => entry.target === 'schemas/distribution-lock.schema.json'))
 })
 
 test('minimal materializes only the core and cockpit without dormant catalogue behavior', async () => {

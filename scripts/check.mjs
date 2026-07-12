@@ -36,14 +36,20 @@ for (const extension of manifest.extensions) {
 const allFiles = await files(root)
 if (manifest.role === 'forge') {
   const extensionCatalog = await readFile(join(root, 'docs/extensions/catalog.md'), 'utf8')
+  const { renderExtensionCatalog } = await import('./generate-extension-catalog.mjs')
+  assert.equal(extensionCatalog, await renderExtensionCatalog(root), 'extension catalogue is stale')
   for (const path of allFiles.filter((path) => path.endsWith('/extension.json'))) {
     const extension = JSON.parse(await readFile(path, 'utf8'))
     assert.ok(extensionCatalog.includes(`\`${extension.id}\``), `extension catalogue misses ${extension.id}`)
   }
 }
 for (const path of allFiles.filter((path) => path.endsWith('/extension.json'))) {
-  await validateContract('ExtensionManifest', JSON.parse(await readFile(path, 'utf8')))
+  const extension = await validateContract('ExtensionManifest', JSON.parse(await readFile(path, 'utf8')))
+  const rootPath = join(path, '..')
+  const readme = await readFile(join(rootPath, extension.readme), 'utf8')
+  for (const heading of ['Value and use cases', 'Selection and setup', 'Capabilities and operations', 'Inputs, controls and results', 'State and artifacts', 'Effects and safety', 'Providers', 'Tests and maturity']) assert.ok(readme.includes(`## ${heading}`), `${extension.id} README misses ${heading}`)
 }
+for (const name of await readdir(join(root, 'catalog', 'materials'))) await validateContract('MaterialSet', JSON.parse(await readFile(join(root, 'catalog', 'materials', name), 'utf8')))
 const recipes = (await readdir(join(root, 'catalog')).catch((error) => error.code === 'ENOENT' ? [] : Promise.reject(error))).filter((name) => name.endsWith('.json')).map((name) => name.slice(0, -5))
 for (const name of recipes) {
   const recipe = JSON.parse(await readFile(join(root, 'catalog', `${name}.json`), 'utf8'))

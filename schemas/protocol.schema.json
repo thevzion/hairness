@@ -466,17 +466,17 @@
         }
       }
     },
-    "DistributionRecipe": {
+    "MaterialSet": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "protocolVersion", "id", "displayName", "role", "materials", "extensions", "capabilities", "sourceDrivers", "sources", "providers", "codebases", "templates", "scripts", "tests"],
+      "required": ["schemaVersion", "protocolVersion", "id", "owner", "requires", "entries"],
       "properties": {
         "schemaVersion": { "const": 2 },
         "protocolVersion": { "const": "0.2" },
         "id": { "$ref": "#/$defs/Slug" },
-        "displayName": { "$ref": "#/$defs/NonEmpty" },
-        "role": { "enum": ["distribution", "forge"] },
-        "materials": {
+        "owner": { "$ref": "#/$defs/ExtensionId" },
+        "requires": { "type": "array", "items": { "$ref": "#/$defs/Slug" }, "uniqueItems": true },
+        "entries": {
           "type": "array",
           "items": {
             "type": "object",
@@ -487,7 +487,46 @@
               "target": { "$ref": "#/$defs/NonEmpty" }
             }
           }
-        },
+        }
+      }
+    },
+    "MaterialGraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "sets", "entries"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "sets": { "type": "array", "items": { "$ref": "#/$defs/Slug" }, "uniqueItems": true },
+        "entries": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "ResolvedMaterial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "owner", "path", "sourcePath", "version", "baseDigest", "policy", "scope"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "owner": { "$ref": "#/$defs/ExtensionId" },
+        "path": { "$ref": "#/$defs/NonEmpty" },
+        "sourcePath": { "$ref": "#/$defs/NonEmpty" },
+        "version": { "$ref": "#/$defs/NonEmpty" },
+        "baseDigest": { "$ref": "#/$defs/NonEmpty" },
+        "policy": { "enum": ["vendored", "managed", "consumer"] },
+        "scope": { "$ref": "#/$defs/NonEmpty" }
+      }
+    },
+    "DistributionRecipe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "id", "displayName", "role", "materialSets", "extensions", "capabilities", "sourceDrivers", "sources", "providers", "codebases", "templates", "scripts", "tests"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "id": { "$ref": "#/$defs/Slug" },
+        "displayName": { "$ref": "#/$defs/NonEmpty" },
+        "role": { "enum": ["distribution", "forge"] },
+        "materialSets": { "type": "array", "items": { "$ref": "#/$defs/Slug" }, "minItems": 1, "uniqueItems": true },
         "extensions": { "type": "array", "items": { "$ref": "#/$defs/ExtensionId" }, "uniqueItems": true },
         "catalogExtensions": { "type": "array", "items": { "$ref": "#/$defs/ExtensionId" }, "uniqueItems": true },
         "capabilities": { "type": "array", "items": { "$ref": "#/$defs/ExtensionId" }, "uniqueItems": true },

@@ -1,19 +1,19 @@
-# Generic extension catalogue
+# Extension catalog
 
-This catalogue is verified against extension manifests. Physical presence in the forge never activates an extension.
+This matrix is generated from extension manifests. Categories organize discovery; they never change extension IDs or source paths.
 
-| Extension | Capability | Minimal | Standard | Forge |
-| --- | --- | ---: | ---: | ---: |
-| `hairness/cockpit` | opening, help, onboarding and wake-up rendering | yes | yes | yes |
-| `hairness/distribution` | provenance and conservative updates | yes | yes | yes |
-| `hairness/work-controls` | persistent work, recap, plan, act and execute | no | yes | yes |
-| `hairness/understanding-controls` | map, explain and compare | no | yes | yes |
-| `hairness/ideation-controls` | ideate, propose and creative strategy | no | yes | yes |
-| `hairness/presentation-controls` | bounded presentation policies and views | no | yes | yes |
-| `hairness/constraints` | inherited effect policies | no | yes | yes |
-| `hairness/session-intelligence` | local continuity and semantic handoff | no | yes | yes |
-| `hairness/codebase` | repository identity, mounts and bounded maps | no | yes | yes |
-| `hairness/sources` | selected read-only source drivers and evidence | no | Git only | full generic catalogue |
-| `hairness/maintainer` | forge status, impact, tests and evals | no | no | yes |
+| Extension | Category | Summary | Maturity | Minimal | Standard | Forge |
+|---|---|---|---|:---:|:---:|:---:|
+| `hairness/ideation-controls` | cognition | Divergent, lateral and convergent ideation controls. | official | no | yes | yes |
+| `hairness/presentation-controls` | cognition | Bounded policies for rendering the smallest useful views. | official | no | yes | yes |
+| `hairness/understanding-controls` | cognition | Composable map, explain and compare operations. | official | no | yes | yes |
+| `hairness/session-intelligence` | collaboration | Local session identity, digests and portable handoffs. | official | no | yes | yes |
+| `hairness/work-controls` | collaboration | Persistent missions, segments, frames, recaps and plans. | official | no | yes | yes |
+| `hairness/distribution` | distribution | Source-owned distribution creation and safe material updates. | official | yes | yes | yes |
+| `hairness/codebase` | ecosystem | Codebase contracts, mounts, inspection and typed maps. | official | no | yes | yes |
+| `hairness/sources` | ecosystem | Read-only source drivers, evidence, redaction and freshness. | official | no | yes | yes |
+| `hairness/constraints` | execution-safety | Inherited constraints that can tighten but never grant authority. | official | no | yes | yes |
+| `hairness/maintainer` | forge | Forge maintenance, impact analysis and replayable qualification. | official | no | no | yes |
+| `hairness/cockpit` | interaction | Main-session routing, help, onboarding and compact attention. | official | yes | yes | yes |
 
-The generic source driver catalogue currently contains Git, Jira, GitLab, and AWS. Standard selects Git only; generation removes every unselected driver.
+Official means maintained by the Hairness project. Verified means protocol conformance for a pinned version, not automatic trust or authority.

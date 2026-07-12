@@ -1,0 +1,17 @@
+name: Protocol RFC
+description: Propose a change to shared Hairness grammar or guarantees.
+title: "rfc: "
+labels: ["kind:rfc", "area:protocol"]
+body:
+  - type: textarea
+    id: problem
+    attributes: { label: Protocol problem }
+    validations: { required: true }
+  - type: textarea
+    id: proposal
+    attributes: { label: Proposed contract and invariants }
+    validations: { required: true }
+  - type: textarea
+    id: compatibility
+    attributes: { label: Compatibility, migration and rejected alternatives }
+    validations: { required: true }

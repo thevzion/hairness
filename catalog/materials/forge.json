@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "forge",
+  "owner": "hairness/distribution",
+  "requires": ["runtime"],
+  "entries": [
+    { "source": "schemas/distribution-lock.schema.json", "target": "schemas/distribution-lock.schema.json" },
+    { "source": "src/bootstrap", "target": "src/bootstrap" },
+    { "source": "catalog", "target": "catalog" },
+    { "source": "docs", "target": "docs" },
+    { "source": "templates", "target": "templates" }
+  ]
+}

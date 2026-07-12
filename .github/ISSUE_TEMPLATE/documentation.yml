@@ -1,0 +1,13 @@
+name: Documentation gap
+description: Report unclear, stale or missing public documentation.
+title: "docs: "
+labels: ["kind:docs"]
+body:
+  - type: textarea
+    id: gap
+    attributes: { label: What was unclear or missing? }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: What should a reader be able to do? }
+    validations: { required: true }

@@ -31,6 +31,7 @@
     "schemas/",
     "scripts/check-commits.mjs",
     "scripts/check-pack.mjs",
+    "scripts/generate-extension-catalog.mjs",
     "scripts/check-providers.mjs",
     "scripts/check.mjs",
     "scripts/conformance.mjs",
@@ -53,7 +54,9 @@
     "check:impact": "node scripts/impact-gate.mjs",
     "check:providers": "node scripts/check-providers.mjs",
     "check:commits": "node scripts/check-commits.mjs",
-    "check:ownership": "node scripts/extension-ownership-gate.mjs"
+    "check:ownership": "node scripts/extension-ownership-gate.mjs",
+    "catalog": "node scripts/generate-extension-catalog.mjs",
+    "check:catalog": "node scripts/generate-extension-catalog.mjs --check"
   },
   "dependencies": {
     "ajv": "8.20.0"

@@ -116,6 +116,38 @@ async function availableRecipes() {
   return values.sort((left, right) => left.id.localeCompare(right.id))
 }
 
+export async function resolveMaterialGraph(selectedRecipe) {
+  const directory = join(sourceRoot, 'catalog', 'materials')
+  const available = new Map()
+  for (const name of await readdir(directory).catch(() => [])) {
+    if (!name.endsWith('.json')) continue
+    const value = await validateContract('MaterialSet', await readJson(join(directory, name)))
+    available.set(value.id, value)
+  }
+  const sets = []
+  const entries = new Map()
+  const visiting = new Set()
+  const visited = new Set()
+  function visit(id) {
+    if (visited.has(id)) return
+    if (visiting.has(id)) throw new HairnessError('material_set_cycle', `Material set cycle at ${id}.`, { exitCode: 2 })
+    const value = available.get(id)
+    if (!value) throw new HairnessError('material_set_missing', `Unknown material set: ${id}.`, { exitCode: 2 })
+    visiting.add(id)
+    for (const dependency of value.requires) visit(dependency)
+    visiting.delete(id)
+    visited.add(id)
+    sets.push(id)
+    for (const entry of value.entries) {
+      const previous = entries.get(entry.target)
+      if (previous && previous.source !== entry.source) throw new HairnessError('material_target_conflict', `${entry.target} is owned by two material sources.`, { exitCode: 2 })
+      entries.set(entry.target, { ...entry, owner: value.owner, set: id })
+    }
+  }
+  for (const id of selectedRecipe.materialSets) visit(id)
+  return validateContract('MaterialGraph', { schemaVersion: 2, protocolVersion: '0.2', sets, entries: [...entries.values()] })
+}
+
 async function recipe(state) {
   const value = (await availableRecipes()).find((candidate) => candidate.id === state.answers.starter)
   if (!value) throw new HairnessError('starter_unavailable', `Starter is unavailable from configured catalog roots: ${state.answers.starter}`, { exitCode: 4 })
@@ -184,8 +216,8 @@ function materialPath(path) {
   return target
 }
 
-async function copyBase(target, selectedRecipe) {
-  for (const material of selectedRecipe.materials) {
+async function copyBase(target, selectedRecipe, graph) {
+  for (const material of graph.entries) {
     const destination = resolve(target, material.target)
     if (relative(target, destination).startsWith('..')) throw new HairnessError('recipe_target_escape', `Recipe target escapes the distribution: ${material.target}.`, { exitCode: 2 })
     await mkdir(dirname(destination), { recursive: true })
@@ -232,9 +264,9 @@ function generatedStatus(state) {
   return `# ${state.answers.displayName} Status\n\nCurrent target: \`0.2.0-alpha.0\`\n\n## Now\n\nNo active chantier.\n\n## Next\n\n- \`onboard-distribution\`\n  - Outcome: The distribution is trusted, mounted and verified by its selected providers.\n  - State: planned\n  - Gate: Onboarding and provider doctors pass.\n  - Evidence: Local onboarding and SessionStart receipts.\n\n## Blocked\n\n- None.\n\n## Release gates\n\n- Distribution checks pass on Node.js 22 and 24.\n\n## References\n\n- [Roadmap](ROADMAP.md)\n- [Documentation](docs/README.md)\n`
 }
 
-async function distributionLock(state, selectedRecipe, extensions) {
+async function distributionLock(state, selectedRecipe, extensions, graph) {
   const roots = [
-    ...selectedRecipe.materials.map((material) => ({ path: material.target, owner: 'hairness/distribution', scope: 'core' })),
+    ...graph.entries.map((material) => ({ path: material.target, owner: material.owner, scope: `material-set:${material.set}` })),
     ...selectedRecipe.scripts.map((name) => ({ path: `scripts/${name}`, owner: 'hairness/distribution', scope: 'core' })),
     ...extensions.map((id) => ({ path: `extensions/${id}`, owner: id, scope: `extension:${id}` })),
   ]
@@ -256,9 +288,10 @@ export async function applyCreate(id, checkpointId, options = {}) {
   if (checkpointId !== plan.checkpointId) throw new HairnessError('checkpoint_mismatch', 'Create checkpoint does not match the current plan.', { exitCode: 2 })
   const state = await loadState(id)
   const selectedRecipe = await recipe(state)
+  const graph = await resolveMaterialGraph(selectedRecipe)
   await assertEmptyTarget(state.target)
   await mkdir(state.target, { recursive: true })
-  await copyBase(state.target, selectedRecipe)
+  await copyBase(state.target, selectedRecipe, graph)
   const activeExtensions = plan.extensions
   const materializedExtensions = [...new Set([...activeExtensions, ...(selectedRecipe.catalogExtensions ?? [])])]
   await copyExtensions(state.target, materializedExtensions)
@@ -297,7 +330,7 @@ export async function applyCreate(id, checkpointId, options = {}) {
   await writeFile(join(state.target, 'README.md'), generatedReadme(state, selectedRecipe))
   if (state.role === 'forge') await writeFile(join(state.target, 'STATUS.md'), generatedStatus(state))
   await writeFile(join(state.target, '.gitignore'), '.overlay/\nnode_modules/\ncoverage/\n.DS_Store\n*.log\n.claude/settings.local.json\n')
-  await writeJsonAtomic(join(state.target, 'hairness.lock.json'), await distributionLock(state, selectedRecipe, materializedExtensions))
+  await writeJsonAtomic(join(state.target, 'hairness.lock.json'), await distributionLock(state, selectedRecipe, materializedExtensions, graph))
 
   if (options.install !== false) await exec('npm', ['install'], { cwd: state.target, encoding: 'utf8' })
   if (options.git !== false) await exec('git', ['init', '-b', 'main'], { cwd: state.target, encoding: 'utf8' })

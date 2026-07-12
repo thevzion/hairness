@@ -1,0 +1,21 @@
+name: Extension proposal
+description: Propose one reusable Hairness capability.
+title: "extension: "
+labels: ["kind:proposal", "area:extension"]
+body:
+  - type: textarea
+    id: need
+    attributes: { label: Repeated need, description: What real user problem repeats? }
+    validations: { required: true }
+  - type: textarea
+    id: contract
+    attributes: { label: Proposed contract, description: Human commands, operations, inputs, sources, results and artifacts. }
+    validations: { required: true }
+  - type: textarea
+    id: effects
+    attributes: { label: Effects and limits, description: Authority, targets, exclusions and known uncertainty. }
+    validations: { required: true }
+  - type: textarea
+    id: proof
+    attributes: { label: Evidence, description: Local prototype, receipts or behavioral tests. }
+    validations: { required: true }
