@@ -1,7 +1,7 @@
 {
   "name": "@hairness/hairness",
   "version": "0.2.0-alpha.0",
-  "description": "A source-owned, provider-native foundation for versioned agentic assets.",
+  "description": "The intent control layer for native AI agents and source-owned agentic assets.",
   "private": false,
   "license": "MIT",
   "repository": {
@@ -26,7 +26,11 @@
   "files": [
     "bin/",
     "catalog/",
+    "docs/compatibility.md",
     "docs/extensions/catalog.md",
+    "docs/known-limitations.md",
+    "docs/releases/0.2.0-alpha.0.md",
+    "docs/releasing.md",
     "extensions/hairness/",
     "schemas/",
     "scripts/check-commits.mjs",
