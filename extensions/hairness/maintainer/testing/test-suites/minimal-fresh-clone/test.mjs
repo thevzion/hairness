@@ -1,0 +1,2 @@
+import { forgeActor, onboard, ok } from '../_shared.mjs'
+export default { id: 'minimal-fresh-clone', actor: forgeActor, async test({ command, checks }) { await onboard(command); const extensions = await command(['extension', 'list']); ok(checks, 'catalog-not-auto-active', extensions.extensions.every((item) => item.enabled || item.source === 'shared')); const opening = await command(['session', 'opening']); ok(checks, 'operational-opening', opening.byteSize < 4096) } }

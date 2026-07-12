@@ -1,0 +1,19 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/constraints",
+  "version": "0.2.0-alpha.0",
+  "module": "./index.mjs",
+  "dependencies": ["hairness/workframes"],
+  "contributes": ["authority-policy"],
+  "services": ["effective"],
+  "commands": [{ "namespace": "constraint", "actions": ["show", "set", "clear"] }],
+  "providerCommands": [
+    { "id": "hairness.constraint", "name": "hairness-constraint", "summary": "Inspect or change inherited session, segment and frame constraints.", "kind": "capability", "classification": "specialized", "command": "hairness constraint show", "arguments": [{ "name": "action", "required": false }], "result": { "schema": "Boundary", "disposition": "run-only" }, "capabilities": ["authority"], "instructions": "./commands/constraints.md" },
+    { "id": "hairness.constraint-readonly", "name": "hairness-constraint-readonly", "summary": "Make the active scope read-only.", "kind": "preset", "classification": "specialized", "command": "hairness constraint set readonly", "arguments": [{ "name": "scope", "required": false }], "result": { "schema": "Boundary", "disposition": "run-only" }, "capabilities": ["authority"], "instructions": "./commands/constraints.md", "fixed": { "constraint": "readonly" } },
+    { "id": "hairness.constraint-no-git", "name": "hairness-constraint-no-git", "summary": "Forbid Git mutations in the active scope.", "kind": "preset", "classification": "specialized", "command": "hairness constraint set no-git", "arguments": [{ "name": "scope", "required": false }], "result": { "schema": "Boundary", "disposition": "run-only" }, "capabilities": ["authority"], "instructions": "./commands/constraints.md", "fixed": { "constraint": "no-git" } },
+    { "id": "hairness.constraint-no-external", "name": "hairness-constraint-no-external", "summary": "Forbid external effects in the active scope.", "kind": "preset", "classification": "specialized", "command": "hairness constraint set no-external", "arguments": [{ "name": "scope", "required": false }], "result": { "schema": "Boundary", "disposition": "run-only" }, "capabilities": ["authority"], "instructions": "./commands/constraints.md", "fixed": { "constraint": "no-external" } },
+    { "id": "hairness.constraint-clear", "name": "hairness-constraint-clear", "summary": "Explicitly clear one constraint at its owning scope.", "kind": "preset", "classification": "specialized", "command": "hairness constraint clear", "arguments": [{ "name": "constraint", "required": true }, { "name": "scope", "required": false }], "result": { "schema": "Boundary", "disposition": "run-only" }, "capabilities": ["authority"], "instructions": "./commands/constraints.md" }
+  ]
+}

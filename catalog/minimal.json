@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "minimal",
+  "displayName": "Minimal cockpit",
+  "extensions": ["hairness/cockpit", "hairness/distribution"],
+  "sources": [],
+  "providers": ["codex", "claude"],
+  "codebases": []
+}

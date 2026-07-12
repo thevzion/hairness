@@ -1,0 +1,16 @@
+# Artifacts
+
+Artifacts preserve durable orientation produced by runs. Each artifact has one active extension owner, a typed payload, deterministic rendering, revision history, annotations, labels, signals, relations, and a freshness policy.
+
+Artifacts do not replace live proof. A ticket map can orient an implementation, but Hairness revalidates the ticket and codebase state before granting executor authority.
+
+Scratch remains untyped and never enters context automatically.
+
+```bash
+hairness artifact list --owner hairness/workframes
+hairness artifact list --label work
+hairness artifact related work/composable-forge-recap
+hairness artifact graph work/composable-forge-recap
+```
+
+`artifact.json` is canonical. Generated Markdown carries Hairness frontmatter and must not be edited directly.

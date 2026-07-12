@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["segmentId", "goal", "steps", "validation", "constraints"],
+  "properties": {
+    "segmentId": { "type": "string", "minLength": 1 },
+    "goal": { "type": "string", "minLength": 1 },
+    "steps": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "validation": { "type": "array", "items": { "type": "string" } },
+    "constraints": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+  }
+}

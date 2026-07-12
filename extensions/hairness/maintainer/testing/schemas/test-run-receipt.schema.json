@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "protocolVersion", "attemptId", "suite", "status", "measurements", "checks", "evidence", "limits", "finishedAt"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "protocolVersion": { "const": "0.2" },
+    "attemptId": { "type": "string" },
+    "suite": { "type": "string" },
+    "status": { "enum": ["succeeded", "failed"] },
+    "measurements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "durationMs", "exitCode", "outputBytes", "assertions"],
+        "properties": {
+          "command": { "type": "string" },
+          "durationMs": { "type": "number", "minimum": 0 },
+          "exitCode": { "anyOf": [{ "type": "integer" }, { "type": "string" }] },
+          "outputBytes": { "type": "integer", "minimum": 0 },
+          "assertions": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "checks": { "type": "array", "items": { "type": "object" } },
+    "evidence": { "type": "array", "items": { "type": "string" } },
+    "limits": { "type": "array", "items": { "type": "string" } },
+    "finishedAt": { "type": "string" }
+  }
+}

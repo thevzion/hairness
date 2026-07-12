@@ -1,0 +1,17 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/git",
+  "version": "0.2.0-alpha.0",
+  "module": "./index.mjs",
+  "contributes": ["session-opening"],
+  "dependencies": [],
+  "commands": [],
+  "providerCommands": [],
+  "sources": [{ "id": "git", "transport": "git", "operations": [
+    { "id": "identity", "access": "read", "summary": "Read repository identity and accepted remote match." },
+    { "id": "status", "access": "read", "summary": "Read branch, upstream, divergence, and dirty paths." },
+    { "id": "overlap", "access": "read", "summary": "Compare dirty paths with bounded targets." }
+  ] }]
+}

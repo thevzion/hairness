@@ -1,0 +1,16 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/aws",
+  "version": "0.2.0-alpha.0",
+  "module": "./index.mjs",
+  "dependencies": ["hairness/source-controls"],
+  "commands": [],
+  "providerCommands": [],
+  "sources": [{ "id": "aws", "transport": "aws", "operations": [
+    { "id": "version", "access": "read", "summary": "Read the local AWS CLI version." },
+    { "id": "profiles", "access": "read", "summary": "List configured AWS profiles without credentials." },
+    { "id": "identity", "access": "read", "summary": "Read the active STS caller identity." }
+  ] }]
+}

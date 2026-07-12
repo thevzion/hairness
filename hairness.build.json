@@ -1,0 +1,611 @@
+{
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "implementationVersion": "0.2.0-alpha.0",
+  "sourceDigest": "sha256:f566545b2eaed9a6dbbf9a2f8a8a12130ea3e8c5ae1d627101ce4967496130a9",
+  "composition": "hairness",
+  "role": "forge",
+  "local": false,
+  "providers": [
+    "codex",
+    "claude"
+  ],
+  "extensions": [
+    "hairness/cockpit",
+    "hairness/distribution",
+    "hairness/workframes",
+    "hairness/presentation-controls",
+    "hairness/constraints",
+    "hairness/session-intelligence",
+    "hairness/maintainer",
+    "hairness/codebase",
+    "hairness/source-controls",
+    "hairness/git"
+  ],
+  "commands": [
+    {
+      "id": "hairness.root",
+      "name": "hairness",
+      "owner": "hairness/cockpit"
+    },
+    {
+      "id": "hairness.help",
+      "name": "hairness-help",
+      "owner": "hairness/cockpit"
+    },
+    {
+      "id": "hairness.onboarding",
+      "name": "hairness-onboarding",
+      "owner": "hairness/cockpit"
+    },
+    {
+      "id": "hairness.wake-up",
+      "name": "hairness-wake-up",
+      "owner": "hairness/cockpit"
+    },
+    {
+      "id": "hairness.update",
+      "name": "hairness-update",
+      "owner": "hairness/distribution"
+    },
+    {
+      "id": "hairness.workframes",
+      "name": "hairness-workframes",
+      "owner": "hairness/workframes"
+    },
+    {
+      "id": "hairness.work-method",
+      "name": "hairness-work-method",
+      "owner": "hairness/workframes"
+    },
+    {
+      "id": "hairness.work-discuss",
+      "name": "hairness-work-discuss",
+      "owner": "hairness/workframes"
+    },
+    {
+      "id": "hairness.work-new-frame",
+      "name": "hairness-work-new-frame",
+      "owner": "hairness/workframes"
+    },
+    {
+      "id": "hairness.work-map",
+      "name": "hairness-work-map",
+      "owner": "hairness/workframes"
+    },
+    {
+      "id": "hairness.work-recap",
+      "name": "hairness-work-recap",
+      "owner": "hairness/workframes"
+    },
+    {
+      "id": "hairness.work-propose",
+      "name": "hairness-work-propose",
+      "owner": "hairness/workframes"
+    },
+    {
+      "id": "hairness.work-plan",
+      "name": "hairness-work-plan",
+      "owner": "hairness/workframes"
+    },
+    {
+      "id": "hairness.work-act",
+      "name": "hairness-work-act",
+      "owner": "hairness/workframes"
+    },
+    {
+      "id": "hairness.work-execute",
+      "name": "hairness-work-execute",
+      "owner": "hairness/workframes"
+    },
+    {
+      "id": "hairness.present",
+      "name": "hairness-present",
+      "owner": "hairness/presentation-controls"
+    },
+    {
+      "id": "hairness.constraint",
+      "name": "hairness-constraint",
+      "owner": "hairness/constraints"
+    },
+    {
+      "id": "hairness.constraint-readonly",
+      "name": "hairness-constraint-readonly",
+      "owner": "hairness/constraints"
+    },
+    {
+      "id": "hairness.constraint-no-git",
+      "name": "hairness-constraint-no-git",
+      "owner": "hairness/constraints"
+    },
+    {
+      "id": "hairness.constraint-no-external",
+      "name": "hairness-constraint-no-external",
+      "owner": "hairness/constraints"
+    },
+    {
+      "id": "hairness.constraint-clear",
+      "name": "hairness-constraint-clear",
+      "owner": "hairness/constraints"
+    },
+    {
+      "id": "hairness.session",
+      "name": "hairness-session",
+      "owner": "hairness/session-intelligence"
+    },
+    {
+      "id": "hairness.handoff",
+      "name": "hairness-handoff",
+      "owner": "hairness/session-intelligence"
+    },
+    {
+      "id": "hairness.maintain",
+      "name": "hairness-maintain",
+      "owner": "hairness/maintainer"
+    },
+    {
+      "id": "hairness.codebase",
+      "name": "hairness-codebase",
+      "owner": "hairness/codebase"
+    },
+    {
+      "id": "hairness.map-codebase",
+      "name": "hairness-map-codebase",
+      "owner": "hairness/codebase"
+    },
+    {
+      "id": "hairness.map-entrypoint",
+      "name": "hairness-map-entrypoint",
+      "owner": "hairness/codebase"
+    },
+    {
+      "id": "hairness.map-system",
+      "name": "hairness-map-system",
+      "owner": "hairness/codebase"
+    },
+    {
+      "id": "hairness.source",
+      "name": "hairness-source",
+      "owner": "hairness/source-controls"
+    },
+    {
+      "id": "hairness.check-sources",
+      "name": "hairness-check-sources",
+      "owner": "hairness/source-controls"
+    }
+  ],
+  "outputs": [
+    {
+      "path": ".agents/skills/hairness/SKILL.md",
+      "owner": "hairness/cockpit",
+      "provider": "codex",
+      "digest": "sha256:3da5d4e67bc376e6a63451d9dd8f340f3af37e761a043cbebacd8da03466152f"
+    },
+    {
+      "path": ".agents/skills/hairness-help/SKILL.md",
+      "owner": "hairness/cockpit",
+      "provider": "codex",
+      "digest": "sha256:76f96ba1e5c4d0880db8b7b9c60f8bc781963c838603cd1d875260c1ad063102"
+    },
+    {
+      "path": ".agents/skills/hairness-onboarding/SKILL.md",
+      "owner": "hairness/cockpit",
+      "provider": "codex",
+      "digest": "sha256:da9353639c5bef0b4905207901837ce6a2a1ae51bb337f728697cc092bc94ba5"
+    },
+    {
+      "path": ".agents/skills/hairness-wake-up/SKILL.md",
+      "owner": "hairness/cockpit",
+      "provider": "codex",
+      "digest": "sha256:5e47f973154f5ebf2422f4437594cd35e1a4bcb9999f7217b53cc8a6987a7a5f"
+    },
+    {
+      "path": ".agents/skills/hairness-update/SKILL.md",
+      "owner": "hairness/distribution",
+      "provider": "codex",
+      "digest": "sha256:5d85fe36b6f89ebe555acdf58dfc743cad6a62420db6fea38d745bf75bc3f2a0"
+    },
+    {
+      "path": ".agents/skills/hairness-workframes/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "codex",
+      "digest": "sha256:811f8bdc8ad078bdc2ac55184b0eaf21e8b7729510255f34f3f53dd111731238"
+    },
+    {
+      "path": ".agents/skills/hairness-work-method/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "codex",
+      "digest": "sha256:247c76fb3a3756e671339ffad4e17810b5f121d6256f49795b89c5c89c186bf9"
+    },
+    {
+      "path": ".agents/skills/hairness-work-discuss/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "codex",
+      "digest": "sha256:dd3a59667ae82cbb53af674f3dcfb7facb903b1ec29185774caf0ce9e11ef64c"
+    },
+    {
+      "path": ".agents/skills/hairness-work-new-frame/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "codex",
+      "digest": "sha256:7cda2ca02b1384aaa3ed0edda7c7ec5c67218513e4f12055478616c65d42e353"
+    },
+    {
+      "path": ".agents/skills/hairness-work-map/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "codex",
+      "digest": "sha256:83132f271385eac9055f6b435d789a282ba7f1c67a20a4b6b5c8fa0fbcd2bd89"
+    },
+    {
+      "path": ".agents/skills/hairness-work-recap/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "codex",
+      "digest": "sha256:64c3ea133ab57ba98719b145d115fe1a278e80ddda8534e75d46292a71985328"
+    },
+    {
+      "path": ".agents/skills/hairness-work-propose/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "codex",
+      "digest": "sha256:7b3793c48612abe28252e83a30a0e23b62979eb8db4e83e49f1e48913ad0b29e"
+    },
+    {
+      "path": ".agents/skills/hairness-work-plan/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "codex",
+      "digest": "sha256:2babf52fa0488d0b01b2a1ee5e3797a9af36f6f7e2835dbbb17d4523588751c4"
+    },
+    {
+      "path": ".agents/skills/hairness-work-act/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "codex",
+      "digest": "sha256:376f2c5de050825f9bf59e4792aa89a7a4638d1edd4a79950c155cb2574c74fd"
+    },
+    {
+      "path": ".agents/skills/hairness-work-execute/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "codex",
+      "digest": "sha256:ffbfd8eecffe141df4d9e366aad8bfdd87cdeae725cb0daa171bb4a8e6d893ae"
+    },
+    {
+      "path": ".agents/skills/hairness-present/SKILL.md",
+      "owner": "hairness/presentation-controls",
+      "provider": "codex",
+      "digest": "sha256:0fbc3f774b1b4e273590815a05b2f98e3c6590f4f22ddd6ea347882193d0e5d0"
+    },
+    {
+      "path": ".agents/skills/hairness-constraint/SKILL.md",
+      "owner": "hairness/constraints",
+      "provider": "codex",
+      "digest": "sha256:b21c07fd34781805841a496b6ed864726cd01bc200b281aa3aaedbd49eaf9954"
+    },
+    {
+      "path": ".agents/skills/hairness-constraint-readonly/SKILL.md",
+      "owner": "hairness/constraints",
+      "provider": "codex",
+      "digest": "sha256:a5b13c121031ff793578f9bd825397c1046a875be2e8862aff485cd20a51bf15"
+    },
+    {
+      "path": ".agents/skills/hairness-constraint-no-git/SKILL.md",
+      "owner": "hairness/constraints",
+      "provider": "codex",
+      "digest": "sha256:a9491cf37757649b4846b8849a262a504ccc016b6eade7f91cae36d30ea640dc"
+    },
+    {
+      "path": ".agents/skills/hairness-constraint-no-external/SKILL.md",
+      "owner": "hairness/constraints",
+      "provider": "codex",
+      "digest": "sha256:c48fe316fe727669f1d1cb9d6c29b4a1780cf08b8982f08b9ae53e34df0fb4b4"
+    },
+    {
+      "path": ".agents/skills/hairness-constraint-clear/SKILL.md",
+      "owner": "hairness/constraints",
+      "provider": "codex",
+      "digest": "sha256:e7931bbba99019f4e0c41c1dc6cda1381af662f2f7bb839f0f95c66b554e809b"
+    },
+    {
+      "path": ".agents/skills/hairness-session/SKILL.md",
+      "owner": "hairness/session-intelligence",
+      "provider": "codex",
+      "digest": "sha256:370f9295a3b252d4ed0a24c3db667d3a74203276777c0e49dabacc0cd4b83b5e"
+    },
+    {
+      "path": ".agents/skills/hairness-handoff/SKILL.md",
+      "owner": "hairness/session-intelligence",
+      "provider": "codex",
+      "digest": "sha256:c30436f4b39a03146bbbe6eed9606d3d1576fb36208e6177bfd4756b54095366"
+    },
+    {
+      "path": ".agents/skills/hairness-maintain/SKILL.md",
+      "owner": "hairness/maintainer",
+      "provider": "codex",
+      "digest": "sha256:45004db291bc2288a12d66c9984ba6454b0de1b1610acdb56c375a4ddf590ff6"
+    },
+    {
+      "path": ".agents/skills/hairness-codebase/SKILL.md",
+      "owner": "hairness/codebase",
+      "provider": "codex",
+      "digest": "sha256:b37650fa6255add1aca521c8d7c3b2232607d0dda827e75a96091b045b9b093c"
+    },
+    {
+      "path": ".agents/skills/hairness-map-codebase/SKILL.md",
+      "owner": "hairness/codebase",
+      "provider": "codex",
+      "digest": "sha256:61a39f1a1db69ece4790b6bd11385eba0ca6e2df9e2cb47e5a1197d0f03b43a8"
+    },
+    {
+      "path": ".agents/skills/hairness-map-entrypoint/SKILL.md",
+      "owner": "hairness/codebase",
+      "provider": "codex",
+      "digest": "sha256:8e58828fcae9037619d89c3ee13af8699d50f4303d92cf9ddf09013f4736071e"
+    },
+    {
+      "path": ".agents/skills/hairness-map-system/SKILL.md",
+      "owner": "hairness/codebase",
+      "provider": "codex",
+      "digest": "sha256:90e1c2603191e7690ac1a314acd48fe2632c13cacdbbee04dfbf548e66c89fd2"
+    },
+    {
+      "path": ".agents/skills/hairness-source/SKILL.md",
+      "owner": "hairness/source-controls",
+      "provider": "codex",
+      "digest": "sha256:0f1b1c690752ba6170e746ad4b52bbe88b3ae1190c0c9c45464a79360d33d475"
+    },
+    {
+      "path": ".agents/skills/hairness-check-sources/SKILL.md",
+      "owner": "hairness/source-controls",
+      "provider": "codex",
+      "digest": "sha256:a3b2ea76ad0dacfd22a2771caada8552b8c1d4be9b19db99fbf06907c16be4f4"
+    },
+    {
+      "path": ".codex/agents/hairness-producer.toml",
+      "owner": "protocol",
+      "provider": "codex",
+      "digest": "sha256:99c97027ff0f32a2a116b3276df87ab21da06bf079b695735f922174dc31f7d3"
+    },
+    {
+      "path": ".codex/agents/hairness-executor.toml",
+      "owner": "protocol",
+      "provider": "codex",
+      "digest": "sha256:688ecdd14f030161f5fde7a48c30cc072c2d4b4c8a7ea4d8d67f80612a663f77"
+    },
+    {
+      "path": ".claude/skills/hairness/SKILL.md",
+      "owner": "hairness/cockpit",
+      "provider": "claude",
+      "digest": "sha256:ed9240338dcc5ac32ba8f8f297725bb71d6631bc514907071935924207bbe124"
+    },
+    {
+      "path": ".claude/skills/hairness-help/SKILL.md",
+      "owner": "hairness/cockpit",
+      "provider": "claude",
+      "digest": "sha256:e34a3878a3043fc35bd66e2abb5306acb8751ba6f66e8abd4728245450edc2b0"
+    },
+    {
+      "path": ".claude/skills/hairness-onboarding/SKILL.md",
+      "owner": "hairness/cockpit",
+      "provider": "claude",
+      "digest": "sha256:30e24c652b7f8b7ab107c71cb473cd70a3159ca45fa6f61c37dfaa8ace3aa695"
+    },
+    {
+      "path": ".claude/skills/hairness-wake-up/SKILL.md",
+      "owner": "hairness/cockpit",
+      "provider": "claude",
+      "digest": "sha256:ad88c577064b7458dae173f92f1bb3a3a82ad969c270ea419e23ba78b52bc9a8"
+    },
+    {
+      "path": ".claude/skills/hairness-update/SKILL.md",
+      "owner": "hairness/distribution",
+      "provider": "claude",
+      "digest": "sha256:92324f6c86f050979ad7843da833927135002b04ca7ee415c54e587731d8b86a"
+    },
+    {
+      "path": ".claude/skills/hairness-workframes/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "claude",
+      "digest": "sha256:81c6c6450b6f65040941f8b1877daec49ae68eaab0830dc9388f5787db268c73"
+    },
+    {
+      "path": ".claude/skills/hairness-work-method/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "claude",
+      "digest": "sha256:e600a0656582671d9703b3013b486a7cc03d2e349b58c0e9078d7473bfce27ec"
+    },
+    {
+      "path": ".claude/skills/hairness-work-discuss/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "claude",
+      "digest": "sha256:5307bc40cfe5eee0f1cee14b59ea36756db4fb22bb3dd0291bb7862c6626820d"
+    },
+    {
+      "path": ".claude/skills/hairness-work-new-frame/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "claude",
+      "digest": "sha256:2cd8b0df4379072c42fdf3b3387379a1fb00fd0e6b99edffbc66de939890d63f"
+    },
+    {
+      "path": ".claude/skills/hairness-work-map/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "claude",
+      "digest": "sha256:0412b57191dc2f70183a1e1b6bd9fab8e9e2770c7e766c133cf095979c034f3c"
+    },
+    {
+      "path": ".claude/skills/hairness-work-recap/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "claude",
+      "digest": "sha256:5f8501d0b67c98924981bdb77d8d7a67567900cad13181756a94fbc10af3dbfa"
+    },
+    {
+      "path": ".claude/skills/hairness-work-propose/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "claude",
+      "digest": "sha256:ae0ea617b76149da3b85962085cc481ef6e0f89352c3b3f40b252b333988adea"
+    },
+    {
+      "path": ".claude/skills/hairness-work-plan/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "claude",
+      "digest": "sha256:66ef50d3ad3bc1190fc2124d8f1385c72b5cc61263a46d327c8e8c08a3ebd0cb"
+    },
+    {
+      "path": ".claude/skills/hairness-work-act/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "claude",
+      "digest": "sha256:8f32c7b8c3feb90369660b6e26b3168afc68ec12aff98471b74a426cfb1cac4f"
+    },
+    {
+      "path": ".claude/skills/hairness-work-execute/SKILL.md",
+      "owner": "hairness/workframes",
+      "provider": "claude",
+      "digest": "sha256:2c80c2467905d3c1204ba86c6d4a72266453f586d08ccb56c421336e61224cbe"
+    },
+    {
+      "path": ".claude/skills/hairness-present/SKILL.md",
+      "owner": "hairness/presentation-controls",
+      "provider": "claude",
+      "digest": "sha256:0322668f5c6daf90cbc176354845ba2478b5689020d3ec4a78d99ff6acaab20c"
+    },
+    {
+      "path": ".claude/skills/hairness-constraint/SKILL.md",
+      "owner": "hairness/constraints",
+      "provider": "claude",
+      "digest": "sha256:1b3cd396d0fa9f080b0f2a443abad3f171ecf64caf36895eb03e3a4c29a906fa"
+    },
+    {
+      "path": ".claude/skills/hairness-constraint-readonly/SKILL.md",
+      "owner": "hairness/constraints",
+      "provider": "claude",
+      "digest": "sha256:3c4d99ca04885b4cf8a87d16ee4f9d00acca45c1c0b7d89627a69f51115f647f"
+    },
+    {
+      "path": ".claude/skills/hairness-constraint-no-git/SKILL.md",
+      "owner": "hairness/constraints",
+      "provider": "claude",
+      "digest": "sha256:c17c7defd40797d34499366d110945d8d00d575a8321e3037a7409f0e531db92"
+    },
+    {
+      "path": ".claude/skills/hairness-constraint-no-external/SKILL.md",
+      "owner": "hairness/constraints",
+      "provider": "claude",
+      "digest": "sha256:e86da911859df0eccad0280b0b037ac491701b3e92ba48ef3bbefed1126acaea"
+    },
+    {
+      "path": ".claude/skills/hairness-constraint-clear/SKILL.md",
+      "owner": "hairness/constraints",
+      "provider": "claude",
+      "digest": "sha256:625563341e073fd1849b2ec693005bfeac50cd53175de1fd282dcf817d3fda48"
+    },
+    {
+      "path": ".claude/skills/hairness-session/SKILL.md",
+      "owner": "hairness/session-intelligence",
+      "provider": "claude",
+      "digest": "sha256:a91cf6b0a89e442f9fb3a98ae5165fbe6c3c2022046414c879f199e7117098e8"
+    },
+    {
+      "path": ".claude/skills/hairness-handoff/SKILL.md",
+      "owner": "hairness/session-intelligence",
+      "provider": "claude",
+      "digest": "sha256:d28892bbe96634e219b6c7562b217b9b1bbbeb676ff83b3c174697d83403550f"
+    },
+    {
+      "path": ".claude/skills/hairness-maintain/SKILL.md",
+      "owner": "hairness/maintainer",
+      "provider": "claude",
+      "digest": "sha256:8424fab66d507b203b3ae6d841de6d30c411ae21c767721d28d3ce8fc9ee6679"
+    },
+    {
+      "path": ".claude/skills/hairness-codebase/SKILL.md",
+      "owner": "hairness/codebase",
+      "provider": "claude",
+      "digest": "sha256:eff6829cc1f16e207c71b42ff017bf47660d8be43fde9b3ce081ac7db501e199"
+    },
+    {
+      "path": ".claude/skills/hairness-map-codebase/SKILL.md",
+      "owner": "hairness/codebase",
+      "provider": "claude",
+      "digest": "sha256:f1c7b5e8ad80eb8bad7ed2e108ccc1d17096ec6f50756d67fd1ca6ec0dea677e"
+    },
+    {
+      "path": ".claude/skills/hairness-map-entrypoint/SKILL.md",
+      "owner": "hairness/codebase",
+      "provider": "claude",
+      "digest": "sha256:d0a467794bf838a7c1946be970a9402af02edd6ccb3dc892fae8e7881cd28061"
+    },
+    {
+      "path": ".claude/skills/hairness-map-system/SKILL.md",
+      "owner": "hairness/codebase",
+      "provider": "claude",
+      "digest": "sha256:1f902161dbc21f7bb76de5dd13cc3965a94a6bfb00dcf820d5bb59d5e538784b"
+    },
+    {
+      "path": ".claude/skills/hairness-source/SKILL.md",
+      "owner": "hairness/source-controls",
+      "provider": "claude",
+      "digest": "sha256:e1e9f45e0c063f4448f7ae2efa07cd27b12891707852aadde54ba6c9991de291"
+    },
+    {
+      "path": ".claude/skills/hairness-check-sources/SKILL.md",
+      "owner": "hairness/source-controls",
+      "provider": "claude",
+      "digest": "sha256:3511cb3122d4a9a1f872ff47a56e62c2f03e200c889bf94b010c1ec5cb4c0c71"
+    },
+    {
+      "path": ".claude/agents/hairness-producer.md",
+      "owner": "protocol",
+      "provider": "claude",
+      "digest": "sha256:79317a54353f92490b159229136b3fdfae626ff91422ebffb2572fecf0760420"
+    },
+    {
+      "path": ".claude/agents/hairness-executor.md",
+      "owner": "protocol",
+      "provider": "claude",
+      "digest": "sha256:24a566ef15e9bf86827c9744e718def60797795bc231e9b1e7fbd03a149fbb3f"
+    }
+  ],
+  "regions": [
+    {
+      "target": "AGENTS.md",
+      "id": "agent-contract",
+      "owner": "hairness/cockpit",
+      "digest": "sha256:6ee1f8c18e118b53367d33890d90286d0f638f10faf764a27664da6cd7cd687b"
+    },
+    {
+      "target": "AGENTS.md",
+      "id": "forge-guidance",
+      "owner": "hairness/maintainer",
+      "digest": "sha256:29f41bd860bfa34f78c18c042c705ff518e2e3cce6b9867c3fe60bea933ee343"
+    },
+    {
+      "target": "CLAUDE.md",
+      "id": "agent-contract",
+      "owner": "hairness/cockpit",
+      "digest": "sha256:6ee1f8c18e118b53367d33890d90286d0f638f10faf764a27664da6cd7cd687b"
+    },
+    {
+      "target": "CLAUDE.md",
+      "id": "forge-guidance",
+      "owner": "hairness/maintainer",
+      "digest": "sha256:29f41bd860bfa34f78c18c042c705ff518e2e3cce6b9867c3fe60bea933ee343"
+    },
+    {
+      "target": ".codex/config.toml",
+      "id": "agent-limits",
+      "owner": "hairness/cockpit",
+      "digest": "sha256:5445ecedb3b2bac637f2031ba276cf7ce7d0e5a5fcd629edf8056055bc6e13b4"
+    }
+  ],
+  "entries": [
+    {
+      "target": ".codex/hooks.json",
+      "pointer": "/hooks/SessionStart/hairness",
+      "id": "session-opening",
+      "owner": "hairness/cockpit",
+      "digest": "sha256:a337b0866f1dda8027e07496264dcfdb7a5198eb18407bf08cb6826b4ae4d7b5"
+    },
+    {
+      "target": ".claude/settings.json",
+      "pointer": "/hooks/SessionStart/hairness",
+      "id": "session-opening",
+      "owner": "hairness/cockpit",
+      "digest": "sha256:2e2256350872ffdae84b39cbcdb48b8fa9124a58f107b88eee97bad08bc92b58"
+    }
+  ]
+}

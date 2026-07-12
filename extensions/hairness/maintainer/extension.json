@@ -1,0 +1,18 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/maintainer",
+  "version": "0.2.0-alpha.0",
+  "module": "./index.mjs",
+  "dependencies": ["hairness/workframes"],
+  "contributes": ["attention", "agent-guidance"],
+  "agentGuidance": [{ "id": "forge-guidance", "source": "./guidance/forge-guidance.md", "targets": ["AGENTS.md", "CLAUDE.md"], "roles": ["forge"] }],
+  "artifactSchemas": [
+    { "type": "decision-record", "schema": "./schemas/decision-record.schema.json" },
+    { "type": "spec-draft", "schema": "./schemas/spec-draft.schema.json" }
+  ],
+  "onboarding": [{ "id": "maintenance.gitWarnings", "phase": "maintenance", "question": "Show attention for branches without upstream or unpushed commits?", "options": [{ "value": "on", "label": "Show Git attention" }, { "value": "off", "label": "Do not show it" }], "preferenceKey": "maintenance.gitWarnings" }],
+  "commands": [{ "namespace": "maintain", "actions": ["check", "impact", "status", "changelog-preview", "test", "eval"] }],
+  "providerCommands": [{ "id": "hairness.maintain", "name": "hairness-maintain", "summary": "Check Hairness owners, projections, package boundaries, and documentation impact.", "kind": "capability", "classification": "specialized", "command": "hairness maintain check", "arguments": [{ "name": "action", "required": false }], "result": { "schema": "ChangeImpactReport", "disposition": "run-only" }, "capabilities": ["maintenance"], "instructions": "./commands/hairness-maintain.md" }]
+}

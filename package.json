@@ -1,0 +1,63 @@
+{
+  "name": "@hairness/hairness",
+  "version": "0.2.0-alpha.0",
+  "description": "A lightweight, source-owned main-session cockpit for coding agents.",
+  "private": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thevzion/hairness.git"
+  },
+  "homepage": "https://github.com/thevzion/hairness#readme",
+  "bugs": {
+    "url": "https://github.com/thevzion/hairness/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "next"
+  },
+  "type": "module",
+  "bin": {
+    "hairness": "bin/hairness.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "bin/",
+    "catalog/standard.json",
+    "catalog/minimal.json",
+    "docs/extensions/catalog.md",
+    "extensions/hairness/",
+    "providers/",
+    "schemas/",
+    "scripts/check-commits.mjs",
+    "scripts/check-pack.mjs",
+    "scripts/check-providers.mjs",
+    "scripts/check.mjs",
+    "scripts/conformance.mjs",
+    "scripts/extension-ownership-gate.mjs",
+    "scripts/impact-gate.mjs",
+    "scripts/run-tests.mjs",
+    "src/",
+    "templates/",
+    "LICENSE",
+    "README.md",
+    "hairness.json"
+  ],
+  "scripts": {
+    "test": "node scripts/run-tests.mjs",
+    "check": "node scripts/check.mjs",
+    "conformance": "node scripts/conformance.mjs",
+    "test:node22": "npx -y node@22 scripts/run-tests.mjs",
+    "test:node24": "npx -y node@24 scripts/run-tests.mjs",
+    "check:pack": "node scripts/check-pack.mjs",
+    "check:impact": "node scripts/impact-gate.mjs",
+    "check:providers": "node scripts/check-providers.mjs",
+    "check:commits": "node scripts/check-commits.mjs",
+    "check:ownership": "node scripts/extension-ownership-gate.mjs"
+  },
+  "dependencies": {
+    "ajv": "8.20.0"
+  }
+}

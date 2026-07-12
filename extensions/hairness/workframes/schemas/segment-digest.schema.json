@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["segmentId", "summary", "decisions", "artifacts", "proof", "openEdges", "limits", "routes"],
+  "properties": {
+    "segmentId": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "minLength": 1 },
+    "decisions": { "type": "array", "items": { "type": "string" } },
+    "artifacts": { "type": "array", "items": { "type": "object" } },
+    "proof": { "type": "array", "items": { "type": "string" } },
+    "openEdges": { "type": "array", "items": { "type": "string" } },
+    "limits": { "type": "array", "items": { "type": "string" } },
+    "routes": { "type": "array", "items": { "type": "string" } }
+  }
+}

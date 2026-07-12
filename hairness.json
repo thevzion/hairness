@@ -1,0 +1,61 @@
+{
+  "$schema": "./schemas/distribution.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "implementationVersion": "0.2.0-alpha.0",
+  "role": "forge",
+  "catalogRoots": ["./catalog", "./extensions"],
+  "name": "hairness",
+  "displayName": "Hairness",
+  "providerPrefix": "hairness",
+  "core": "./src/core/index.mjs",
+  "defaults": {
+    "interaction": { "language": "en", "mode": "auto", "budget": "balanced" },
+    "session": { "transcript": false },
+    "maintenance": { "gitWarnings": true }
+  },
+  "extensions": [
+    {
+      "id": "hairness/cockpit",
+      "path": "./extensions/hairness/cockpit"
+    },
+    {
+      "id": "hairness/distribution",
+      "path": "./extensions/hairness/distribution"
+    },
+    {
+      "id": "hairness/workframes",
+      "path": "./extensions/hairness/workframes"
+    },
+    {
+      "id": "hairness/presentation-controls",
+      "path": "./extensions/hairness/presentation-controls"
+    },
+    {
+      "id": "hairness/constraints",
+      "path": "./extensions/hairness/constraints"
+    },
+    {
+      "id": "hairness/session-intelligence",
+      "path": "./extensions/hairness/session-intelligence"
+    },
+    {
+      "id": "hairness/maintainer",
+      "path": "./extensions/hairness/maintainer"
+    },
+    {
+      "id": "hairness/codebase",
+      "path": "./extensions/hairness/codebase"
+    },
+    {
+      "id": "hairness/source-controls",
+      "path": "./extensions/hairness/source-controls"
+    },
+    {
+      "id": "hairness/git",
+      "path": "./extensions/hairness/git"
+    }
+  ],
+  "sources": [{ "id": "git", "requirement": "required" }],
+  "codebases": []
+}

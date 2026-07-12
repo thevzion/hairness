@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/src/prologue.mjs\" --host codex",
+            "timeout": 5,
+            "statusMessage": "Loading Hairness context"
+          }
+        ]
+      }
+    ]
+  }
+}

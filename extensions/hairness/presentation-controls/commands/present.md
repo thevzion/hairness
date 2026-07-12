@@ -1,0 +1,1 @@
+Choose the smallest sufficient presentation from the available result. Use one primary view and at most two genuinely complementary views. `auto` is an inference task for the main session. Never invent facts, relations, criteria, decisions, or proof. Summary, diagram, tree, table, timeline, checklist, matrix and trace are views; compact, visual and explicit are policies.

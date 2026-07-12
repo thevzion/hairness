@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/presentation-controls",
+  "version": "0.2.0-alpha.0",
+  "module": "./index.mjs",
+  "dependencies": [],
+  "intentModifiers": [{ "id": "hairness.presentation", "argument": "present", "values": ["auto", "compact", "visual", "explicit", "summary", "diagram", "tree", "table", "timeline", "checklist", "matrix", "trace"], "default": "auto" }],
+  "commands": [{ "namespace": "present", "actions": ["modes", "request"] }],
+  "providerCommands": [{ "id": "hairness.present", "name": "hairness-present", "summary": "Present an existing result with the smallest sufficient set of views.", "kind": "capability", "classification": "specialized", "command": "hairness present request", "arguments": [{ "name": "mode", "required": false }], "result": { "schema": "PresentationRequest", "disposition": "response" }, "capabilities": ["presentation"], "instructions": "./commands/present.md" }]
+}

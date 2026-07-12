@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "standard",
+  "displayName": "Standard cockpit",
+  "extensions": [
+    "hairness/cockpit",
+    "hairness/distribution",
+    "hairness/workframes",
+    "hairness/presentation-controls",
+    "hairness/constraints",
+    "hairness/session-intelligence",
+    "hairness/codebase",
+    "hairness/source-controls",
+    "hairness/git"
+  ],
+  "sources": [
+    { "id": "git", "requirement": "required" }
+  ],
+  "providers": ["codex", "claude"],
+  "codebases": []
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/cockpit",
+  "version": "0.2.0-alpha.0",
+  "module": "./index.mjs",
+  "dependencies": [],
+  "contributes": ["attention", "agent-guidance", "session-opening", "session-renderer", "provider-hooks"],
+  "agentGuidance": [{ "id": "agent-contract", "source": "./guidance/agent-contract.md", "targets": ["AGENTS.md", "CLAUDE.md"] }],
+  "commands": [{ "namespace": "wake-up", "actions": ["show"] }, { "namespace": "help", "actions": ["show"] }],
+  "providerCommands": [
+    { "id": "hairness.root", "name": "hairness", "summary": "Route one intention through the active Hairness distribution.", "kind": "bridge", "classification": "primary", "command": "hairness help", "arguments": [], "result": { "schema": "ContextPacket", "disposition": "response" }, "capabilities": ["routing"], "instructions": "./commands/hairness.md" },
+    { "id": "hairness.help", "name": "hairness-help", "summary": "Explain the active human command surface and exact host invocations.", "kind": "capability", "classification": "primary", "command": "hairness help", "arguments": [], "result": { "schema": "ContextPacket", "disposition": "response" }, "capabilities": ["help"], "instructions": "./commands/hairness-help.md" },
+    { "id": "hairness.onboarding", "name": "hairness-onboarding", "summary": "Continue deterministic local onboarding one question at a time.", "kind": "capability", "classification": "primary", "command": "hairness onboarding next", "arguments": [], "result": { "schema": "OnboardingState", "disposition": "run-only" }, "capabilities": ["onboarding"], "instructions": "./commands/hairness-onboarding.md" },
+    { "id": "hairness.wake-up", "name": "hairness-wake-up", "summary": "Show current attention, limits, and the next useful route.", "kind": "capability", "classification": "primary", "command": "hairness wake-up", "arguments": [], "result": { "schema": "ContextPacket", "disposition": "response" }, "capabilities": ["cockpit"], "instructions": "./commands/hairness-wake-up.md" }
+  ]
+}

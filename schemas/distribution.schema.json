@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/schemas/0.2/distribution.schema.json",
+  "title": "DistributionManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "protocolVersion", "implementationVersion", "role", "catalogRoots", "name", "displayName", "providerPrefix", "core", "extensions", "sources", "codebases"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 2 },
+    "protocolVersion": { "const": "0.2" },
+    "implementationVersion": { "type": "string", "minLength": 1 },
+    "role": { "enum": ["forge", "distribution"] },
+    "catalogRoots": { "type": "array", "items": { "type": "string", "pattern": "^\\./" }, "uniqueItems": true },
+    "name": { "$ref": "protocol.schema.json#/$defs/Slug" },
+    "displayName": { "$ref": "protocol.schema.json#/$defs/NonEmpty" },
+    "providerPrefix": { "$ref": "protocol.schema.json#/$defs/Slug" },
+    "cliAlias": { "$ref": "protocol.schema.json#/$defs/Slug" },
+    "generatedFrom": { "$ref": "protocol.schema.json#/$defs/GeneratedFrom" },
+    "core": { "type": "string", "pattern": "^\\./" },
+    "defaults": { "type": "object" },
+    "extensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path"],
+        "properties": {
+          "id": { "$ref": "protocol.schema.json#/$defs/ExtensionId" },
+          "path": { "type": "string", "pattern": "^\\./" }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "requirement"],
+        "properties": {
+          "id": { "$ref": "protocol.schema.json#/$defs/Slug" },
+          "requirement": { "$ref": "protocol.schema.json#/$defs/RequirementPolicy" }
+        }
+      }
+    },
+    "codebases": {
+      "type": "array",
+      "items": { "$ref": "protocol.schema.json#/$defs/CodebaseContract" }
+    }
+  }
+}
