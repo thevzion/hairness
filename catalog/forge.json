@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "forge",
+  "displayName": "Self-hosting forge",
+  "role": "forge",
+  "materials": [
+    { "source": "bin", "target": "bin" },
+    { "source": "schemas", "target": "schemas" },
+    { "source": "src", "target": "src" },
+    { "source": "catalog", "target": "catalog" },
+    { "source": "docs", "target": "docs" },
+    { "source": "templates", "target": "templates" }
+  ],
+  "extensions": [
+    "hairness/cockpit", "hairness/distribution", "hairness/work-controls", "hairness/understanding-controls",
+    "hairness/ideation-controls", "hairness/presentation-controls", "hairness/constraints",
+    "hairness/session-intelligence", "hairness/maintainer", "hairness/codebase", "hairness/sources"
+  ],
+  "catalogExtensions": [
+    "hairness/cockpit", "hairness/distribution", "hairness/work-controls", "hairness/understanding-controls",
+    "hairness/ideation-controls", "hairness/presentation-controls", "hairness/constraints",
+    "hairness/session-intelligence", "hairness/maintainer", "hairness/codebase", "hairness/sources"
+  ],
+  "capabilities": [
+    "hairness/cockpit", "hairness/distribution-lifecycle", "hairness/work", "hairness/understanding",
+    "hairness/ideation", "hairness/presentation", "hairness/constraints",
+    "hairness/session", "hairness/maintenance", "hairness/codebase", "hairness/sources"
+  ],
+  "sourceDrivers": ["git", "jira", "gitlab", "aws"],
+  "sources": [{ "id": "git", "requirement": "required" }],
+  "providers": ["codex", "claude"],
+  "codebases": [],
+  "templates": ["distribution-readme", "hairness-notice", "forge-status"],
+  "scripts": ["check-providers.mjs", "check.mjs", "conformance.mjs", "extension-ownership-gate.mjs", "run-tests.mjs", "check-commits.mjs", "check-pack.mjs", "impact-gate.mjs"],
+  "tests": ["smoke"]
+}

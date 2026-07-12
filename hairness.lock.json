@@ -1,32 +1,273 @@
 {
-  "$schema": "./schemas/distribution-lock.schema.json",
   "schemaVersion": 2,
   "protocolVersion": "0.2",
   "role": "forge",
-  "recipe": { "id": "standard", "digest": "sha256:5741a474ca78799d96e8b67d2a0672f1fcb898542a1e7a19ff22fc2e14ceb9a8" },
-  "generatedFrom": { "source": "@hairness/hairness", "implementationVersion": "0.2.0-alpha.0", "protocolVersion": "0.2" },
-  "updateSource": { "kind": "npm", "spec": "@hairness/hairness", "channel": "next" },
+  "recipe": {
+    "id": "forge",
+    "digest": "sha256:920cdcbe53623727a63b468327a2783977998d2d9cb918edfbc8dd116da92c6f"
+  },
+  "generatedFrom": {
+    "source": "@hairness/hairness",
+    "implementationVersion": "0.2.0-alpha.0",
+    "protocolVersion": "0.2",
+    "createdAt": "2026-07-12T11:35:57.698Z"
+  },
+  "updateSource": {
+    "kind": "npm",
+    "spec": "@hairness/hairness",
+    "channel": "next"
+  },
   "materials": [
-    { "id": "material-bin", "owner": "hairness/distribution", "path": "bin", "sourcePath": "bin", "version": "0.2.0-alpha.0", "baseDigest": "sha256:561cf6fa0d85db7d864a4ee4893e66af6392e6f5fefa58517f4030403159e67e", "policy": "vendored", "scope": "core" },
-    { "id": "material-schemas", "owner": "hairness/distribution", "path": "schemas", "sourcePath": "schemas", "version": "0.2.0-alpha.0", "baseDigest": "sha256:c35110b141fb8b0978258d5efce7824d1369aa845fcb0cfd16ff3947da62dcd4", "policy": "vendored", "scope": "core" },
-    { "id": "material-provider-templates", "owner": "hairness/distribution", "path": "providers", "sourcePath": "providers", "version": "0.2.0-alpha.0", "baseDigest": "sha256:c9f2bedbe3e999b597c373a44ff9b2a37d0896ca5a792a75bbe0237c98fbeef8", "policy": "vendored", "scope": "providers" },
-    { "id": "material-cli", "owner": "hairness/distribution", "path": "src/cli.mjs", "sourcePath": "src/cli.mjs", "version": "0.2.0-alpha.0", "baseDigest": "sha256:61744cbe74701b5e024df8dac0acbea3222696cb631e2335f3f13fdd3ef2391e", "policy": "vendored", "scope": "core" },
-    { "id": "material-prologue", "owner": "hairness/distribution", "path": "src/prologue.mjs", "sourcePath": "src/prologue.mjs", "version": "0.2.0-alpha.0", "baseDigest": "sha256:e9075a462ba737bda6e12836f492190ecdced156438c4cda48b5a822cd036800", "policy": "vendored", "scope": "core" },
-    { "id": "material-core", "owner": "hairness/distribution", "path": "src/core", "sourcePath": "src/core", "version": "0.2.0-alpha.0", "baseDigest": "sha256:4dbf6be317d6c43a79337c0b691569571653c4c677e9e6fdbea1498c2de3d206", "policy": "vendored", "scope": "core" },
-    { "id": "material-distribution-runtime", "owner": "hairness/distribution", "path": "src/distribution", "sourcePath": "src/distribution", "version": "0.2.0-alpha.0", "baseDigest": "sha256:5eb686d5a65f10f3ce1550e7985532d7ace6f839086ef2d5f7461ed309674376", "policy": "vendored", "scope": "core" },
-    { "id": "material-provider-runtime", "owner": "hairness/distribution", "path": "src/providers", "sourcePath": "src/providers", "version": "0.2.0-alpha.0", "baseDigest": "sha256:03f9fc217121a6f6d2ff9cfe76a81967cff122467fde48a21c6dcc0b6f67c127", "policy": "vendored", "scope": "providers" },
-    { "id": "material-bootstrap", "owner": "hairness/distribution", "path": "src/bootstrap", "sourcePath": "src/bootstrap", "version": "0.2.0-alpha.0", "baseDigest": "sha256:f63dec09c553466a9d3f96ee125cee5e96f2ceb8ba1da1e913de197a1e94257d", "policy": "vendored", "scope": "core" },
-    { "id": "material-catalog", "owner": "hairness/distribution", "path": "catalog", "sourcePath": "catalog", "version": "0.2.0-alpha.0", "baseDigest": "sha256:57d402b30c7adc0ec81101987f3cacae64baae32f40546f851a23ca62425a752", "policy": "vendored", "scope": "core" },
-    { "id": "material-cockpit", "owner": "hairness/cockpit", "path": "extensions/hairness/cockpit", "sourcePath": "extensions/hairness/cockpit", "version": "0.2.0-alpha.0", "baseDigest": "sha256:06dd8052a3c5fa67b7581979f97c47be09cf0f9056aa885a16f0345f969a8c51", "policy": "vendored", "scope": "extension:hairness/cockpit" },
-    { "id": "material-distribution", "owner": "hairness/distribution", "path": "extensions/hairness/distribution", "sourcePath": "extensions/hairness/distribution", "version": "0.2.0-alpha.0", "baseDigest": "sha256:a8565321c8adf62c26ed5a18ad57b4a7bdc82403ec6dc4cd105bad555ba75943", "policy": "vendored", "scope": "extension:hairness/distribution" },
-    { "id": "material-workframes", "owner": "hairness/workframes", "path": "extensions/hairness/workframes", "sourcePath": "extensions/hairness/workframes", "version": "0.2.0-alpha.0", "baseDigest": "sha256:afcb777640161280d990cab3908ce4889764118f1034426e53c9d4219dcdcae8", "policy": "vendored", "scope": "extension:hairness/workframes" },
-    { "id": "material-presentation", "owner": "hairness/presentation-controls", "path": "extensions/hairness/presentation-controls", "sourcePath": "extensions/hairness/presentation-controls", "version": "0.2.0-alpha.0", "baseDigest": "sha256:51c422360daaee26f428c71596f81054b01bab917eb3c56032b737ef63534b19", "policy": "vendored", "scope": "extension:hairness/presentation-controls" },
-    { "id": "material-constraints", "owner": "hairness/constraints", "path": "extensions/hairness/constraints", "sourcePath": "extensions/hairness/constraints", "version": "0.2.0-alpha.0", "baseDigest": "sha256:5e99d034ea50e4d30410c13cd5475386f1dd2b9c3cffb46c5a606eeadb33f06b", "policy": "vendored", "scope": "extension:hairness/constraints" },
-    { "id": "material-session", "owner": "hairness/session-intelligence", "path": "extensions/hairness/session-intelligence", "sourcePath": "extensions/hairness/session-intelligence", "version": "0.2.0-alpha.0", "baseDigest": "sha256:287c8362f7b00112e28995066ee7c1eddc2e2cea873e1d98105c88e6cc74aace", "policy": "vendored", "scope": "extension:hairness/session-intelligence" },
-    { "id": "material-maintainer", "owner": "hairness/maintainer", "path": "extensions/hairness/maintainer", "sourcePath": "extensions/hairness/maintainer", "version": "0.2.0-alpha.0", "baseDigest": "sha256:a5a41aa44635ebddff298b9c61abf61bc65dcd206d4da6bff718f7b63da85e2f", "policy": "vendored", "scope": "extension:hairness/maintainer" },
-    { "id": "material-codebase", "owner": "hairness/codebase", "path": "extensions/hairness/codebase", "sourcePath": "extensions/hairness/codebase", "version": "0.2.0-alpha.0", "baseDigest": "sha256:6ae9ff95dceb9bff287cf64b40d798a50f39ab8dd5e21ef99d6cbdee414651b5", "policy": "vendored", "scope": "extension:hairness/codebase" },
-    { "id": "material-sources", "owner": "hairness/source-controls", "path": "extensions/hairness/source-controls", "sourcePath": "extensions/hairness/source-controls", "version": "0.2.0-alpha.0", "baseDigest": "sha256:dbc425db2f6dbad5468b30f111fa53ac9ae79a50c703bd7e36db8e5ac7d8ee9d", "policy": "vendored", "scope": "extension:hairness/source-controls" },
-    { "id": "material-git", "owner": "hairness/git", "path": "extensions/hairness/git", "sourcePath": "extensions/hairness/git", "version": "0.2.0-alpha.0", "baseDigest": "sha256:ec52834b4e6c40516f7362c0007a07b8ef6f9df2c9226fefbb1770a997049c70", "policy": "vendored", "scope": "extension:hairness/git" },
-    { "id": "material-scripts", "owner": "hairness/distribution", "path": "scripts", "sourcePath": "scripts", "version": "0.2.0-alpha.0", "baseDigest": "sha256:a0a42608af4858c414fa8fd3fd7ac4793328bdf0ab91faea85b5908274f6ebe6", "policy": "vendored", "scope": "core" }
+    {
+      "id": "material-bin",
+      "owner": "hairness/distribution",
+      "path": "bin",
+      "sourcePath": "bin",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:561cf6fa0d85db7d864a4ee4893e66af6392e6f5fefa58517f4030403159e67e",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-schemas",
+      "owner": "hairness/distribution",
+      "path": "schemas",
+      "sourcePath": "schemas",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:4b98005c369eaa80d3338ce12c46dbb5f1e3448c801d6adb6cfc1da44d53960a",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-src",
+      "owner": "hairness/distribution",
+      "path": "src",
+      "sourcePath": "src",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:8ee4e7330d6e5a1564060a8a150b4e15f55f6ff51dcfef346ad2b282af515049",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-catalog",
+      "owner": "hairness/distribution",
+      "path": "catalog",
+      "sourcePath": "catalog",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:fe39b4f1ebcf883f58d6155802234aed8d835ef6adb2d6f75e2c5639e797a100",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-docs",
+      "owner": "hairness/distribution",
+      "path": "docs",
+      "sourcePath": "docs",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:6d4167e91d32ba934d0214f4f2764a43f4aa44e3766472e243fd2c81a65d2d0f",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-templates",
+      "owner": "hairness/distribution",
+      "path": "templates",
+      "sourcePath": "templates",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:c926fc7e3725815513f7257494949e00c897824ee484c23e1fafcd5f630a6750",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-scripts-check-providers-mjs",
+      "owner": "hairness/distribution",
+      "path": "scripts/check-providers.mjs",
+      "sourcePath": "scripts/check-providers.mjs",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:7552961eb84f78915334cfd2dd97e9a4542330a130f215c2a8bf62e11a994344",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-scripts-check-mjs",
+      "owner": "hairness/distribution",
+      "path": "scripts/check.mjs",
+      "sourcePath": "scripts/check.mjs",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:9715545803bf4ee8558d40068a4432f0e4e5a1124481620e6ddab2787526fc2b",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-scripts-conformance-mjs",
+      "owner": "hairness/distribution",
+      "path": "scripts/conformance.mjs",
+      "sourcePath": "scripts/conformance.mjs",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:6bdc8da00ad67273f3a5f15cdc9937aef1618247694994a59fcbbbd18dd45171",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-scripts-extension-ownership-gate-mjs",
+      "owner": "hairness/distribution",
+      "path": "scripts/extension-ownership-gate.mjs",
+      "sourcePath": "scripts/extension-ownership-gate.mjs",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:718b317e22cead00d868307dd484dc2e427bfc10ac294cb7c31f74222312f3aa",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-scripts-run-tests-mjs",
+      "owner": "hairness/distribution",
+      "path": "scripts/run-tests.mjs",
+      "sourcePath": "scripts/run-tests.mjs",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:08b2d81b8852b89345cdaf4974505792be992b0efa77109f31ff3a3658c4b4c4",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-scripts-check-commits-mjs",
+      "owner": "hairness/distribution",
+      "path": "scripts/check-commits.mjs",
+      "sourcePath": "scripts/check-commits.mjs",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:13df684fae58dbff79a28b00c11378e566813f7449864168857159cf7f12b43d",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-scripts-check-pack-mjs",
+      "owner": "hairness/distribution",
+      "path": "scripts/check-pack.mjs",
+      "sourcePath": "scripts/check-pack.mjs",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:be41d119fe4fa3731547711d2ad9c3093a380b8e0f19d642f82a7e2467064d13",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-scripts-impact-gate-mjs",
+      "owner": "hairness/distribution",
+      "path": "scripts/impact-gate.mjs",
+      "sourcePath": "scripts/impact-gate.mjs",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:5f869d670bf48e8501dac39215831f44795e1de39b8dd2f1f44c6991182b0fa9",
+      "policy": "vendored",
+      "scope": "core"
+    },
+    {
+      "id": "material-extensions-hairness-cockpit",
+      "owner": "hairness/cockpit",
+      "path": "extensions/hairness/cockpit",
+      "sourcePath": "extensions/hairness/cockpit",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:c543d69ea0e0b5d11cc0be20d3ae5091e10b5da0cf19dbb2f10e71684f06aeef",
+      "policy": "vendored",
+      "scope": "extension:hairness/cockpit"
+    },
+    {
+      "id": "material-extensions-hairness-distribution",
+      "owner": "hairness/distribution",
+      "path": "extensions/hairness/distribution",
+      "sourcePath": "extensions/hairness/distribution",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:20907a797d183845c902321d017ea78fd4d60e9f5b6ef3b36cf10c1a68142b0a",
+      "policy": "vendored",
+      "scope": "extension:hairness/distribution"
+    },
+    {
+      "id": "material-extensions-hairness-work-controls",
+      "owner": "hairness/work-controls",
+      "path": "extensions/hairness/work-controls",
+      "sourcePath": "extensions/hairness/work-controls",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:4e6118ea2c161f2f2e9ce46e96929ede2ad35bf923df74676f32edd71b75c69f",
+      "policy": "vendored",
+      "scope": "extension:hairness/work-controls"
+    },
+    {
+      "id": "material-extensions-hairness-understanding-controls",
+      "owner": "hairness/understanding-controls",
+      "path": "extensions/hairness/understanding-controls",
+      "sourcePath": "extensions/hairness/understanding-controls",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:2564d03da52eca88459bb32b8e3b5da694cfdfb0875403602e4bc3e0c6cb86f3",
+      "policy": "vendored",
+      "scope": "extension:hairness/understanding-controls"
+    },
+    {
+      "id": "material-extensions-hairness-ideation-controls",
+      "owner": "hairness/ideation-controls",
+      "path": "extensions/hairness/ideation-controls",
+      "sourcePath": "extensions/hairness/ideation-controls",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:57901bb54229239a296c2bef279a930b6ed0bd9e6e338d223934e2e34431433d",
+      "policy": "vendored",
+      "scope": "extension:hairness/ideation-controls"
+    },
+    {
+      "id": "material-extensions-hairness-presentation-controls",
+      "owner": "hairness/presentation-controls",
+      "path": "extensions/hairness/presentation-controls",
+      "sourcePath": "extensions/hairness/presentation-controls",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:fec6a1642a80d26e2243c6dbf4d17b7346a319f438e5c3f6c5acd5601dd3de44",
+      "policy": "vendored",
+      "scope": "extension:hairness/presentation-controls"
+    },
+    {
+      "id": "material-extensions-hairness-constraints",
+      "owner": "hairness/constraints",
+      "path": "extensions/hairness/constraints",
+      "sourcePath": "extensions/hairness/constraints",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:1d8a49c9f8eebb0d485f1a9327783c0916245bb5fa68738520048203c037ac14",
+      "policy": "vendored",
+      "scope": "extension:hairness/constraints"
+    },
+    {
+      "id": "material-extensions-hairness-session-intelligence",
+      "owner": "hairness/session-intelligence",
+      "path": "extensions/hairness/session-intelligence",
+      "sourcePath": "extensions/hairness/session-intelligence",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:894a67973f4fbeb654fb48c0ea167a0f8ad4c73021181c10d2bf287eed3a7b9a",
+      "policy": "vendored",
+      "scope": "extension:hairness/session-intelligence"
+    },
+    {
+      "id": "material-extensions-hairness-maintainer",
+      "owner": "hairness/maintainer",
+      "path": "extensions/hairness/maintainer",
+      "sourcePath": "extensions/hairness/maintainer",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:7d814c844e3f719aba5e7dd982d7c025e900eae5bc032bea65a22518fcc7a2e1",
+      "policy": "vendored",
+      "scope": "extension:hairness/maintainer"
+    },
+    {
+      "id": "material-extensions-hairness-codebase",
+      "owner": "hairness/codebase",
+      "path": "extensions/hairness/codebase",
+      "sourcePath": "extensions/hairness/codebase",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:dee5734dba00a41ab2763dba339ac12983759fc3e351fbdea8ebc94bfa68678c",
+      "policy": "vendored",
+      "scope": "extension:hairness/codebase"
+    },
+    {
+      "id": "material-extensions-hairness-sources",
+      "owner": "hairness/sources",
+      "path": "extensions/hairness/sources",
+      "sourcePath": "extensions/hairness/sources",
+      "version": "0.2.0-alpha.0",
+      "baseDigest": "sha256:a0c6a34ddad123c98bad80f0b70bd740f33fa55bb61dff678cb92a046a717807",
+      "policy": "vendored",
+      "scope": "extension:hairness/sources"
+    }
   ]
 }
+

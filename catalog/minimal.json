@@ -3,8 +3,23 @@
   "protocolVersion": "0.2",
   "id": "minimal",
   "displayName": "Minimal cockpit",
+  "role": "distribution",
+  "materials": [
+    { "source": "bin", "target": "bin" },
+    { "source": "schemas", "target": "schemas" },
+    { "source": "src/cli.mjs", "target": "src/cli.mjs" },
+    { "source": "src/prologue.mjs", "target": "src/prologue.mjs" },
+    { "source": "src/core", "target": "src/core" },
+    { "source": "src/distribution", "target": "src/distribution" },
+    { "source": "src/providers", "target": "src/providers" }
+  ],
   "extensions": ["hairness/cockpit", "hairness/distribution"],
+  "capabilities": ["hairness/cockpit", "hairness/distribution-lifecycle"],
+  "sourceDrivers": [],
   "sources": [],
   "providers": ["codex", "claude"],
-  "codebases": []
+  "codebases": [],
+  "templates": ["distribution-readme", "hairness-notice"],
+  "scripts": ["check-providers.mjs", "check.mjs", "conformance.mjs", "extension-ownership-gate.mjs", "run-tests.mjs"],
+  "tests": ["smoke"]
 }

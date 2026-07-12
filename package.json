@@ -1,7 +1,7 @@
 {
   "name": "@hairness/hairness",
   "version": "0.2.0-alpha.0",
-  "description": "A lightweight, source-owned main-session cockpit for coding agents.",
+  "description": "A source-owned, provider-native foundation for versioned agentic assets.",
   "private": false,
   "license": "MIT",
   "repository": {
@@ -25,8 +25,7 @@
   },
   "files": [
     "bin/",
-    "catalog/standard.json",
-    "catalog/minimal.json",
+    "catalog/",
     "docs/extensions/catalog.md",
     "extensions/hairness/",
     "schemas/",

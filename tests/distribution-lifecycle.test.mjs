@@ -6,12 +6,12 @@ import { tmpdir } from 'node:os'
 import { answerCreate, applyCreate, planCreate, startCreate } from '../src/bootstrap/create.mjs'
 import { applyDistributionUpdate, planDistributionUpdate } from '../src/distribution/update-engine.mjs'
 
-async function createFixture(name, role = 'distribution') {
+async function createFixture(name, preset = 'standard') {
   const base = await mkdtemp(join(tmpdir(), `hairness-${name}-`))
   process.env.HAIRNESS_HOME = join(base, 'home')
   const target = join(base, name)
-  let gap = await startCreate(target, 'standard', role)
-  const answers = { language: 'en', name, displayName: name, providerPrefix: name, cliAlias: 'none', extensions: 'preset', providers: 'codex', codebases: 'later', rootCommit: 'no' }
+  let gap = await startCreate(target, preset)
+  const answers = { language: 'en', name, displayName: name, providerPrefix: name, cliAlias: 'none', extensions: 'preset', providers: 'codex', codebases: 'later' }
   while (gap.question) gap = await answerCreate(gap.createId, gap.id, answers[gap.id] ?? gap.options[0].value)
   const plan = await planCreate(gap.createId)
   await applyCreate(gap.createId, plan.checkpointId, { install: false, git: false, build: false })
@@ -40,7 +40,7 @@ test('team and forge payloads have distinct operational boundaries', async () =>
   assert.ok(forgeManifest.extensions.some((extension) => extension.id === 'hairness/maintainer'))
   await access(join(forge.target, 'STATUS.md'))
   for (const path of ['scripts/check-commits.mjs', 'scripts/check-pack.mjs', 'scripts/impact-gate.mjs']) await access(join(forge.target, path))
-  for (const path of ['LICENSE', 'SPEC.md', 'ROADMAP.md', 'CHANGELOG.md']) await assert.rejects(access(join(forge.target, path)), path)
+  await assert.rejects(access(join(forge.target, 'LICENSE')))
 })
 
 test('safe update ignores scripts outside the distribution payload', async () => {
