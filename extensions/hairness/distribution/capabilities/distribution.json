@@ -7,7 +7,49 @@
   "version": "0.2.0-alpha.0",
   "summary": "Inspect provenance and propose source-owned distribution updates.",
   "operations": [
-    { "id": "inspect", "class": "observe", "summary": "Inspect distribution provenance and update readiness.", "result": { "schema": "ContextPacket", "disposition": "run-only" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
-    { "id": "apply", "class": "effect", "summary": "Apply one reviewed distribution update plan.", "result": { "schema": "ChangeReceipt", "disposition": "effect" }, "sources": [], "effects": ["distribution-files"], "routes": ["deterministic"], "acceptsModifiers": [] }
+    {
+      "id": "inspect",
+      "class": "observe",
+      "summary": "Inspect distribution provenance and update readiness.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "deterministic"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "run-only"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "apply",
+      "class": "effect",
+      "summary": "Apply one reviewed distribution update plan.",
+      "sources": [],
+      "effects": [
+        "distribution-files"
+      ],
+      "routes": [
+        "deterministic"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ChangeReceipt",
+            "disposition": "effect"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    }
   ]
 }

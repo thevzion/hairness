@@ -250,17 +250,25 @@ export async function collectContributions(root, contribution, input, stack = []
       'session-opening': module.sessionContributions,
       'session-renderer': module.renderSessionOpening,
       'provider-hooks': module.providerHooks,
+      'input-resolver': module.invocationResolvers,
     }
     const handler = handlers[contribution]
     if (typeof handler !== 'function') throw new HairnessError('extension_contribution_missing', `${value.manifest.id} does not export ${contribution}.`, { exitCode: 2 })
     const values = await handler({ root, input, manifest: value.manifest, runtime: await runtimeFor(root, value.manifest.id, stack) })
     if (contribution === 'session-renderer') output.push({ owner: value.manifest.id, value: values })
     else for (const item of values ?? []) {
-      const contract = contribution === 'attention' ? 'AttentionSignal' : contribution === 'authority-policy' ? 'EffectPolicy' : contribution === 'session-opening' ? 'SessionContribution' : null
+      const contract = contribution === 'attention' ? 'AttentionSignal' : contribution === 'authority-policy' ? 'EffectPolicy' : contribution === 'session-opening' ? 'SessionContribution' : contribution === 'input-resolver' ? 'ResolverContribution' : null
       output.push(contract ? await validateContract(contract, item) : item)
     }
   }
   return output
+}
+
+export async function operationIndex(root) {
+  const extensions = await enabledInspected(root)
+  const index = capabilityIndex(extensions)
+  for (const operation of index.operations.values()) operation.extensionPath = extensions.find((value) => value.manifest.id === operation.owner)?.descriptor.path
+  return index
 }
 
 export async function collectOnboardingContributions(root, phase, input = {}, options = {}) {

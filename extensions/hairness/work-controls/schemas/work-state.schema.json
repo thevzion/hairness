@@ -27,7 +27,7 @@
     "entityRef": {
       "type": "object",
       "required": ["kind", "id"],
-      "properties": { "kind": { "type": "string" }, "id": { "type": "string" }, "revision": { "type": "integer", "minimum": 1 } }
+      "properties": { "kind": { "type": "string" }, "id": { "type": "string" }, "revision": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$", "maxLength": 128 } }
     },
     "relation": {
       "type": "object",

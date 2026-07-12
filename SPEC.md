@@ -23,7 +23,7 @@ An **AgenticAsset** is a conceptual, versioned unit that changes what an agent c
 A **CapabilitySpec** MUST declare a stable ID, owner, version, summary, and globally unique operations. An **Operation** MUST declare:
 
 - an ID and class `observe`, `derive`, or `effect`;
-- a typed ResultContract;
+- one or more typed ResultOptions and exactly one declared default;
 - declared sources and effects;
 - supported route kinds;
 - accepted modifiers.
@@ -39,6 +39,12 @@ A RouteSpec MUST use kind `deterministic`, `inline`, `worker`, or `external`. A 
 An observe/derive worker MUST use `producer`. An effect worker MUST use `executor`. The route kind MUST be supported by its operation.
 
 Every fan-out MUST declare one fan-in. Every required route MUST return a valid typed result before the plan can succeed. Optional failure MUST return as an explicit limit. Mechanical reduction MAY merge compatible typed results; semantic reconciliation MUST be an operation.
+
+An InvocationDraft MAY be proposed by a provider model or constructed directly. Hairness MUST validate it into one InvocationRequest referencing an active Operation. Resolution MUST prefer explicit inputs, then the provider draft, effective local state, distribution defaults, and trusted extension resolvers. Only an unresolved required ambiguity MAY become an InvocationGap.
+
+An InvocationPreview MUST remain below 4 KiB and expose resolved inputs, controls, route, expected result, effects, gaps, limits, and next action. `--auto` MAY bypass only preview confirmation. It MUST NOT bypass trust, ambiguity, budget escalation, authority, target or effect expansion, result validation, publication, or partial effects.
+
+Invocation events MUST be append-only and state MUST be reconstructible from them. Events and receipts MUST NOT contain transcripts, provider output, or internal reasoning.
 
 ## 5. Main session
 

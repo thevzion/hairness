@@ -34,6 +34,7 @@ export function workspacePaths(root) {
     overlay,
     config: join(overlay, 'config.json'),
     runs: join(overlay, 'runs'),
+    invocations: join(overlay, 'invocations'),
     plans: join(overlay, 'runs', '.plans'),
     artifacts: join(overlay, 'artifacts'),
     staging: join(overlay, 'artifacts', '.staging'),
@@ -59,6 +60,7 @@ export async function ensureOverlay(root) {
   const paths = workspacePaths(root)
   await Promise.all([
     paths.runs,
+    paths.invocations,
     paths.plans,
     paths.staging,
     paths.scratch,

@@ -9,6 +9,7 @@ import { ensureOverlay, readJson, userPaths, workspacePaths, writeJsonAtomic } f
 import { validateContract } from '../core/contracts.mjs'
 import { buildProviders } from '../providers/compiler.mjs'
 import { collectOnboardingContributions, descriptorManifest, descriptors } from './registry.mjs'
+import { assertGapAnswer, nextUnansweredGap } from './gaps.mjs'
 
 const exec = promisify(execFile)
 
@@ -70,7 +71,7 @@ export async function onboardingState(root) {
 
 export async function nextOnboardingGap(root) {
   const state = await loadExtensionGaps(root, await onboardingState(root))
-  const gap = state.gaps.find((candidate) => state.answers[candidate.id] === undefined)
+  const gap = nextUnansweredGap(state.gaps, state.answers)
   if (!gap) return { summary: 'Onboarding answers are complete.', status: 'ready', routes: ['hairness onboarding review'], limits: [] }
   return { ...gap, position: Object.keys(state.answers).length + 1, total: state.gaps.length }
 }
@@ -79,8 +80,7 @@ export async function answerOnboardingGap(root, id, value) {
   const state = await loadExtensionGaps(root, await onboardingState(root))
   const gap = state.gaps.find((candidate) => candidate.id === id)
   if (!gap) throw new HairnessError('onboarding_gap_unknown', `Unknown onboarding gap: ${id}`, { exitCode: 2 })
-  if (!gap.allowCustom && !gap.options.some((option) => option.value === value)) throw new HairnessError('onboarding_answer_invalid', `Invalid value for ${id}: ${value}`, { exitCode: 2 })
-  state.answers[id] = value
+  state.answers[id] = assertGapAnswer(gap, value, 'onboarding_answer_invalid')
   if (id === 'trust' && value === 'trust') await loadExtensionGaps(root, state)
   state.state = state.gaps.every((candidate) => state.answers[candidate.id] !== undefined) ? 'ready' : 'collecting'
   await writeJsonAtomic(statePath(root), state)
@@ -94,7 +94,7 @@ function selectedProviders(value) {
 
 export async function onboardingPlan(root) {
   const state = await loadExtensionGaps(root, await onboardingState(root))
-  const missing = state.gaps.find((gap) => state.answers[gap.id] === undefined)
+  const missing = nextUnansweredGap(state.gaps, state.answers)
   if (missing) throw new HairnessError('onboarding_incomplete', `Answer ${missing.id} before planning.`, { routes: ['hairness onboarding next'] })
   if (state.answers.trust !== 'trust') throw new HairnessError('workspace_untrusted', 'Review the distribution, then explicitly answer trust.', { routes: ['hairness onboarding answer trust --value trust'] })
   const providers = selectedProviders(state.answers.providers)

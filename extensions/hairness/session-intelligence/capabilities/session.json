@@ -7,7 +7,50 @@
   "version": "0.2.0-alpha.0",
   "summary": "Associate provider sessions and preserve compact handoffs without transcripts.",
   "operations": [
-    { "id": "inspect", "class": "observe", "summary": "Inspect or reconcile the current provider session association.", "result": { "schema": "HairnessSession", "disposition": "run-only" }, "sources": [], "effects": [], "routes": ["deterministic"], "acceptsModifiers": [] },
-    { "id": "handoff", "class": "derive", "summary": "Produce a compact durable session handoff.", "result": { "schema": "ArtifactEnvelope", "disposition": "artifact", "artifactOwner": "hairness/session-intelligence", "artifactType": "session-handoff" }, "sources": [], "effects": [], "routes": ["inline", "worker"], "acceptsModifiers": [] }
+    {
+      "id": "inspect",
+      "class": "observe",
+      "summary": "Inspect or reconcile the current provider session association.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "deterministic"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "HairnessSession",
+            "disposition": "run-only"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "handoff",
+      "class": "derive",
+      "summary": "Produce a compact durable session handoff.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "inline",
+        "worker"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ArtifactEnvelope",
+            "disposition": "artifact",
+            "artifactOwner": "hairness/session-intelligence",
+            "artifactType": "session-handoff"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    }
   ]
 }

@@ -20,7 +20,7 @@
     "capabilities": { "type": "array", "items": { "type": "string", "pattern": "^\\./" }, "uniqueItems": true },
     "dependencies": { "type": "array", "items": { "$ref": "protocol.schema.json#/$defs/ExtensionId" }, "uniqueItems": true },
     "services": { "type": "array", "items": { "$ref": "protocol.schema.json#/$defs/Slug" }, "uniqueItems": true },
-    "contributes": { "type": "array", "items": { "enum": ["attention", "agent-guidance", "authority-policy", "session-opening", "session-renderer", "provider-hooks", "onboarding"] }, "uniqueItems": true },
+    "contributes": { "type": "array", "items": { "enum": ["attention", "agent-guidance", "authority-policy", "session-opening", "session-renderer", "provider-hooks", "onboarding", "input-resolver"] }, "uniqueItems": true },
     "relationTypes": { "type": "array", "items": { "$ref": "protocol.schema.json#/$defs/DottedId" }, "uniqueItems": true },
     "intentModifiers": {
       "type": "array",

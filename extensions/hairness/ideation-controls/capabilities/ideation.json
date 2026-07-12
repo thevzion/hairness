@@ -7,7 +7,55 @@
   "version": "0.2.0-alpha.0",
   "summary": "Explore candidate directions and converge toward an explicit proposal.",
   "operations": [
-    { "id": "ideate", "class": "derive", "summary": "Open several candidate directions without treating them as decisions.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["inline", "worker"], "acceptsModifiers": ["hairness.creative", "hairness.presentation"] },
-    { "id": "propose", "class": "derive", "summary": "Recommend one direction with tradeoff, risk and confidence.", "result": { "schema": "ContextPacket", "disposition": "response" }, "sources": [], "effects": [], "routes": ["inline", "worker"], "acceptsModifiers": ["hairness.creative", "hairness.presentation"] }
+    {
+      "id": "ideate",
+      "class": "derive",
+      "summary": "Open several candidate directions without treating them as decisions.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "inline",
+        "worker"
+      ],
+      "acceptsModifiers": [
+        "hairness.creative",
+        "hairness.presentation"
+      ],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    },
+    {
+      "id": "propose",
+      "class": "derive",
+      "summary": "Recommend one direction with tradeoff, risk and confidence.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "inline",
+        "worker"
+      ],
+      "acceptsModifiers": [
+        "hairness.creative",
+        "hairness.presentation"
+      ],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        }
+      ],
+      "defaultResult": "default"
+    }
   ]
 }
