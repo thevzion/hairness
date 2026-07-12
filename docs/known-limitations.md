@@ -8,7 +8,7 @@ These limitations apply to `0.2.0-alpha.0`.
   Exact version pinning is required.
 - Codex and Claude provider projections use guarded agent-first-call routing
   where the host cannot guarantee a deterministic command hook.
-- Provider model qualification is intentionally batched into a final campaign.
+- The existing Codex attestation is not a cross-provider guarantee.
   Deterministic fixtures do not prove native UI behavior by themselves.
 - Claude live qualification depends on a locally authenticated Claude CLI.
 - The community catalogue, PackManifest, remote registry and extension search

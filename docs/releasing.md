@@ -13,7 +13,7 @@ reported by the CLI.
 
 1. Require a clean Git tree and the expected public commit.
 2. Run deterministic checks on Node.js 22 and 24.
-3. Run the consolidated Codex and Claude qualification campaign once.
+3. Review deterministic provider parity, existing attestations and explicit live limits.
 4. Generate the changelog preview from accepted Conventional Commits.
 5. Inspect provider projections and the npm tarball file list.
 6. Install the exact tarball and create a temporary distribution from it.

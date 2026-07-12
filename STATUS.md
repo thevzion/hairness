@@ -7,8 +7,8 @@ Current target: `0.2.0-alpha.0`
 - `npm-alpha`
   - Outcome: The experimental package, documentation and release evidence are ready for a separate publication checkpoint.
   - State: active
-  - Gate: Deterministic package and distribution validation passes, followed by one consolidated provider campaign.
-  - Evidence: Content-addressed tarball, known limitations, release candidate receipt and provider attestations.
+  - Gate: Deterministic package and distribution validation passes.
+  - Evidence: Content-addressed tarball, known limitations, release candidate receipt and the existing Codex attestation.
 
 ## Next
 
@@ -34,7 +34,7 @@ Current target: `0.2.0-alpha.0`
 - Minimal, standard and forge payloads contain selected source only.
 - Generic package contains no local state, private composition, secret, transcript or private path.
 - Node.js 22 and 24 checks pass.
-- Native provider qualification is run once after deterministic validation, not during each implementation step.
+- Additional native provider qualification is non-blocking alpha follow-up evidence.
 
 ## References
 
