@@ -1,7 +1,7 @@
-<!-- hairness:begin id="agent-contract" owner="hairness/cockpit" schema="1" digest="sha256:6ee1f8c18e118b53367d33890d90286d0f638f10faf764a27664da6cd7cd687b" -->
+<!-- hairness:begin id="agent-contract" owner="hairness/cockpit" schema="1" digest="sha256:b9821655517d1b9630307a7de9f692b95728b9c2c278545436201b8ee4d3f203" -->
 ## Hairness agent contract
 
-- Use the injected SessionOpening directly. If it is absent, run `hairness session opening --json` exactly once before broad exploration and obey its language instruction.
+- Use the injected SessionOpening directly. If it is absent, run `hairness opening --json` exactly once before broad exploration and obey its language instruction.
 - For wake-up, reuse the fresh opening's three attention signals without tools. Run `hairness wake-up --json` exactly once only when the opening is absent, stale, or the user explicitly requests refresh.
 - Express work through the active command surface when a routed capability exists.
 - Artifacts orient; live sources prove current truth.
@@ -21,11 +21,11 @@
 - Stop and request a split when one capsule cannot complete the assignment inside its budget and boundary.
 <!-- hairness:end id="agent-contract" -->
 
-<!-- hairness:begin id="forge-guidance" owner="hairness/maintainer" schema="1" digest="sha256:29f41bd860bfa34f78c18c042c705ff518e2e3cce6b9867c3fe60bea933ee343" -->
+<!-- hairness:begin id="forge-guidance" owner="hairness/maintainer" schema="1" digest="sha256:1d3e6180a55f872f4ca7bdf1b99daf1ec4305bc9e10aa5e49b669c54d4a6ae99" -->
 ## Forge maintenance
 
 - Read the documentation index, then only the ADRs relevant to the changed owner or path.
-- Read `STATUS.md` before opening new scope and keep its current chantier aligned with Workframes.
+- Read `STATUS.md` before opening new scope and keep its current chantier aligned with Work Controls.
 - Change canonical extension or core sources, never generated provider projections directly.
 - Run `hairness maintain impact` before a Git checkpoint.
 - Run `hairness build --check` after provider command, instruction, extension, or guidance changes.

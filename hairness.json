@@ -24,8 +24,16 @@
       "path": "./extensions/hairness/distribution"
     },
     {
-      "id": "hairness/workframes",
-      "path": "./extensions/hairness/workframes"
+      "id": "hairness/work-controls",
+      "path": "./extensions/hairness/work-controls"
+    },
+    {
+      "id": "hairness/understanding-controls",
+      "path": "./extensions/hairness/understanding-controls"
+    },
+    {
+      "id": "hairness/ideation-controls",
+      "path": "./extensions/hairness/ideation-controls"
     },
     {
       "id": "hairness/presentation-controls",
@@ -48,12 +56,8 @@
       "path": "./extensions/hairness/codebase"
     },
     {
-      "id": "hairness/source-controls",
-      "path": "./extensions/hairness/source-controls"
-    },
-    {
-      "id": "hairness/git",
-      "path": "./extensions/hairness/git"
+      "id": "hairness/sources",
+      "path": "./extensions/hairness/sources"
     }
   ],
   "sources": [{ "id": "git", "requirement": "required" }],

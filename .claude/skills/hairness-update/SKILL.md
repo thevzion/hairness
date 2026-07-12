@@ -8,6 +8,7 @@ description: Inspect and safely update source-owned Hairness materials.
 Invocation: `/hairness-update`
 Deterministic route: `hairness update doctor --json`
 Owner: `hairness/distribution`
+Operation: `hairness/distribution-lifecycle#inspect`
 
 # Hairness distribution lifecycle
 

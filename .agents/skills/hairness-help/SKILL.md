@@ -8,6 +8,7 @@ description: Explain the active human command surface and exact host invocations
 Invocation: `$hairness-help`
 Deterministic route: `hairness help --json`
 Owner: `hairness/cockpit`
+Operation: `hairness/cockpit#help`
 
 Run `hairness help --json`. Explain only commands materialized in this distribution and use the exact provider invocation.
 

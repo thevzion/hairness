@@ -8,6 +8,7 @@ description: Inspect or route work for a registered codebase.
 Invocation: `/hairness-codebase`
 Deterministic route: `hairness codebase --json`
 Owner: `hairness/codebase`
+Operation: `hairness/codebase#inspect`
 
 Resolve the codebase and action, then run the matching `hairness codebase` route. Treat live source evidence as current truth.
 

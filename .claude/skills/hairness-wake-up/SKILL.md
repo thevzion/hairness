@@ -8,6 +8,7 @@ description: Show current attention, limits, and the next useful route.
 Invocation: `/hairness-wake-up`
 Deterministic route: `hairness wake-up --json`
 Owner: `hairness/cockpit`
+Operation: `hairness/cockpit#wake-up`
 
 If a fresh SessionOpening is already present, render its three attention signals directly with zero tool calls. If it is missing or the user explicitly requests a refresh, run exactly one `hairness wake-up --json`. Present the highest-priority signal and its deterministic next route.
 

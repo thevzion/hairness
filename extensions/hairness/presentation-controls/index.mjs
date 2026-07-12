@@ -5,6 +5,6 @@ export async function handleCommand({ target, action, flags, runtime }) {
   if (target !== 'request') throw new Error(`Unknown presentation action: ${target}`)
   const request = { mode: flags.mode ?? action ?? 'auto', maxViews: Number(flags['max-views'] ?? 3) }
   if (!modes.includes(request.mode)) throw new Error(`Unknown presentation mode: ${request.mode}`)
-  await runtime.contracts.validate('PresentationRequest', request)
+  await runtime.contracts.validateSchema('./schemas/presentation-request.schema.json', request, 'presentation request')
   return { ...request, summary: `Let the main session infer up to ${request.maxViews} sufficient view(s).`, limits: ['Do not invent content, structure, decisions, or proof.'], routes: [] }
 }

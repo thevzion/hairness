@@ -8,6 +8,7 @@ description: Route one intention through the active Hairness distribution.
 Invocation: `/hairness`
 Deterministic route: `hairness help --json`
 Owner: `hairness/cockpit`
+Operation: `router`
 
 Resolve the human intention, then route it through the smallest relevant Hairness command. Start with help when ownership is unclear.
 

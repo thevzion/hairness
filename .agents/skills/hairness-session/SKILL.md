@@ -8,6 +8,7 @@ description: Inspect or reconcile the current provider session association.
 Invocation: `$hairness-session`
 Deterministic route: `hairness session status --json`
 Owner: `hairness/session-intelligence`
+Operation: `hairness/session#inspect`
 
 Run the requested session route. Preserve provider associations and digests, never transcripts or reasoning.
 

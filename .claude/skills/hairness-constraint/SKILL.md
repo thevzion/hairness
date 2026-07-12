@@ -8,6 +8,7 @@ description: Inspect or change inherited session, segment and frame constraints.
 Invocation: `/hairness-constraint`
 Deterministic route: `hairness constraint show --json`
 Owner: `hairness/constraints`
+Operation: `hairness/constraints#inspect`
 
 Constraints inherit from session to segment, frame and operation. A child may only tighten its boundary. Clearing is explicit at the owning scope. Constraints never grant authority; every effect still requires an operation-scoped checkpoint and worker capsule.
 

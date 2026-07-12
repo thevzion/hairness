@@ -8,6 +8,7 @@ description: Continue deterministic local onboarding one question at a time.
 Invocation: `$hairness-onboarding`
 Deterministic route: `hairness onboarding next --json`
 Owner: `hairness/cockpit`
+Operation: `hairness/cockpit#onboarding`
 
 Run `hairness onboarding next --json`. Ask exactly the returned question; never skip the checkpoint or infer trust.
 

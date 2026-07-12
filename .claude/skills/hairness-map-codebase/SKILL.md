@@ -1,6 +1,6 @@
 ---
 name: hairness-map-codebase
-description: Produce or refresh one bounded codebase digest.
+description: Produce a bounded codebase, entrypoint, or system map.
 ---
 
 # hairness-map-codebase
@@ -8,6 +8,10 @@ description: Produce or refresh one bounded codebase digest.
 Invocation: `/hairness-map-codebase`
 Deterministic route: `hairness codebase map --json`
 Owner: `hairness/codebase`
+Operation: `hairness/codebase#map`
+
+Accepted modifiers:
+- `--present <auto|compact|visual|explicit|summary|diagram|tree|table|timeline|checklist|matrix|trace>` (default: `auto`)
 
 Run `hairness codebase map <id> --json`. Spawn one native producer only when the returned capsule requests it, then fan in.
 

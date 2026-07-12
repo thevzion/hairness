@@ -10,8 +10,15 @@ const root = new URL('../', import.meta.url).pathname.replace(/\/$/, '')
 test('provider compiler emits the same active command set for Codex and Claude', async () => {
   await buildProviders(root, { check: true })
   const manifest = JSON.parse(await readFile(join(root, 'hairness.build.json')))
-  assert.equal(manifest.commands.length, 30)
-  assert.equal(new Set(manifest.commands.map((command) => command.name)).size, 30)
+  assert.equal(manifest.commands.length, 24)
+  assert.equal(new Set(manifest.commands.map((command) => command.name)).size, 24)
+  assert.deepEqual(manifest.commands.map((command) => command.name), [
+    'hairness', 'hairness-help', 'hairness-onboarding', 'hairness-wake-up', 'hairness-update',
+    'hairness-work', 'hairness-discuss', 'hairness-recap', 'hairness-plan', 'hairness-act', 'hairness-execute',
+    'hairness-map', 'hairness-explain', 'hairness-compare', 'hairness-ideate', 'hairness-propose',
+    'hairness-constraint', 'hairness-session', 'hairness-handoff', 'hairness-maintain',
+    'hairness-codebase', 'hairness-map-codebase', 'hairness-source', 'hairness-check-sources',
+  ])
   for (const command of manifest.commands) {
     await access(join(root, '.agents/skills', command.name, 'SKILL.md'))
     await access(join(root, '.claude/skills', command.name, 'SKILL.md'))
