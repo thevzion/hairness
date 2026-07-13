@@ -2,11 +2,10 @@
 
 These limitations apply to `0.2.0-alpha.0`.
 
-- The npm package is prepared but not published. The documented `npx` flow is
-  unavailable until a separate publication checkpoint completes.
-- Public npm launch is blocked until the ergonomic delivery surface is
-  dogfooded end-to-end in a fresh Codex task and its exact release candidate is
-  approved. Deterministic Codex/Claude projection parity remains mandatory.
+- The npm alpha uses the prerelease channel `next`; `latest` is intentionally
+  not used. Pin `@hairness/cli@0.2.0-alpha.0` for reproducible evaluation.
+- Package publication, Git tagging and GitHub Release creation remain separate
+  authority boundaries. A successful pull-request merge never grants them.
 - Protocol, command, capability and extension contracts may change before 1.0.
   Exact version pinning is required.
 - Provider command files are lossy projections of Hairness metadata. The

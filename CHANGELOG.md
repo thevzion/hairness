@@ -6,6 +6,8 @@ entries.
 
 ## Unreleased
 
+## 0.2.0-alpha.0 - 2026-07-13
+
 ### Changed
 
 - Replaced provider plugins and attachments with tracked repo-local projections.
@@ -16,6 +18,9 @@ entries.
 - Separated natural intent mode from direct automation while preserving one canonical request and receipt.
 - Replaced sequential forge delivery with policy-driven parallel change plans and aggregated release plans.
 - Made authority approval revalidate stored checkpoints, policies, targets and locks before returning an executor capsule.
+- Repositioned Hairness as a provider-agnostic harness for agentic systems while keeping Codex and Claude as the initial projections ([#10](https://github.com/thevzion/hairness/pull/10)).
+- Completed the release pull-request lifecycle with exact-head CI, squash merge and public `main` verification gates ([#11](https://github.com/thevzion/hairness/pull/11)).
+- Preserved bare CLI version reporting while allowing nested release commands to receive their explicit version argument ([#12](https://github.com/thevzion/hairness/pull/12)).
 
 ### Added
 
