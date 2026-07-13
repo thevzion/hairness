@@ -1,7 +1,21 @@
 {
   "name": "@hairness/cli",
   "version": "0.2.0-alpha.0",
-  "description": "The intent control layer for native AI agents and source-owned agentic assets.",
+  "description": "Provider-agnostic harness that equips native AI agents to operate across your codebases, tools, and workflows.",
+  "keywords": [
+    "ai-agents",
+    "agentic-ai",
+    "agentic-systems",
+    "ai-harness",
+    "provider-agnostic",
+    "developer-tools",
+    "cli",
+    "automation",
+    "human-in-the-loop",
+    "multi-repo",
+    "codex",
+    "claude-code"
+  ],
   "private": false,
   "license": "MIT",
   "repository": {
