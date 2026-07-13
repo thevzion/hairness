@@ -76,6 +76,13 @@ async function completeEffect(env, plan, stage, flags = {}) {
   return { prepared, receipt }
 }
 
+async function completePartialEffect(env, plan, stage, status = 'partial', flags = {}) {
+  const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage, ...flags }, runtime: env.rt })
+  env.runs.get(prepared.runId).result = { status: 'succeeded', summary: `${stage} ${status}`, proof: [`receipt:${stage}:${status}`], outcome: { receipt: { status, summary: `${stage} ${status}`, effects: prepared.checkpoint.effects, targets: prepared.checkpoint.targets, proof: [`receipt:${stage}:${status}`], head: flags.head ?? null } } }
+  const receipt = await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage, run: prepared.runId }, runtime: env.rt })
+  return { prepared, receipt }
+}
+
 test('accepted briefs are idempotent and allow parallel change plans', async (context) => {
   const env = await fixture(); context.after(env.cleanup)
   const first = await draftAndAccept(env, 'Add safe delivery')
@@ -171,6 +178,20 @@ test('release planning aggregates only conventional release-impacting changes', 
   assert.equal(mismatchedPublish.status, 'blocked')
   assert.match(mismatchedPublish.limits[0], /exact public commit/)
 
+  await completeEffect(env, plan, 'npm-publish', { head: 'release-main-head' })
+  const tagCreate = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'git-tag-create', head: 'release-main-head' }, runtime: env.rt })
+  assert.deepEqual(tagCreate.checkpoint.effects, ['git:tag'])
+  assert.deepEqual(tagCreate.checkpoint.targets, [env.root])
+  env.runs.get(tagCreate.runId).result = { status: 'succeeded', summary: 'tag created', proof: ['tag:local'], outcome: { receipt: { status: 'succeeded', summary: 'tag created', effects: ['git:tag'], targets: [env.root], proof: ['tag:local'], head: 'release-main-head' } } }
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'git-tag-create', run: tagCreate.runId }, runtime: env.rt })
+  const tagPush = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'git-tag-push', head: 'release-main-head' }, runtime: env.rt })
+  assert.deepEqual(tagPush.checkpoint.effects, ['git:push'])
+  assert.match(tagPush.checkpoint.targets[0], /^github:\/\/example\/widget\/tags\//)
+  env.runs.get(tagPush.runId).result = { status: 'succeeded', summary: 'tag pushed', proof: ['tag:remote'], outcome: { receipt: { status: 'succeeded', summary: 'tag pushed', effects: ['git:push'], targets: tagPush.checkpoint.targets, proof: ['tag:remote'], head: 'release-main-head' } } }
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'git-tag-push', run: tagPush.runId }, runtime: env.rt })
+  const afterTag = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: {}, runtime: env.rt })
+  assert.equal(afterTag.results[0].stage, 'github-release')
+
   const releaseState = env.values.get('state.json')
   const ciReceipt = releaseState.receipts.find((receipt) => receipt.planId === plan.id && receipt.stage === 'ci')
   ciReceipt.status = 'partial'
@@ -191,11 +212,70 @@ test('changed policy and partial evidence block progression', async (context) =>
   const blocked = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'prepare' }, runtime: env.rt })
   assert.equal(blocked.status, 'blocked')
   env.setPolicy(basePolicy)
-  const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'prepare' }, runtime: env.rt })
-  env.runs.get(prepared.runId).result = { status: 'succeeded', summary: 'branch partial', proof: ['branch:unknown'], outcome: { receipt: { status: 'partial', summary: 'branch partial', effects: ['git:branch'], targets: prepared.checkpoint.targets, proof: ['branch:unknown'], head: null } } }
-  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'prepare', run: prepared.runId }, runtime: env.rt })
+  const { receipt } = await completePartialEffect(env, plan, 'prepare')
   const next = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: {}, runtime: env.rt })
   assert.equal(next.results[0].stage, 'prepare')
+  assert.equal(next.results[0].status, 'needs-reconciliation')
+  assert.deepEqual(next.results[0].decisions, ['accept-deviation', 'retry', 'abort'])
+
+  const prepared = await handleCommand({ root: env.root, target: 'reconcile', action: plan.id, flags: { stage: 'prepare', receipt: receipt.id, decision: 'accept-deviation', reason: 'The observed branch is usable.', proof: 'git:branch-present,head:abc1234' }, runtime: env.rt })
+  assert.equal(prepared.status, 'needs-authority')
+  assert.equal(prepared.checkpoint.receiptId, receipt.id)
+  assert.deepEqual(prepared.effects, [])
+  const automatic = await handleCommand({ root: env.root, target: 'reconcile', action: plan.id, flags: { checkpoint: prepared.checkpoint.id, auto: true }, runtime: env.rt })
+  assert.equal(automatic.status, 'blocked')
+
+  env.setPolicy({ ...basePolicy, requiredChecks: [...basePolicy.requiredChecks, 'security'] })
+  const stalePolicy = await handleCommand({ root: env.root, target: 'reconcile', action: plan.id, flags: { checkpoint: prepared.checkpoint.id }, runtime: env.rt })
+  assert.equal(stalePolicy.status, 'blocked')
+  env.setPolicy(basePolicy)
+  const accepted = await handleCommand({ root: env.root, target: 'reconcile', action: plan.id, flags: { checkpoint: prepared.checkpoint.id }, runtime: env.rt })
+  assert.equal(accepted.status, 'ready')
+  const state = await handleCommand({ root: env.root, target: 'status', flags: {}, runtime: env.rt })
+  assert.equal(state.receipts.find((item) => item.id === receipt.id).status, 'partial')
+  assert.equal(state.reconciliations[0].receiptId, receipt.id)
+  assert.equal(state.reconciliations[0].decision, 'accept-deviation')
+  const after = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: {}, runtime: env.rt })
+  assert.equal(after.results[0].stage, 'implement')
+})
+
+test('retry and abort remain explicit append-only reconciliation outcomes', async (context) => {
+  const retryEnv = await fixture(); context.after(retryEnv.cleanup)
+  const { plan: retryPlan } = await draftAndAccept(retryEnv, 'Retry one effect')
+  const { receipt: retryReceipt } = await completePartialEffect(retryEnv, retryPlan, 'prepare', 'unknown')
+  const retryCheckpoint = await handleCommand({ root: retryEnv.root, target: 'reconcile', action: retryPlan.id, flags: { stage: 'prepare', receipt: retryReceipt.id, decision: 'retry', reason: 'Live proof shows no branch was created.', proof: 'git:branch-absent' }, runtime: retryEnv.rt })
+  const storedCheckpoint = retryEnv.values.get('state.json').reconciliationCheckpoints.find((item) => item.id === retryCheckpoint.checkpoint.id)
+  storedCheckpoint.createdAt = '2000-01-01T00:00:00.000Z'
+  const stale = await handleCommand({ root: retryEnv.root, target: 'reconcile', action: retryPlan.id, flags: { checkpoint: retryCheckpoint.checkpoint.id }, runtime: retryEnv.rt })
+  assert.equal(stale.status, 'blocked')
+  storedCheckpoint.createdAt = new Date().toISOString()
+  await handleCommand({ root: retryEnv.root, target: 'reconcile', action: retryPlan.id, flags: { checkpoint: retryCheckpoint.checkpoint.id }, runtime: retryEnv.rt })
+  const retryState = await handleCommand({ root: retryEnv.root, target: 'status', flags: {}, runtime: retryEnv.rt })
+  const storedRetryPlan = retryState.plans.find((item) => item.id === retryPlan.id)
+  assert.equal(storedRetryPlan.runs.prepare, undefined)
+  assert.equal(retryState.receipts.find((item) => item.id === retryReceipt.id).status, 'unknown')
+  assert.equal(retryState.reconciliations[0].decision, 'retry')
+  assert.equal((await handleCommand({ root: retryEnv.root, target: 'next', action: retryPlan.id, flags: {}, runtime: retryEnv.rt })).results[0].status, 'needs-checkpoint')
+
+  const abortEnv = await fixture(); context.after(abortEnv.cleanup)
+  const { plan: abortPlan } = await draftAndAccept(abortEnv, 'Abort one effect')
+  const { receipt: abortReceipt } = await completePartialEffect(abortEnv, abortPlan, 'prepare')
+  const abortCheckpoint = await handleCommand({ root: abortEnv.root, target: 'reconcile', action: abortPlan.id, flags: { stage: 'prepare', receipt: abortReceipt.id, decision: 'abort', reason: 'The deviation is not acceptable.', proof: 'operator:stop' }, runtime: abortEnv.rt })
+  const aborted = await handleCommand({ root: abortEnv.root, target: 'reconcile', action: abortPlan.id, flags: { checkpoint: abortCheckpoint.checkpoint.id }, runtime: abortEnv.rt })
+  assert.equal(aborted.status, 'blocked')
+  const abortNext = await handleCommand({ root: abortEnv.root, target: 'next', action: abortPlan.id, flags: {}, runtime: abortEnv.rt })
+  assert.equal(abortNext.results[0].status, 'blocked')
+  assert.equal(abortNext.results[0].reconciliation.decision, 'abort')
+})
+
+test('unstarted legacy Git tag stages migrate without rewriting historical evidence', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const plan = await handleCommand({ root: env.root, target: 'plan', flags: { kind: 'release', version: '1.2.0-alpha.0' }, runtime: env.rt })
+  const state = env.values.get('state.json')
+  state.plans.find((item) => item.id === plan.id).stages = state.plans.find((item) => item.id === plan.id).stages.flatMap((stage) => ['git-tag-create', 'git-tag-push'].includes(stage) ? [] : stage === 'github-release' ? ['git-tag', stage] : [stage])
+  const migrated = await handleCommand({ root: env.root, target: 'status', flags: {}, runtime: env.rt })
+  const stages = migrated.plans.find((item) => item.id === plan.id).stages
+  assert.deepEqual(stages.slice(-3), ['git-tag-create', 'git-tag-push', 'github-release'])
 })
 
 test('a neutral policy proves Delivery Controls do not hardcode Hairness', async (context) => {

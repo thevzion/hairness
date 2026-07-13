@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "protocolVersion": "0.2",
   "implementationVersion": "0.2.0-alpha.0",
-  "sourceDigest": "sha256:bbdf3bdfabb8fb72b862d5aac1155c0b7609a438f6b83f43f93e2b772624fd77",
+  "sourceDigest": "sha256:cd03e999ea0e1a27e4d7a9bf9dd69f60a2f0572ebad518715964bc5f44b441ff",
   "composition": "hairness",
   "role": "forge",
   "local": false,
@@ -451,36 +451,36 @@
       "path": ".agents/skills/hairness-cmd-want-ship/SKILL.md",
       "owner": "hairness/delivery-controls",
       "provider": "codex",
-      "digest": "sha256:507211a933ce0211fed073795e1437be7fe83f72de211c751912c557860a1929",
-      "byteSize": 939
+      "digest": "sha256:819f1a9c2543b382ea6058d7ff7defc2333ceb87fa15b5659f01d2bf784cc0ae",
+      "byteSize": 942
     },
     {
       "path": ".agents/skills/hairness-cmd-ship-it/SKILL.md",
       "owner": "hairness/delivery-controls",
       "provider": "codex",
-      "digest": "sha256:58ff2c7c141dda468ee85ae48da39ede5fb8fa635ccd8803a9cc7764f90d187f",
-      "byteSize": 937
+      "digest": "sha256:eaf14cd20ac9b436df001d6dffc80d03ce08d3ff6caffe4417091f9462a52c76",
+      "byteSize": 940
     },
     {
       "path": ".agents/skills/hairness-publish-pr/SKILL.md",
       "owner": "hairness/delivery-controls",
       "provider": "codex",
-      "digest": "sha256:1c5e238ef4d11409856795b8c02bdf35ab709d8ab69640782e27042671a2fd7b",
-      "byteSize": 989
+      "digest": "sha256:bb624a81b1ff623263221383cf997d58587c416ffd1b8341949a3173d97d5be1",
+      "byteSize": 992
     },
     {
       "path": ".agents/skills/hairness-merge-pr/SKILL.md",
       "owner": "hairness/delivery-controls",
       "provider": "codex",
-      "digest": "sha256:ae23531c829e41e50c293904190b881d77b2bb31ff5ae891d221575b3e1c4658",
-      "byteSize": 961
+      "digest": "sha256:8e2abb3d1cfe9f6111036be7f910fb4e546869600b04060f0dbe94a7380fa006",
+      "byteSize": 964
     },
     {
       "path": ".agents/skills/hairness-publish-release/SKILL.md",
       "owner": "hairness/delivery-controls",
       "provider": "codex",
-      "digest": "sha256:d0953c3cf4855a6df70e8dcc9604422e572b71624f78e883f808ee7c18a352e3",
-      "byteSize": 1017
+      "digest": "sha256:8d72f813e0f7d30804b34b6dd6599805957998fc87b17d65ab01c24b3ca2e7ea",
+      "byteSize": 1020
     },
     {
       "path": ".agents/skills/hairness-codebase/SKILL.md",
@@ -703,36 +703,36 @@
       "path": ".claude/skills/hairness-cmd-want-ship/SKILL.md",
       "owner": "hairness/delivery-controls",
       "provider": "claude",
-      "digest": "sha256:83e7836786869b5d8bb55613c15ee700e1a5abcdc1c32954d2e302049518ef1d",
-      "byteSize": 939
+      "digest": "sha256:8b1de0e5182ba59e07b8ea455e7ab491b65440ac1116e3e2f14b4ea751421098",
+      "byteSize": 942
     },
     {
       "path": ".claude/skills/hairness-cmd-ship-it/SKILL.md",
       "owner": "hairness/delivery-controls",
       "provider": "claude",
-      "digest": "sha256:54fc4f71ef267d58bd4ece5f00e26ee10b65a3f7c338d31e1f37106810de6ec3",
-      "byteSize": 937
+      "digest": "sha256:bf4a9cadd11ec5bab97a810d8658f2e0b5b8ed04bdc6b5d36134d55cc3f47533",
+      "byteSize": 940
     },
     {
       "path": ".claude/skills/hairness-publish-pr/SKILL.md",
       "owner": "hairness/delivery-controls",
       "provider": "claude",
-      "digest": "sha256:def0c2527e1d7334c8d35dd4c2a6789858fd0fdc6d65dea53d2cf9c500eb90c5",
-      "byteSize": 989
+      "digest": "sha256:cf6fb4c609ed791902c9d6679a65fa610544ef0a429addc3ae50d908a5509c62",
+      "byteSize": 992
     },
     {
       "path": ".claude/skills/hairness-merge-pr/SKILL.md",
       "owner": "hairness/delivery-controls",
       "provider": "claude",
-      "digest": "sha256:e1ef2e0e6ea132290377223a667e444c9d3cb01a6300668195fa58a20a0b3a6a",
-      "byteSize": 961
+      "digest": "sha256:93e6eb15fafcf50c10d2ccbab6266becb38f9bdd2c2ccd1e89b013b1d23a7c71",
+      "byteSize": 964
     },
     {
       "path": ".claude/skills/hairness-publish-release/SKILL.md",
       "owner": "hairness/delivery-controls",
       "provider": "claude",
-      "digest": "sha256:0ddcc315000727a09a1ae3500db404ba61d80ac5f6223746660b0c63eefcaa65",
-      "byteSize": 1017
+      "digest": "sha256:2e1ee7283ac8dceab1890ef9c89af4134982bdf953d3b198a3192cbd781dd718",
+      "byteSize": 1020
     },
     {
       "path": ".claude/skills/hairness-codebase/SKILL.md",

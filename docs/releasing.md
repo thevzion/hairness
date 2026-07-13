@@ -8,9 +8,11 @@ environment approval.
 
 ## Alpha policy
 
-Pre-release versions use the npm dist-tag `next`. They MUST NOT be published as
-`latest`. Protocol and implementation versions are independent and MUST both be
-reported by the CLI.
+Pre-release versions are intentionally published with the npm dist-tag `next`;
+release automation never assigns `latest`. If the registry exposes an extra
+tag, record and reconcile the exact publication receipt before continuing.
+Consumers should use `next` or an exact version. Protocol and implementation
+versions are independent and MUST both be reported by the CLI.
 
 ## Release candidate
 
@@ -60,6 +62,15 @@ checkpoint permits `npm publish <exact-tarball> --access public --tag next`.
 Timeout or unknown output requires `npm view` reconciliation and integrity
 comparison before any retry.
 
+## Reconciliation
+
+A partial, failed or unknown effect receipt is immutable. Delivery Controls
+requires a fresh proof and one separately checkpointed decision:
+`accept-deviation`, `retry` or `abort`. The checkpoint binds the exact receipt
+digest and current policy. `--auto` can prepare the decision but cannot apply
+it, and the original effect must never be repeated until reconciliation has
+resolved its observed outcome.
+
 ## External effects
 
 The following actions require separate confirmation and receipts:
@@ -77,7 +88,7 @@ or announcements into one implicit approval. If an effect is partial or its
 result is unknown, stop and reconcile before continuing.
 
 After npm verification, create the annotated Git tag, push it, and create the
-GitHub prerelease through three separate checkpoints. Download the registry
+GitHub prerelease through three separate stages, Runs and checkpoints. Download the registry
 tarball and compare integrity and SHA-256 with the candidate before tagging.
 The post-release traceability PR records date, commit, tag, npm URL and digests;
 it also introduces Trusted Publishing without `NPM_TOKEN`. The future workflow

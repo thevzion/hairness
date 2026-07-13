@@ -12,7 +12,7 @@
   "module": "./index.mjs",
   "capabilities": ["./capabilities/delivery.json"],
   "dependencies": ["hairness/initiative-controls", "hairness/work-controls", "hairness/sources"],
-  "commands": [{ "namespace": "delivery", "actions": ["status", "want", "accept", "plan", "next", "checkpoint", "receipt", "release-candidate"] }],
+  "commands": [{ "namespace": "delivery", "actions": ["status", "want", "accept", "plan", "next", "checkpoint", "receipt", "reconcile", "release-candidate"] }],
   "artifactSchemas": [
     { "type": "delivery-brief", "schema": "./schemas/delivery-brief.schema.json" },
     { "type": "pull-request-proposal", "schema": "./schemas/pull-request-proposal.schema.json" },
