@@ -255,9 +255,8 @@ function successfulReceipt(value, plan, stage, head) {
   })
 }
 
-function pendingStage(value, plan, head) {
-  const expectedHead = plan.kind === 'change' ? head : null
-  return plan.stages.find((stage) => !successfulReceipt(value, plan, stage, expectedHead)) ?? null
+function pendingStage(value, plan) {
+  return plan.stages.find((stage) => !successfulReceipt(value, plan, stage)) ?? null
 }
 
 function pendingReconciliation(value, plan, stage) {
@@ -436,10 +435,11 @@ async function prepareCheckpoint(root, plan, stage, flags, runtime, value) {
   const targets = split(flags.targets).length ? split(flags.targets) : defaultTargets(root, plan, stage, currentPolicy.value)
   if (['publish-pr', 'release-pr'].includes(stage) && (!flags.head || !flags['diff-digest'] || !split(flags.files).length)) throw new Error(`${stage} requires --head, --diff-digest and --files from an inspected diff.`)
   if (['merge', 'npm-publish', 'git-tag-create', 'git-tag-push', 'git-tag', 'github-release'].includes(stage) && !flags.head) throw new Error(`${stage} requires the exact --head commit.`)
-  if (stage === 'merge' && plan.kind === 'release') {
-    const pullRequest = successfulReceipt(value, plan, 'release-pr')
+  if (stage === 'merge') {
+    const pullRequestStage = plan.kind === 'release' ? 'release-pr' : 'publish-pr'
+    const pullRequest = successfulReceipt(value, plan, pullRequestStage)
     const ci = successfulReceipt(value, plan, 'ci', flags.head)
-    if (!pullRequest?.head || pullRequest.head !== flags.head || !ci) return { summary: 'Release merge proof does not match the pull-request head.', status: 'blocked', limits: ['Re-observe CI and reconcile the exact pull-request head before merging.'], routes: [`hairness delivery next ${plan.id}`] }
+    if (!pullRequest?.head || pullRequest.head !== flags.head || !ci) return { summary: 'Merge proof does not match the pull-request head.', status: 'blocked', limits: ['Re-observe the pull request and CI for the exact head before merging.'], routes: [`hairness delivery next ${plan.id}`] }
   }
   if (stage === 'npm-publish' && !plan.artifacts.some((id) => id.startsWith('release/'))) return { summary: 'npm-publish requires a promoted ReleaseCandidate.', status: 'blocked', limits: ['Prepare and inspect the ReleaseCandidate first.'], routes: [`hairness delivery release-candidate ${plan.id}`] }
   if (stage === 'git-tag-push' && !successfulReceipt(value, plan, 'git-tag-create', flags.head)) return { summary: 'git-tag-push requires the exact local tag creation receipt.', status: 'blocked', limits: ['Create and verify the annotated tag before pushing it.'], routes: [`hairness delivery next ${plan.id}`] }

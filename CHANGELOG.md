@@ -10,6 +10,7 @@ entries.
 
 - Preserve partial, failed and unknown delivery receipts as immutable evidence and resume only through append-only `accept-deviation`, `retry` or `abort` reconciliation decisions.
 - Split local Git tag creation from remote tag push into separate release stages, Runs and checkpoints.
+- Preserve pre-commit qualification across the resulting pull-request head while requiring exact PR and CI head agreement at merge.
 
 ## 0.2.0-alpha.0 - 2026-07-13
 

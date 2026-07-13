@@ -48,4 +48,9 @@ pushes, opens a PR, merges, tags, releases, publishes npm, or posts externally.
 Those are separate provider-native executor Runs; npm, local Git tag creation,
 remote tag push and GitHub Release can never share implicit authority.
 
+Stage order survives the transition from a qualified pre-commit diff to its
+resulting pull-request head. Merge authority is granted only when the
+pull-request receipt and fresh CI receipt both match the exact requested head;
+the later head does not retroactively invalidate the earlier qualification.
+
 This boundary lets Hairness improve itself without becoming a Git bot: the native agent performs an approved operation and returns a receipt; the extension preserves the plan and evidence.

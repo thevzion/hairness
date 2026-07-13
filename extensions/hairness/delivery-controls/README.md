@@ -24,6 +24,8 @@ Drafts, plans, receipts, reconciliation checkpoints and reconciliation decisions
 
 The handler never stages, commits, pushes, opens or merges a PR, tags, releases or publishes. `--auto` cannot cross effects or apply a reconciliation decision; stale, partial or unknown proof blocks. Native agents act only after exact Run/checkpoint approval. Local tag creation and remote tag push are distinct release stages and grants.
 
+Stage completion remains ordered across the pre-commit and post-commit heads. The merge boundary compares the exact pull-request receipt and fresh CI receipt to the requested head instead of retroactively invalidating a pre-commit qualification.
+
 ## Providers
 
 Projects `hairness-cmd-want-ship`, `hairness-cmd-ship-it`, `hairness-publish-pr`, `hairness-merge-pr` and `hairness-publish-release` with exact Codex/Claude parity.

@@ -70,8 +70,9 @@ async function draftAndAccept(env, subject = 'Add safe delivery', type = 'feat')
 }
 
 async function completeEffect(env, plan, stage, flags = {}) {
-  const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage, ...flags }, runtime: env.rt })
-  env.runs.get(prepared.runId).result = { status: 'succeeded', summary: `${stage} completed`, proof: [`receipt:${stage}`], outcome: { receipt: { status: 'succeeded', summary: `${stage} completed`, effects: prepared.checkpoint.effects, targets: prepared.checkpoint.targets, proof: [`receipt:${stage}`], head: flags.head ?? null } } }
+  const { receiptHead, ...checkpointFlags } = flags
+  const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage, ...checkpointFlags }, runtime: env.rt })
+  env.runs.get(prepared.runId).result = { status: 'succeeded', summary: `${stage} completed`, proof: [`receipt:${stage}`], outcome: { receipt: { status: 'succeeded', summary: `${stage} completed`, effects: prepared.checkpoint.effects, targets: prepared.checkpoint.targets, proof: [`receipt:${stage}`], head: receiptHead ?? checkpointFlags.head ?? null } } }
   const receipt = await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage, run: prepared.runId }, runtime: env.rt })
   return { prepared, receipt }
 }
@@ -136,6 +137,26 @@ test('pull-request proposal rejects a title incoherent with its branch', async (
   await completeEffect(env, plan, 'implement')
   await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'checks:ready', head: 'abc1234' }, runtime: env.rt })
   await assert.rejects(handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'publish-pr', head: 'abc1234', title: 'fix: wrong type', 'diff-digest': 'sha256:abcd', files: 'src/a.mjs' }, runtime: env.rt }), /does not match branch type/)
+})
+
+test('change merge keeps pre-commit qualification and requires matching PR and CI heads', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const { plan } = await draftAndAccept(env, 'Fix exact merge head', 'fix')
+  await completeEffect(env, plan, 'prepare')
+  await completeEffect(env, plan, 'implement')
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'checks:ready', head: 'base-head' }, runtime: env.rt })
+  const { receipt: published } = await completeEffect(env, plan, 'publish-pr', { head: 'base-head', receiptHead: 'pull-request-head', 'diff-digest': 'sha256:abcd', files: 'src/a.mjs,tests/a.test.mjs' })
+  assert.equal(published.head, 'pull-request-head')
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'ci', proof: 'checks:ready', head: 'pull-request-head' }, runtime: env.rt })
+
+  const next = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: { boundary: 'merge', head: 'pull-request-head' }, runtime: env.rt })
+  assert.equal(next.results[0].stage, 'merge')
+  const wrongHead = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'merge', head: 'different-head' }, runtime: env.rt })
+  assert.equal(wrongHead.status, 'blocked')
+  assert.match(wrongHead.summary, /does not match/)
+  const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'merge', head: 'pull-request-head' }, runtime: env.rt })
+  assert.equal(prepared.status, 'needs-authority')
+  assert.deepEqual(prepared.checkpoint.effects, ['github:merge'])
 })
 
 test('release planning aggregates only conventional release-impacting changes', async (context) => {
