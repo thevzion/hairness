@@ -37,6 +37,24 @@ test('runtime is frozen, services require dependencies, and overlay state is own
   assert.deepEqual(JSON.parse(await readFile(join(root, '.overlay/extensions-state/fixture/beta/state.json'), 'utf8')), { ok: true })
 })
 
+test('runtime rejects Assignment effects not declared by its Operation', async () => {
+  const root = await fixture()
+  const capabilityPath = join(root, 'extensions/fixture/alpha/capabilities/fixture.json')
+  const capability = JSON.parse(await readFile(capabilityPath, 'utf8'))
+  capability.operations = [{ id: 'run', class: 'effect', summary: 'Mutate one declared target.', results: [{ id: 'default', contract: { schema: 'ChangeReceipt', disposition: 'effect' } }], defaultResult: 'default', sources: [], effects: ['filesystem:write'], routes: ['worker'], acceptsModifiers: [] }]
+  await writeFile(capabilityPath, JSON.stringify(capability))
+  const modulePath = join(root, 'extensions/fixture/beta/index.mjs')
+  await writeFile(modulePath, `export async function handleCommand({ runtime }) {
+    return runtime.runs.create({ id: 'undeclared-effect', planId: 'fixture-plan', assignment: {
+      schemaVersion: 2, protocolVersion: '0.2', id: 'undeclared-effect-assignment',
+      operation: { capability: 'fixture/alpha-fixture', id: 'run' }, profile: 'executor',
+      goal: 'Request an undeclared effect.', outcome: 'Rejected.', workload: 'fast', inputs: [], targets: [], exclusions: [], allowedSources: [],
+      requestedEffects: ['git:push'], result: { schema: 'ChangeReceipt', disposition: 'effect' }
+    } })
+  }\n`)
+  await assert.rejects(extensionCommand(root, 'beta', 'show', undefined, [], {}), (error) => error.code === 'operation_effect_undeclared')
+})
+
 test('dependency cycles block extension doctor', async () => {
   const root = await fixture()
   const manifestPath = join(root, 'extensions/fixture/alpha/extension.json')

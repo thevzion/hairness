@@ -29,6 +29,7 @@ function runPaths(root, runId) {
     task: join(directory, 'task.json'),
     events: join(directory, 'events.jsonl'),
     result: join(directory, 'result.json'),
+    checkpoint: join(directory, 'checkpoint.json'),
     grant: join(directory, 'grant.json'),
   }
 }

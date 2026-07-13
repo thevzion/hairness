@@ -7,8 +7,12 @@ Initiative
   outcome + gate + evidence + links
         │
         ▼
-DeliveryPlan
-  check → commit → push → pull request → CI → release candidate
+DeliveryBrief → ChangeDeliveryPlan
+  prepare → implement → qualify → publish PR → CI → merge → verify main
+        │
+        ▼ accepted merged plans
+ReleaseDeliveryPlan
+  collect → release PR → qualify tarball → npm → Git tag → GitHub Release
         │
         ▼
 operation checkpoints + typed receipts
@@ -16,6 +20,24 @@ operation checkpoints + typed receipts
 
 Initiative Controls keeps the local macro roadmap in owner-scoped overlay state. `STATUS.md` is a deliberately published snapshot, never the live database. Publishing returns a filesystem checkpoint and executor input; the handler does not edit the file.
 
-Delivery Controls turns one initiative into ordered steps. It prepares checkpoints and records proof, but never stages, commits, pushes, opens a PR, merges, tags, releases, publishes npm, or posts externally. A release candidate is produced as a typed artifact only after delivery proof exists.
+Delivery Controls implements a generic, distribution-configured GitHub Flow.
+An initiative may contain several parallel `ChangeDeliveryPlan` objects; each
+accepted brief produces one idempotent plan for one coherent pull request.
+`ReleaseDeliveryPlan` separately aggregates conventional merged pull requests
+since the previous tag. Release commits and changes explicitly carrying
+`releaseImpact: none` are excluded. The explicit version is checked against the
+configured package manifest and accompanied by a SemVer recommendation.
+
+Every effect boundary stores its policy digest, exact targets, Run, checkpoint
+and expected proof before the executor starts. `PullRequestProposal` binds the
+PR title and body to the inspected files, head and diff digest. Missing, stale,
+partial or unknown proof blocks progression. A `ReleaseCandidate` binds the
+package, version, tag, commit, checks, changes, tarball path, SHA-256, npm
+integrity, dry-run and limitations.
+
+The handler prepares checkpoints and records proof, but never stages, commits,
+pushes, opens a PR, merges, tags, releases, publishes npm, or posts externally.
+Those are separate provider-native executor Runs; npm, Git tag, tag push and
+GitHub Release can never share implicit authority.
 
 This boundary lets Hairness improve itself without becoming a Git bot: the native agent performs an approved operation and returns a receipt; the extension preserves the plan and evidence.

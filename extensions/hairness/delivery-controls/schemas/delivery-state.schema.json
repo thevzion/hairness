@@ -3,25 +3,63 @@
   "$id": "https://hairness.dev/extensions/delivery-controls/delivery-state.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "protocolVersion", "plans", "receipts", "updatedAt"],
+  "required": ["schemaVersion", "protocolVersion", "drafts", "plans", "receipts", "activePlanId", "updatedAt"],
   "properties": {
     "schemaVersion": { "const": 2 },
     "protocolVersion": { "const": "0.2" },
+    "drafts": { "type": "array", "items": { "$ref": "#/$defs/brief" } },
     "plans": { "type": "array", "items": { "$ref": "#/$defs/plan" } },
     "receipts": { "type": "array", "items": { "$ref": "#/$defs/receipt" } },
+    "activePlanId": { "type": ["string", "null"] },
     "updatedAt": { "type": "string" }
   },
   "$defs": {
+    "brief": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "subject", "type", "outcome", "acceptance", "scope", "nonGoals", "releaseImpact", "repository", "base", "branch", "checks", "risks", "confidence", "policyDigest", "createdAt"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "subject": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "minLength": 1 },
+        "outcome": { "type": "string", "minLength": 1 },
+        "acceptance": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "scope": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "nonGoals": { "type": "array", "items": { "type": "string" } },
+        "releaseImpact": { "enum": ["user", "internal", "none"] },
+        "repository": { "type": "string", "minLength": 1 },
+        "base": { "type": "string", "minLength": 1 },
+        "branch": { "type": "string", "minLength": 1 },
+        "checks": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "risks": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "enum": ["low", "medium", "high"] },
+        "policyDigest": { "type": "string", "pattern": "^sha256:" },
+        "createdAt": { "type": "string" }
+      }
+    },
     "plan": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "initiativeId", "state", "steps", "exclusions", "createdAt", "updatedAt"],
+      "required": ["id", "kind", "initiativeId", "briefArtifact", "state", "repository", "base", "branch", "version", "versionRecommendation", "baseline", "policyDigest", "evidenceMaxAgeMinutes", "stages", "runs", "checkpoints", "artifacts", "changes", "createdAt", "updatedAt"],
       "properties": {
-        "id": { "type": "string" },
-        "initiativeId": { "type": "string" },
-        "state": { "enum": ["planned", "in-progress", "ready", "blocked", "completed"] },
-        "steps": { "type": "array", "items": { "enum": ["check", "commit", "push", "pull-request", "ci", "release-candidate"] }, "minItems": 1, "uniqueItems": true },
-        "exclusions": { "type": "array", "items": { "type": "string" } },
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["change", "release"] },
+        "initiativeId": { "type": ["string", "null"] },
+        "briefArtifact": { "type": ["string", "null"] },
+        "state": { "enum": ["planned", "in-progress", "blocked", "ready", "completed"] },
+        "repository": { "type": "string", "minLength": 1 },
+        "base": { "type": "string", "minLength": 1 },
+        "branch": { "type": ["string", "null"] },
+        "version": { "type": ["string", "null"] },
+        "versionRecommendation": { "enum": ["major", "minor", "patch", "none"] },
+        "baseline": { "type": ["string", "null"] },
+        "policyDigest": { "type": "string", "pattern": "^sha256:" },
+        "evidenceMaxAgeMinutes": { "type": "integer", "minimum": 1 },
+        "stages": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true },
+        "runs": { "type": "object", "additionalProperties": { "type": "string" } },
+        "checkpoints": { "type": "object", "additionalProperties": { "type": "string" } },
+        "artifacts": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "changes": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string" },
         "updatedAt": { "type": "string" }
       }
@@ -29,11 +67,20 @@
     "receipt": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["planId", "summary", "proof", "observedAt"],
+      "required": ["id", "planId", "stage", "checkpointId", "runId", "status", "summary", "targets", "effects", "proof", "head", "policyDigest", "observedAt"],
       "properties": {
-        "planId": { "type": "string" },
+        "id": { "type": "string", "minLength": 1 },
+        "planId": { "type": "string", "minLength": 1 },
+        "stage": { "type": "string", "minLength": 1 },
+        "checkpointId": { "type": ["string", "null"] },
+        "runId": { "type": ["string", "null"] },
+        "status": { "enum": ["succeeded", "partial", "failed", "unknown"] },
         "summary": { "type": "string", "minLength": 1 },
+        "targets": { "type": "array", "items": { "type": "string" } },
+        "effects": { "type": "array", "items": { "type": "string" } },
         "proof": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "head": { "type": ["string", "null"] },
+        "policyDigest": { "type": "string", "pattern": "^sha256:" },
         "observedAt": { "type": "string" }
       }
     }

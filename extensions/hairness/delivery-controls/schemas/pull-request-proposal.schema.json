@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/extensions/delivery-controls/pull-request-proposal.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["planId", "repository", "base", "branch", "head", "title", "body", "files", "diffDigest", "checks", "releaseImpact", "policyDigest", "observedAt"],
+  "properties": {
+    "planId": { "type": "string", "minLength": 1 },
+    "repository": { "type": "string", "minLength": 1 },
+    "base": { "type": "string", "minLength": 1 },
+    "branch": { "type": "string", "minLength": 1 },
+    "head": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "body": { "type": "string" },
+    "files": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "diffDigest": { "type": "string", "pattern": "^sha256:" },
+    "checks": { "type": "array", "items": { "type": "string" } },
+    "releaseImpact": { "enum": ["user", "internal", "none"] },
+    "policyDigest": { "type": "string", "pattern": "^sha256:" },
+    "observedAt": { "type": "string" }
+  }
+}

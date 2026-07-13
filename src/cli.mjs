@@ -4,6 +4,7 @@ import packageJson from '../package.json' with { type: 'json' }
 import {
   HairnessError,
   annotateArtifact,
+  approveCheckpoint,
   appendRunEvent,
   artifactHistory,
   artifactGraph,
@@ -144,10 +145,18 @@ async function coreCommand(root, positionals, flags) {
   }
 
   if (namespace === 'run') {
-    if (!target) throw new HairnessError('usage', 'Usage: hairness run <id> show|resume|cancel|clean', { exitCode: 2 })
+    if (!target) throw new HairnessError('usage', 'Usage: hairness run <id> show|resume|approve|cancel|clean', { exitCode: 2 })
     const mode = action ?? 'show'
     if (mode === 'show') return { run: await readRun(root, target), result: await readRunResult(root, target) }
     if (mode === 'resume') return transitionRun(root, target, 'ready', { reason: 'resume requested' })
+    if (mode === 'approve') {
+      if (!flags.checkpoint) throw new HairnessError('usage', 'Usage: hairness run <id> approve --checkpoint <id>', { exitCode: 2 })
+      const run = await readRun(root, target)
+      if (run.state !== 'needs-authority') throw new HairnessError('run_not_waiting_authority', `Run ${target} is ${run.state}.`, { exitCode: 2 })
+      const { aggregateAuthorityPolicy } = await import('./distribution/registry.mjs')
+      const grant = await approveCheckpoint(root, target, flags.checkpoint, (effects) => aggregateAuthorityPolicy(root, effects, { runId: target }))
+      return { summary: 'Checkpoint approved for the exact Run capsule.', status: 'ready', grant, capsule: await buildWorkerCapsule(root, target), limits: [], routes: [`hairness worker ${target} inspect --start --json`] }
+    }
     if (mode === 'cancel') return transitionRun(root, target, 'cancelled', { reason: flags.reason ?? 'cancel requested' })
     if (mode === 'clean') {
       const run = await readRun(root, target)

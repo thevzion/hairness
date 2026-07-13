@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/extensions/delivery-controls/delivery-brief-input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["subject"],
+  "properties": {
+    "subject": { "type": "string", "minLength": 1 },
+    "type": { "type": "string", "minLength": 1 },
+    "outcome": { "type": "string", "minLength": 1 },
+    "acceptance": { "type": "string" },
+    "scope": { "type": "string" },
+    "non-goals": { "type": "string" },
+    "release-impact": { "enum": ["user", "internal", "none"] },
+    "base": { "type": "string", "minLength": 1 },
+    "branch": { "type": "string", "minLength": 1 },
+    "risks": { "type": "string" },
+    "confidence": { "enum": ["low", "medium", "high"] }
+  }
+}

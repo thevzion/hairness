@@ -12,7 +12,26 @@
   "defaults": {
     "interaction": { "language": "en", "mode": "auto", "budget": "balanced" },
     "session": { "transcript": false },
-    "maintenance": { "gitWarnings": true }
+    "maintenance": { "gitWarnings": true },
+    "delivery": {
+      "profile": "github-flow",
+      "repository": "thevzion/hairness",
+      "baseBranch": "main",
+      "branchTypes": ["feat", "fix", "docs", "refactor", "perf", "test", "build", "ci", "chore", "release"],
+      "branchPattern": "^(?:(feat|fix|docs|refactor|perf|test|build|ci|chore)/[a-z0-9]+(?:-[a-z0-9]+)*|release/[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)$",
+      "merge": { "method": "squash", "deleteBranch": true, "linearHistory": true, "resolveConversations": true },
+      "requiredChecks": ["test (22)", "test (24)", "delivery policy"],
+      "evidenceMaxAgeMinutes": 30,
+      "release": {
+        "package": "@hairness/cli",
+        "registry": "https://registry.npmjs.org/",
+        "versionSource": "package.json",
+        "prereleaseTag": "next",
+        "gitTagFormat": "v{version}",
+        "githubRelease": "prerelease",
+        "bootstrapBaseline": "22201ddea642f7bc852e7ac43d6765cd98c6fe3b"
+      }
+    }
   },
   "extensions": [
     {
@@ -68,6 +87,10 @@
       "path": "./extensions/hairness/sources"
     }
   ],
-  "sources": [{ "id": "git", "requirement": "required" }],
+  "sources": [
+    { "id": "git", "requirement": "required" },
+    { "id": "github", "requirement": "required" },
+    { "id": "npm", "requirement": "required" }
+  ],
   "codebases": []
 }

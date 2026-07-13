@@ -5,13 +5,17 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import {
   acquireLocks,
+  approveCheckpoint,
   assertEffectAllowed,
   createRun,
   grantCheckpoint,
   listLocks,
   quarantineLocks,
+  proposeCheckpoint,
+  readRun,
   releaseLocks,
   resolveLock,
+  transitionRun,
 } from '../src/core/index.mjs'
 import { assignment, temporaryWorkspace } from './helpers.mjs'
 
@@ -53,5 +57,54 @@ test('locks serialize targets and quarantine ambiguous state', async () => {
   await assert.rejects(releaseLocks([target], 'run-1'), (error) => error.code === 'target_quarantined')
   assert.equal((await listLocks())[0].state, 'unknown')
   await resolveLock(target)
+  assert.deepEqual(await listLocks(), [])
+})
+
+test('stored checkpoints bind one URI target before approval', async () => {
+  const root = await temporaryWorkspace()
+  const home = await mkdtemp(join(tmpdir(), 'hairness-home-'))
+  process.env.HAIRNESS_HOME = home
+  const target = 'github://example/project/branches/feat-delivery'
+  await createRun(root, { id: 'run-uri', planId: 'plan-uri', assignment: assignment({ operation: { capability: 'fixture/artifacts', id: 'mutate' }, profile: 'executor', targets: [target], requestedEffects: ['filesystem:write'] }) })
+  await transitionRun(root, 'run-uri', 'ready')
+  await transitionRun(root, 'run-uri', 'needs-authority')
+  const proposal = await proposeCheckpoint(root, {
+    schemaVersion: 2,
+    protocolVersion: '0.2',
+    id: 'checkpoint-uri',
+    runId: 'run-uri',
+    mode: 'external',
+    intent: 'Update one exact remote branch.',
+    targets: [target],
+    effects: ['filesystem:write'],
+    exclusions: ['merge'],
+    risk: 'Remote mutation.',
+    proof: ['diff:sha256:test'],
+    approved: false,
+  })
+  assert.match(proposal.policyDigest, /^sha256:/)
+  const grant = await approveCheckpoint(root, 'run-uri', proposal.id)
+  assert.equal(grant.targets[0], target)
+  assert.equal((await readRun(root, 'run-uri')).state, 'ready')
+  assert.equal((await assertEffectAllowed(root, 'run-uri', 'filesystem:write', target)).id, 'grant-checkpoint-uri')
+  await assert.rejects(acquireLocks([target], 'run-uri-competitor'), (error) => error.code === 'target_locked')
+  await releaseLocks([target], 'run-uri')
+  await assert.rejects(acquireLocks(['github://user:secret@example/project'], 'bad'), (error) => error.code === 'target_credentials_forbidden')
+  await assert.rejects(acquireLocks(['github://example/project#token'], 'bad-fragment'), (error) => error.code === 'target_fragment_forbidden')
+})
+
+test('approval rejects a checkpoint when authority policy changed', async () => {
+  const root = await temporaryWorkspace()
+  const home = await mkdtemp(join(tmpdir(), 'hairness-home-'))
+  process.env.HAIRNESS_HOME = home
+  const target = 'npm://registry.npmjs.org/%40example%2Fcli/1.0.0'
+  await createRun(root, { id: 'run-stale-policy', planId: 'plan-stale', assignment: assignment({ operation: { capability: 'fixture/artifacts', id: 'mutate' }, profile: 'executor', targets: [target], requestedEffects: ['filesystem:write'] }) })
+  await transitionRun(root, 'run-stale-policy', 'ready')
+  await transitionRun(root, 'run-stale-policy', 'needs-authority')
+  let revision = 'one'
+  const policy = async (effects) => ({ owner: 'test/policy', requestedEffects: effects, allowedEffects: effects, deniedEffects: [], reasons: [], digest: `sha256:${revision}`, observedAt: new Date().toISOString() })
+  const proposal = await proposeCheckpoint(root, { schemaVersion: 2, protocolVersion: '0.2', id: 'checkpoint-stale', runId: 'run-stale-policy', mode: 'external', intent: 'Publish exact version.', targets: [target], effects: ['filesystem:write'], exclusions: [], risk: 'Registry mutation.', proof: ['candidate:one'], approved: false }, policy)
+  revision = 'two'
+  await assert.rejects(approveCheckpoint(root, 'run-stale-policy', proposal.id, policy), (error) => error.code === 'checkpoint_stale')
   assert.deepEqual(await listLocks(), [])
 })

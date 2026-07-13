@@ -4,15 +4,25 @@
   "protocolVersion": "0.2",
   "id": "hairness/delivery-controls",
   "version": "0.2.0-alpha.0",
-  "summary": "Sequential delivery plans, Git checkpoints, receipts and release candidates.",
+  "summary": "Policy-driven change and release delivery through explicit authority boundaries.",
   "category": "forge",
   "tags": ["delivery", "release", "self-hosting"],
   "maturity": "experimental",
   "readme": "./README.md",
   "module": "./index.mjs",
   "capabilities": ["./capabilities/delivery.json"],
-  "dependencies": ["hairness/initiative-controls", "hairness/work-controls"],
-  "commands": [{ "namespace": "delivery", "actions": ["plan", "status", "checkpoint", "receipt", "release-candidate"] }],
-  "artifactSchemas": [{ "type": "release-candidate", "schema": "./schemas/release-candidate.schema.json" }],
-  "commandSurfaces": []
+  "dependencies": ["hairness/initiative-controls", "hairness/work-controls", "hairness/sources"],
+  "commands": [{ "namespace": "delivery", "actions": ["status", "want", "accept", "plan", "next", "checkpoint", "receipt", "release-candidate"] }],
+  "artifactSchemas": [
+    { "type": "delivery-brief", "schema": "./schemas/delivery-brief.schema.json" },
+    { "type": "pull-request-proposal", "schema": "./schemas/pull-request-proposal.schema.json" },
+    { "type": "release-candidate", "schema": "./schemas/release-candidate.schema.json" }
+  ],
+  "commandSurfaces": [
+    { "id": "hairness.delivery.want-ship", "summary": "Draft one coherent delivery brief before work starts.", "classification": "accelerator", "surface": "intent", "lexeme": { "verb": "want", "object": "ship" }, "machineRoute": "hairness delivery want", "arguments": [{ "name": "subject", "required": true }], "resultId": "response", "operation": { "capability": "hairness/delivery", "id": "brief" }, "instructions": "./commands/delivery.md", "fixed": { "controls": { "promotion": "none" } } },
+    { "id": "hairness.delivery.ship-it", "summary": "Preview and resolve exactly the next delivery boundary.", "classification": "accelerator", "surface": "intent", "lexeme": { "verb": "ship", "object": "it" }, "machineRoute": "hairness delivery next", "arguments": [{ "name": "plan", "required": false }], "resultId": "response", "operation": { "capability": "hairness/delivery", "id": "advance" }, "instructions": "./commands/delivery.md", "fixed": { "controls": { "promotion": "none" } } },
+    { "id": "hairness.delivery.publish-pr", "summary": "Preview the exact commit, push and pull-request boundary.", "classification": "specialized", "surface": "specialized", "machineRoute": "hairness delivery next", "arguments": [{ "name": "plan", "required": false }], "resultId": "response", "operation": { "capability": "hairness/delivery", "id": "advance" }, "instructions": "./commands/delivery.md", "fixed": { "controls": { "boundary": "publish-pr", "promotion": "none" } } },
+    { "id": "hairness.delivery.merge-pr", "summary": "Preview the exact squash-merge boundary.", "classification": "specialized", "surface": "specialized", "machineRoute": "hairness delivery next", "arguments": [{ "name": "plan", "required": false }], "resultId": "response", "operation": { "capability": "hairness/delivery", "id": "advance" }, "instructions": "./commands/delivery.md", "fixed": { "controls": { "boundary": "merge", "promotion": "none" } } },
+    { "id": "hairness.delivery.publish-release", "summary": "Preview the exact npm publication boundary for a qualified candidate.", "classification": "specialized", "surface": "specialized", "machineRoute": "hairness delivery next", "arguments": [{ "name": "plan", "required": false }], "resultId": "response", "operation": { "capability": "hairness/delivery", "id": "advance" }, "instructions": "./commands/delivery.md", "fixed": { "controls": { "boundary": "npm-publish", "promotion": "none" } } }
+  ]
 }

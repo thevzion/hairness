@@ -3,7 +3,9 @@ import assert from 'node:assert/strict'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { runCli } from '../src/cli.mjs'
-import { temporaryWorkspace } from './helpers.mjs'
+import { aggregateAuthorityPolicy } from '../src/distribution/registry.mjs'
+import { createRun, proposeCheckpoint, readRun, transitionRun } from '../src/core/index.mjs'
+import { assignment, temporaryWorkspace } from './helpers.mjs'
 
 function stream() {
   let value = ''
@@ -47,5 +49,23 @@ test('CLI starts a direct auto invocation through the canonical route', async ()
   const output = JSON.parse(stdout.read())
   assert.equal(output.data.state, 'needs-agent')
   assert.equal(output.data.next.action, 'dispatch-agent')
+  assert.equal(stderr.read(), '')
+})
+
+test('CLI approves only the stored checkpoint and returns a granted executor capsule', async () => {
+  const root = await temporaryWorkspace()
+  process.env.HAIRNESS_ROOT = root
+  process.env.HAIRNESS_HOME = join(root, 'home')
+  const runId = 'approve-executor'
+  await createRun(root, { id: runId, planId: 'approve-plan', assignment: assignment({ id: 'approve-assignment', operation: { capability: 'fixture/artifacts', id: 'mutate' }, profile: 'executor', targets: [root], requestedEffects: ['filesystem:write'], result: { schema: 'ChangeReceipt', disposition: 'effect' } }) })
+  await transitionRun(root, runId, 'ready')
+  await transitionRun(root, runId, 'needs-authority')
+  const checkpoint = await proposeCheckpoint(root, { schemaVersion: 2, protocolVersion: '0.2', id: 'approve-checkpoint', runId, mode: 'mutation', intent: 'Mutate the fixture.', targets: [root], effects: ['filesystem:write'], exclusions: [], risk: 'Workspace mutation.', proof: ['diff:fixture'], approved: false }, (effects) => aggregateAuthorityPolicy(root, effects, { runId }))
+  const stdout = stream(); const stderr = stream()
+  assert.equal(await runCli(['run', runId, 'approve', '--checkpoint', checkpoint.id, '--json'], { stdout, stderr }), 0)
+  const output = JSON.parse(stdout.read())
+  assert.equal(output.data.status, 'ready')
+  assert.deepEqual(output.data.capsule.allowedEffects, ['filesystem:write'])
+  assert.equal((await readRun(root, runId)).state, 'ready')
   assert.equal(stderr.read(), '')
 })

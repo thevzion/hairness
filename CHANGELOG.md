@@ -14,6 +14,8 @@ entries.
 - Made extension presence inert until selected by the distribution or explicit local configuration.
 - Made provider commands submit a typed invocation before asking the user for missing input.
 - Separated natural intent mode from direct automation while preserving one canonical request and receipt.
+- Replaced sequential forge delivery with policy-driven parallel change plans and aggregated release plans.
+- Made authority approval revalidate stored checkpoints, policies, targets and locks before returning an executor capsule.
 
 ### Added
 
@@ -27,8 +29,12 @@ entries.
 - Recipe-declared materials, capabilities, source drivers, templates, scripts and tests.
 - A deterministic Invocation Engine with append-only events, one-gap resolution, previews, hard gates, receipts and safe `--auto` progression.
 - Attention-preserving Codex and Claude command projections with explicit `strict`, `guarded` and `unsupported` host paths.
-- Forge-only Initiative and Delivery Controls for local roadmap state, sequential delivery plans, release candidates and checkpointed external effects.
+- Forge-only Initiative and Delivery Controls for local roadmap state, policy-driven change/release plans, release candidates and checkpointed external effects.
 - Public alpha documentation, known limitations and a reproducible release runbook.
+- Conversational `want-ship`, `ship-it`, PR, merge and release controls with safe preview and non-chainable authority boundaries.
+- Typed DeliveryBrief, PullRequestProposal and ReleaseCandidate artifacts with correlated receipts and stale-proof gates.
+- Read-only GitHub and npm source drivers plus credential-free URI target locking.
+- Native CI enforcement for coherent delivery branches and Conventional pull-request titles.
 
 ## 0.1.0-alpha.0
 

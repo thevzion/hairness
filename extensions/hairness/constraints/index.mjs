@@ -33,7 +33,7 @@ export async function authorityPolicy({ input, runtime, manifest }) {
   const constraints = await effective(runtime, input)
   const deniedEffects = requestedEffects.filter((effect) =>
     constraints.includes('readonly')
-    || (constraints.includes('no-git') && effect.startsWith('git:'))
+    || (constraints.includes('no-git') && (effect.startsWith('git:') || effect.startsWith('github:')))
     || (constraints.includes('no-external') && !effect.startsWith('filesystem:')))
   const allowedEffects = requestedEffects.filter((effect) => !deniedEffects.includes(effect))
   const observedAt = new Date().toISOString()
