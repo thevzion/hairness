@@ -9,7 +9,7 @@ const split = (value, separator = ',') => String(value ?? '').split(separator).m
 const slug = (value) => String(value ?? '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 56) || 'change'
 const empty = () => ({ schemaVersion: 2, protocolVersion: '0.2', drafts: [], plans: [], receipts: [], activePlanId: null, updatedAt: now() })
 const changeStages = ['prepare', 'implement', 'qualify', 'publish-pr', 'ci', 'merge', 'verify-main']
-const releaseStages = ['collect', 'release-pr', 'qualify', 'npm-publish', 'git-tag', 'github-release']
+const releaseStages = ['collect', 'release-pr', 'ci', 'merge', 'verify-main', 'qualify', 'npm-publish', 'git-tag', 'github-release']
 const observeStages = new Set(['qualify', 'ci', 'verify-main', 'collect'])
 const effectsByStage = {
   prepare: ['git:branch'],
@@ -226,7 +226,10 @@ function successfulReceipt(value, plan, stage, head) {
   })
 }
 
-function pendingStage(value, plan, head) { return plan.stages.find((stage) => !successfulReceipt(value, plan, stage, head)) ?? null }
+function pendingStage(value, plan, head) {
+  const expectedHead = plan.kind === 'change' ? head : null
+  return plan.stages.find((stage) => !successfulReceipt(value, plan, stage, expectedHead)) ?? null
+}
 
 async function refreshRunReceipt(plan, stage, runtime, value) {
   const runId = plan.runs[stage]
@@ -294,7 +297,17 @@ async function prepareCheckpoint(root, plan, stage, flags, runtime, value) {
   const targets = split(flags.targets).length ? split(flags.targets) : defaultTargets(root, plan, stage, currentPolicy.value)
   if (['publish-pr', 'release-pr'].includes(stage) && (!flags.head || !flags['diff-digest'] || !split(flags.files).length)) throw new Error(`${stage} requires --head, --diff-digest and --files from an inspected diff.`)
   if (['merge', 'npm-publish', 'git-tag', 'github-release'].includes(stage) && !flags.head) throw new Error(`${stage} requires the exact --head commit.`)
+  if (stage === 'merge' && plan.kind === 'release') {
+    const pullRequest = successfulReceipt(value, plan, 'release-pr')
+    const ci = successfulReceipt(value, plan, 'ci', flags.head)
+    if (!pullRequest?.head || pullRequest.head !== flags.head || !ci) return { summary: 'Release merge proof does not match the pull-request head.', status: 'blocked', limits: ['Re-observe CI and reconcile the exact pull-request head before merging.'], routes: [`hairness delivery next ${plan.id}`] }
+  }
   if (stage === 'npm-publish' && !plan.artifacts.some((id) => id.startsWith('release/'))) return { summary: 'npm-publish requires a promoted ReleaseCandidate.', status: 'blocked', limits: ['Prepare and inspect the ReleaseCandidate first.'], routes: [`hairness delivery release-candidate ${plan.id}`] }
+  if (['npm-publish', 'git-tag', 'github-release'].includes(stage)) {
+    const candidateId = plan.artifacts.find((id) => id.startsWith('release/'))
+    const candidate = candidateId ? await runtime.artifacts.read(candidateId).catch(() => null) : null
+    if (!candidate || candidate.payload.commit !== flags.head) return { summary: `${stage} does not match the qualified release commit.`, status: 'blocked', limits: ['Use the exact public commit recorded in the ReleaseCandidate.'], routes: [`hairness delivery release-candidate ${plan.id}`] }
+  }
   const proof = split(flags.proof).length ? split(flags.proof) : [`plan:${plan.id}`, `policy:${plan.policyDigest}`, ...(flags.head ? [`head:${flags.head}`] : []), ...(flags['diff-digest'] ? [`diff:${flags['diff-digest']}`] : [])]
   const runId = `delivery-${hash({ plan: plan.id, stage, targets, effects, proof, diffDigest: flags['diff-digest'] ?? null }).slice(0, 20)}`
   const checkpointId = `checkpoint-${hash({ runId, plan: plan.id, stage, targets, effects, proof }).slice(0, 20)}`
@@ -322,7 +335,11 @@ async function prepareCheckpoint(root, plan, stage, flags, runtime, value) {
 }
 
 async function releaseCandidate(plan, flags, runtime, value) {
-  for (const stage of ['collect', 'release-pr', 'qualify']) if (!successfulReceipt(value, plan, stage)) return { summary: 'Release qualification proof is incomplete.', status: 'blocked', limits: [`Missing ${stage} receipt.`], routes: [`hairness delivery next ${plan.id}`] }
+  const required = ['collect', 'release-pr', 'ci', 'merge', 'verify-main', 'qualify']
+  for (const stage of required) if (!successfulReceipt(value, plan, stage)) return { summary: 'Release qualification proof is incomplete.', status: 'blocked', limits: [`Missing ${stage} receipt.`], routes: [`hairness delivery next ${plan.id}`] }
+  const pullRequest = successfulReceipt(value, plan, 'release-pr')
+  if (!pullRequest.head || !successfulReceipt(value, plan, 'ci', pullRequest.head) || !successfulReceipt(value, plan, 'merge', pullRequest.head)) return { summary: 'Release pull-request proof is stale or refers to a different head.', status: 'blocked', limits: ['Release PR, CI and merge receipts must agree on the exact pull-request head.'], routes: [`hairness delivery next ${plan.id}`] }
+  if (!flags.commit || !successfulReceipt(value, plan, 'verify-main', flags.commit) || !successfulReceipt(value, plan, 'qualify', flags.commit)) return { summary: 'Release qualification does not match the public commit.', status: 'blocked', limits: ['Verify main and qualify the exact commit supplied to the ReleaseCandidate.'], routes: [`hairness delivery next ${plan.id}`] }
   const policy = await deliveryPolicy(runtime)
   if (policy.digest !== plan.policyDigest) return { summary: 'Release policy is stale.', status: 'blocked', limits: ['Re-plan the release.'], routes: [] }
   const payload = { planId: plan.id, policyDigest: plan.policyDigest, package: { name: policy.value.release.package, version: plan.version, registry: policy.value.release.registry, distTag: policy.value.release.prereleaseTag }, commit: flags.commit, changes: plan.changes, checks: policy.value.requiredChecks, tarball: { path: flags.tarball, sha256: flags.sha256, integrity: flags.integrity }, dryRun: flags['dry-run'] ?? flags.dryRun, limitations: split(flags.limitations, '|'), observedAt: now() }
@@ -363,8 +380,9 @@ export async function handleCommand({ root, target, action, rest = [], flags, ru
   const next = pendingStage(value, plan, flags.head)
   if (mode === 'next') {
     if (!next) return packet('ship it', `${plan.id} is complete.`, [{ status: 'completed', plan }], [], [])
-    const boundary = flags.boundary
-    if (boundary && boundary !== next) return packet('ship it', `${boundary} cannot run before ${next}.`, [{ status: 'blocked', requested: boundary, next }], [`Complete ${next} first.`], [`hairness delivery next ${plan.id}`])
+    const requested = flags.boundary
+    const boundary = plan.kind === 'release' && requested === 'publish-pr' ? 'release-pr' : requested
+    if (boundary && boundary !== next) return packet('ship it', `${requested} cannot run before ${next}.`, [{ status: 'blocked', requested, next }], [`Complete ${next} first.`], [`hairness delivery next ${plan.id}`])
     return packet('ship it', `${next} is the next delivery boundary.`, [{ status: observeStages.has(next) ? 'needs-proof' : 'needs-checkpoint', planId: plan.id, stage: next, effects: effectsByStage[next] ?? [], targets: defaultTargets(root, plan, next, (await deliveryPolicy(runtime)).value) }], ['No target effect occurred.'], [observeStages.has(next) ? `hairness delivery receipt ${plan.id} --stage ${next} --proof <evidence>` : `hairness delivery checkpoint ${plan.id} --stage ${next}`])
   }
   if (mode === 'checkpoint') return prepareCheckpoint(root, plan, flags.stage ?? next, flags, runtime, value)
