@@ -14,7 +14,7 @@ async function status(root, input) {
   ])
   const changes = porcelain ? porcelain.split('\n').filter(Boolean) : []
   const [ahead = null, behind = null] = divergence?.split(/\s+/).map(Number) ?? []
-  return { path, branch, upstream, ahead, behind, dirty: changes.length, changes }
+  return { path, branch: branch || 'HEAD', upstream, ahead, behind, dirty: changes.length, changes }
 }
 
 export const operations = {
