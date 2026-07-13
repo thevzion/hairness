@@ -4,15 +4,19 @@
   "protocolVersion": "0.2",
   "id": "hairness/delivery-controls",
   "version": "0.2.0-alpha.0",
-  "summary": "Sequential delivery plans, Git checkpoints, receipts and release candidates.",
+  "summary": "Policy-driven change and release delivery through explicit authority boundaries.",
   "category": "forge",
   "tags": ["delivery", "release", "self-hosting"],
   "maturity": "experimental",
   "readme": "./README.md",
   "module": "./index.mjs",
   "capabilities": ["./capabilities/delivery.json"],
-  "dependencies": ["hairness/initiative-controls", "hairness/work-controls"],
-  "commands": [{ "namespace": "delivery", "actions": ["plan", "status", "checkpoint", "receipt", "release-candidate"] }],
-  "artifactSchemas": [{ "type": "release-candidate", "schema": "./schemas/release-candidate.schema.json" }],
+  "dependencies": ["hairness/initiative-controls", "hairness/work-controls", "hairness/sources"],
+  "commands": [{ "namespace": "delivery", "actions": ["status", "want", "accept", "plan", "next", "checkpoint", "receipt", "release-candidate"] }],
+  "artifactSchemas": [
+    { "type": "delivery-brief", "schema": "./schemas/delivery-brief.schema.json" },
+    { "type": "pull-request-proposal", "schema": "./schemas/pull-request-proposal.schema.json" },
+    { "type": "release-candidate", "schema": "./schemas/release-candidate.schema.json" }
+  ],
   "commandSurfaces": []
 }

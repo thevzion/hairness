@@ -112,6 +112,22 @@ export async function canonicalPath(path) {
   return realpath(resolve(path))
 }
 
+export async function canonicalTarget(target) {
+  const value = String(target ?? '')
+  if (!value) throw new HairnessError('target_invalid', 'Target must not be empty.', { exitCode: 2 })
+  if (/^[A-Za-z][A-Za-z0-9+.-]*:\/\//.test(value)) {
+    let url
+    try { url = new URL(value) }
+    catch (error) { throw new HairnessError('target_invalid', `Invalid target URI: ${value}`, { exitCode: 2, cause: error }) }
+    if (url.username || url.password) throw new HairnessError('target_credentials_forbidden', 'Target URIs must not contain credentials.', { exitCode: 2 })
+    if (url.search) throw new HairnessError('target_query_forbidden', 'Target URIs must not contain query parameters.', { exitCode: 2 })
+    if (url.hash) throw new HairnessError('target_fragment_forbidden', 'Target URIs must not contain fragments.', { exitCode: 2 })
+    return url.href
+  }
+  try { return await canonicalPath(value) }
+  catch (error) { if (error.code === 'ENOENT') return resolve(value); throw error }
+}
+
 export function assertSafeId(value, label = 'id') {
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value)) {
     throw new HairnessError('invalid_id', `Invalid ${label}: ${value}`, { exitCode: 2 })

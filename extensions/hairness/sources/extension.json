@@ -16,6 +16,8 @@
   "contributes": ["session-opening", "onboarding"],
   "sourceDrivers": [
     "./drivers/git/driver.json",
+    "./drivers/github/driver.json",
+    "./drivers/npm/driver.json",
     "./drivers/jira/driver.json",
     "./drivers/gitlab/driver.json",
     "./drivers/aws/driver.json"

@@ -6,7 +6,7 @@ import { cp, mkdir, mkdtemp, readdir, realpath, rm, symlink, writeFile } from 'n
 import { dirname, join, relative, resolve } from 'node:path'
 import { HairnessError } from '../core/errors.mjs'
 import { artifactHistory, listArtifacts, promoteArtifact, readArtifact, stageArtifact } from '../core/artifacts.mjs'
-import { acquireLocks, grantCheckpoint, quarantineLocks, releaseLocks } from '../core/authority.mjs'
+import { acquireLocks, approveCheckpoint, grantCheckpoint, proposeCheckpoint, quarantineLocks, releaseLocks } from '../core/authority.mjs'
 import { createExtensionRuntime } from '../core/extension-runtime/index.mjs'
 import { readJson, userPaths, workspacePaths, writeJsonAtomic } from '../core/io.mjs'
 import { readPlan, reduceStoredPlan, writePlan } from '../core/plans.mjs'
@@ -141,6 +141,8 @@ async function validateAssignmentOperation(root, assignment) {
   validateOperationProfile(operation, assignment.profile)
   if (operation.class === 'effect' && assignment.requestedEffects.length === 0) throw new HairnessError('operation_effect_missing', `${operation.capability}#${operation.id} requires requested effects.`, { exitCode: 2 })
   if (operation.class !== 'effect' && assignment.requestedEffects.length) throw new HairnessError('operation_effect_forbidden', `${operation.capability}#${operation.id} cannot request effects.`, { exitCode: 2 })
+  const undeclared = assignment.requestedEffects.filter((effect) => !operation.effects.includes(effect))
+  if (undeclared.length) throw new HairnessError('operation_effect_undeclared', `${operation.capability}#${operation.id} does not declare effects: ${undeclared.join(', ')}.`, { exitCode: 2 })
   return assignment
 }
 
@@ -184,7 +186,10 @@ async function runtimeFor(root, owner, stack = []) {
     runs: {
       create: async (value) => createRun(root, { ...value, assignment: await validateAssignmentOperation(root, value.assignment) }), read: (id) => readRun(root, id), list: () => listRuns(root),
       transition: (id, state, detail) => transitionRun(root, id, state, detail), result: (id, value) => value === undefined ? readRunResult(root, id) : submitRunResult(root, value),
-      capsule: (id) => buildWorkerCapsule(root, id), checkpoint: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
+      capsule: (id) => buildWorkerCapsule(root, id),
+      checkpoint: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
+      proposeCheckpoint: (value) => proposeCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
+      approveCheckpoint: (runId, checkpointId) => approveCheckpoint(root, runId, checkpointId, (effects) => aggregateAuthorityPolicy(root, effects)),
     },
     plans: { read: (id) => readPlan(root, id), write: async (value) => writePlan(root, await validatePlanOperations(root, value)), reduce: (id) => reduceStoredPlan(root, id) },
     invocations: { list: (options) => listInvocations(root, options), events: (id) => invocationEvents(root, id), result: (id) => readInvocationResult(root, id) },
@@ -193,7 +198,10 @@ async function runtimeFor(root, owner, stack = []) {
       stage: async (runId, value) => { await validateArtifactPayload(root, value); return stageArtifact(root, runId, value) }, promote: (runId) => promoteArtifact(root, runId),
     },
     authority: {
-      grant: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)), acquireLocks, releaseLocks, quarantineLocks,
+      grant: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
+      propose: (value) => proposeCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
+      approve: (runId, checkpointId) => approveCheckpoint(root, runId, checkpointId, (effects) => aggregateAuthorityPolicy(root, effects)),
+      acquireLocks, releaseLocks, quarantineLocks,
     },
     extensions: {
       list: () => listExtensions(root), call: (id, service, input = {}) => callService(root, owner, id, service, input, stack),
