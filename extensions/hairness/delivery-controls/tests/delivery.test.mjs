@@ -1,37 +1,173 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { handleCommand } from '../index.mjs'
 import { validateJsonSchema } from '../../../../src/core/contracts.mjs'
 
-function runtime() {
-  const values = new Map(); const plans = []; const runs = []
-  return {
-    contracts: { validateSchema: (schema, value, label) => validateJsonSchema(new URL(`../${schema.slice(2)}`, import.meta.url), value, label) },
-    overlay: { read: async (key, fallback) => values.get(key) ?? fallback, write: async (key, value) => (values.set(key, value), value), append: async () => null },
-    extensions: { call: async () => ({ id: 'npm-alpha' }) },
-    plans: { write: async (value) => (plans.push(value), value) },
-    runs: { create: async (value) => (runs.push(value), value), transition: async () => null, capsule: async (id) => ({ runId: id, profile: 'producer' }) },
-    plansWritten: plans,
-    runsCreated: runs,
-  }
+const basePolicy = {
+  profile: 'github-flow',
+  repository: 'example/widget',
+  baseBranch: 'main',
+  branchTypes: ['feat', 'fix', 'docs', 'refactor', 'perf', 'test', 'build', 'ci', 'chore', 'release'],
+  branchPattern: '^(?:(feat|fix|docs|refactor|perf|test|build|ci|chore)/[a-z0-9]+(?:-[a-z0-9]+)*|release/[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)$',
+  merge: { method: 'squash', deleteBranch: true, linearHistory: true, resolveConversations: true },
+  requiredChecks: ['test (22)', 'test (24)', 'delivery policy'],
+  evidenceMaxAgeMinutes: 30,
+  release: { package: '@example/cli', registry: 'https://registry.npmjs.org/', versionSource: 'package.json', prereleaseTag: 'next', gitTagFormat: 'v{version}', githubRelease: 'prerelease', bootstrapBaseline: null },
 }
 
-test('delivery controls plan sequential work without performing Git effects', async () => {
-  const rt = runtime()
-  const plan = await handleCommand({ target: 'plan', flags: {}, runtime: rt })
-  assert.deepEqual(plan.steps, ['check', 'commit', 'push', 'pull-request', 'ci', 'release-candidate'])
-  const checkpoint = await handleCommand({ target: 'checkpoint', action: plan.id, flags: { step: 'commit', targets: 'main' }, runtime: rt })
-  assert.equal(checkpoint.status, 'needs-authority')
-  assert.deepEqual(checkpoint.checkpoint.effects, ['git:write', 'remote:write'])
-  assert.equal(rt.runsCreated.length, 0)
+async function fixture(policy = basePolicy) {
+  const root = await mkdtemp(join(tmpdir(), 'hairness-delivery-'))
+  await writeFile(join(root, 'package.json'), `${JSON.stringify({ name: policy.release.package, version: '1.2.0-alpha.0' })}\n`)
+  const values = new Map()
+  const pendingArtifacts = new Map()
+  const artifacts = new Map()
+  const latestArtifacts = new Map()
+  const plans = []
+  const runs = new Map()
+  const checkpoints = []
+  let activePolicy = structuredClone(policy)
+  const rt = {
+    contracts: { validateSchema: (schema, value, label) => validateJsonSchema(new URL(`../${schema.slice(2)}`, import.meta.url), value, label) },
+    distribution: { read: async () => ({ defaults: { delivery: activePolicy } }) },
+    overlay: { read: async (key, fallback) => values.get(key) ?? structuredClone(fallback), write: async (key, value) => (values.set(key, structuredClone(value)), value), append: async () => null },
+    extensions: { call: async () => ({ id: 'initiative-one' }) },
+    artifacts: {
+      read: async (id, revision) => {
+        const value = revision ? artifacts.get(`${id}@${revision}`) : latestArtifacts.get(id)
+        if (!value) { const error = new Error(`Missing ${id}`); error.code = 'artifact_not_found'; throw error }
+        return structuredClone(value)
+      },
+      stage: async (runId, value) => (pendingArtifacts.set(runId, structuredClone(value)), value),
+      promote: async (runId) => {
+        const value = pendingArtifacts.get(runId)
+        artifacts.set(`${value.id}@${value.revision}`, structuredClone(value))
+        latestArtifacts.set(value.id, structuredClone(value))
+        return value
+      },
+    },
+    plans: { write: async (value) => (plans.push(structuredClone(value)), value) },
+    runs: {
+      create: async (value) => (runs.set(value.id, { ...structuredClone(value), state: 'planned' }), value),
+      transition: async (id, state) => (runs.get(id).state = state),
+      capsule: async (id) => ({ runId: id, profile: 'executor', assignment: structuredClone(runs.get(id).assignment) }),
+      result: async (id) => runs.get(id).result ?? null,
+      proposeCheckpoint: async (value) => {
+        const stored = { ...structuredClone(value), policyDigest: 'sha256:authority-policy' }
+        checkpoints.push(stored)
+        return stored
+      },
+    },
+  }
+  return { root, rt, values, artifacts, plans, runs, checkpoints, setPolicy: (value) => { activePolicy = structuredClone(value) }, cleanup: () => rm(root, { recursive: true, force: true }) }
+}
+
+async function draftAndAccept(env, subject = 'Add safe delivery', type = 'feat') {
+  const draft = await handleCommand({ root: env.root, target: 'want', action: subject, flags: { type }, runtime: env.rt })
+  return handleCommand({ root: env.root, target: 'accept', action: draft.results[0].id, flags: {}, runtime: env.rt })
+}
+
+async function completeEffect(env, plan, stage, flags = {}) {
+  const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage, ...flags }, runtime: env.rt })
+  env.runs.get(prepared.runId).result = { status: 'succeeded', summary: `${stage} completed`, proof: [`receipt:${stage}`], outcome: { receipt: { status: 'succeeded', summary: `${stage} completed`, effects: prepared.checkpoint.effects, targets: prepared.checkpoint.targets, proof: [`receipt:${stage}`], head: flags.head ?? null } } }
+  const receipt = await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage, run: prepared.runId }, runtime: env.rt })
+  return { prepared, receipt }
+}
+
+test('accepted briefs are idempotent and allow parallel change plans', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const first = await draftAndAccept(env, 'Add safe delivery')
+  const same = await handleCommand({ root: env.root, target: 'accept', action: first.plan.briefArtifact.split('/').at(-1), flags: {}, runtime: env.rt })
+  const second = await draftAndAccept(env, 'Fix release proof', 'fix')
+  const state = await handleCommand({ root: env.root, target: 'status', flags: {}, runtime: env.rt })
+  assert.equal(first.plan.id, same.plan.id)
+  assert.notEqual(first.plan.id, second.plan.id)
+  assert.equal(state.plans.length, 2)
+  assert.ok(state.plans.every((plan) => plan.initiativeId === 'initiative-one'))
 })
 
-test('delivery receipt unlocks one bounded release-candidate producer', async () => {
-  const rt = runtime()
-  const plan = await handleCommand({ target: 'plan', action: 'npm-alpha', flags: {}, runtime: rt })
-  await handleCommand({ target: 'receipt', action: plan.id, flags: { summary: 'check: passed', proof: 'npm test,npm run check' }, runtime: rt })
-  const candidate = await handleCommand({ target: 'release-candidate', action: plan.id, flags: {}, runtime: rt })
-  assert.equal(candidate.status, 'ready')
-  assert.equal(candidate.capsule.profile, 'producer')
-  assert.equal(rt.runsCreated[0].assignment.requestedEffects.length, 0)
+test('ship-it and auto stay effect-free until one exact checkpoint', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const { plan } = await draftAndAccept(env)
+  const preview = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: { auto: true }, runtime: env.rt })
+  assert.equal(preview.results[0].stage, 'prepare')
+  assert.equal(env.runs.size, 0)
+  const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'prepare' }, runtime: env.rt })
+  assert.equal(prepared.status, 'needs-authority')
+  assert.deepEqual(prepared.checkpoint.effects, ['git:branch'])
+  assert.equal(env.checkpoints.length, 1)
+  assert.equal(env.runs.get(prepared.runId).state, 'needs-authority')
+})
+
+test('pull-request proposal binds inspected files, head and diff to the executor capsule', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const { plan } = await draftAndAccept(env)
+  await completeEffect(env, plan, 'prepare')
+  await completeEffect(env, plan, 'implement')
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'checks:test-22,checks:test-24', head: 'abc1234' }, runtime: env.rt })
+  const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'publish-pr', head: 'abc1234', 'diff-digest': 'sha256:abcd', files: 'src/a.mjs,tests/a.test.mjs' }, runtime: env.rt })
+  const proposalInput = env.runs.get(prepared.runId).assignment.inputs.find((item) => item.pullRequestProposal)
+  const proposal = [...env.artifacts.values()].find((item) => item.type === 'pull-request-proposal')
+  assert.equal(proposal.payload.head, 'abc1234')
+  assert.equal(proposal.payload.diffDigest, 'sha256:abcd')
+  assert.deepEqual(proposal.payload.files, ['src/a.mjs', 'tests/a.test.mjs'])
+  assert.match(proposal.payload.body, /releaseImpact: user/)
+  assert.equal(proposalInput.pullRequestProposal.diffDigest, proposal.payload.diffDigest)
+  const stale = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'publish-pr', head: 'abc1234', 'diff-digest': 'sha256:changed', files: 'src/a.mjs,tests/a.test.mjs' }, runtime: env.rt })
+  assert.equal(stale.status, 'blocked')
+  assert.match(stale.limits[0], /existing Run/)
+})
+
+test('pull-request proposal rejects a title incoherent with its branch', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const { plan } = await draftAndAccept(env)
+  await completeEffect(env, plan, 'prepare')
+  await completeEffect(env, plan, 'implement')
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'checks:ready', head: 'abc1234' }, runtime: env.rt })
+  await assert.rejects(handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'publish-pr', head: 'abc1234', title: 'fix: wrong type', 'diff-digest': 'sha256:abcd', files: 'src/a.mjs' }, runtime: env.rt }), /does not match branch type/)
+})
+
+test('release planning aggregates only conventional release-impacting changes', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const changes = [
+    { number: 10, title: 'feat(cli): add delivery', releaseImpact: 'user' },
+    { number: 11, title: 'fix(ci): stabilize checks', releaseImpact: 'none' },
+    { number: 12, title: 'release: 1.2.0-alpha.0', releaseImpact: 'user' },
+    { number: 13, title: 'misc notes', releaseImpact: 'user' },
+  ]
+  const plan = await handleCommand({ root: env.root, target: 'plan', flags: { kind: 'release', version: '1.2.0-alpha.0' }, runtime: env.rt })
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'collect', proof: 'github:merged-pull-requests', head: 'def5678', 'changes-json': JSON.stringify(changes) }, runtime: env.rt })
+  const collected = (await handleCommand({ root: env.root, target: 'status', flags: {}, runtime: env.rt })).plans.find((item) => item.id === plan.id)
+  assert.deepEqual(collected.changes, ['#10 feat(cli): add delivery'])
+  assert.equal(collected.versionRecommendation, 'minor')
+  await completeEffect(env, plan, 'release-pr', { head: 'def5678', 'diff-digest': 'sha256:release', files: 'CHANGELOG.md,docs/releases/1.2.0-alpha.0.md' })
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'tarball:qualified', head: 'def5678' }, runtime: env.rt })
+  const candidate = await handleCommand({ root: env.root, target: 'release-candidate', action: plan.id, flags: { commit: 'def5678', tarball: '/tmp/example-cli.tgz', sha256: 'sha256:1234', integrity: 'sha512-example', 'dry-run': 'passed' }, runtime: env.rt })
+  assert.equal(candidate.payload.package.name, '@example/cli')
+  const preview = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: { auto: true }, runtime: env.rt })
+  assert.equal(preview.results[0].stage, 'npm-publish')
+  assert.equal(env.runs.size, 1)
+})
+
+test('changed policy and partial evidence block progression', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const { plan } = await draftAndAccept(env)
+  env.setPolicy({ ...basePolicy, requiredChecks: [...basePolicy.requiredChecks, 'security'] })
+  const blocked = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'prepare' }, runtime: env.rt })
+  assert.equal(blocked.status, 'blocked')
+  env.setPolicy(basePolicy)
+  const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'prepare' }, runtime: env.rt })
+  env.runs.get(prepared.runId).result = { status: 'succeeded', summary: 'branch partial', proof: ['branch:unknown'], outcome: { receipt: { status: 'partial', summary: 'branch partial', effects: ['git:branch'], targets: prepared.checkpoint.targets, proof: ['branch:unknown'], head: null } } }
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'prepare', run: prepared.runId }, runtime: env.rt })
+  const next = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: {}, runtime: env.rt })
+  assert.equal(next.results[0].stage, 'prepare')
+})
+
+test('a neutral policy proves Delivery Controls do not hardcode Hairness', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const { plan } = await draftAndAccept(env, 'Ship neutral fixture')
+  assert.equal(plan.repository, 'example/widget')
+  assert.doesNotMatch(JSON.stringify(plan), /thevzion|@hairness\/cli/)
 })

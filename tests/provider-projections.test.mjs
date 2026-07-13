@@ -10,8 +10,8 @@ const root = new URL('../', import.meta.url).pathname.replace(/\/$/, '')
 test('provider compiler emits the same active command set for Codex and Claude', async () => {
   await buildProviders(root, { check: true })
   const manifest = JSON.parse(await readFile(join(root, 'hairness.build.json')))
-  assert.equal(manifest.commands.length, 29)
-  assert.equal(new Set(manifest.commands.map((command) => command.name)).size, 29)
+  assert.equal(manifest.commands.length, 34)
+  assert.equal(new Set(manifest.commands.map((command) => command.name)).size, 34)
   assert.deepEqual(manifest.commands.map((command) => command.name), [
     'hairness', 'hairness-help', 'hairness-onboarding', 'hairness-wake-up',
     'hairness-cmd-show-topics',
@@ -20,11 +20,13 @@ test('provider compiler emits the same active command set for Codex and Claude',
     'hairness-cmd-show-next', 'hairness-cmd-ask-next', 'hairness-cmd-plan-system-wire', 'hairness-cmd-plan-system-shape',
     'hairness-cmd-do-frame', 'hairness-cmd-do-plan',
     'hairness-cmd-show-structure', 'hairness-cmd-compare-options', 'hairness-cmd-ideate', 'hairness-cmd-propose', 'hairness-cmd-propose-creative',
+    'hairness-cmd-want-ship', 'hairness-cmd-ship-it', 'hairness-publish-pr', 'hairness-merge-pr', 'hairness-publish-release',
     'hairness-codebase', 'hairness-source', 'hairness-cmd-check-sources',
   ])
   assert.deepEqual(manifest.commands.filter((command) => command.surface === 'bridge').map((command) => command.name), ['hairness'])
   assert.deepEqual(manifest.commands.filter((command) => command.surface === 'namespace').map((command) => command.name), ['hairness-help', 'hairness-work', 'hairness-codebase', 'hairness-source'])
   assert.ok(manifest.commands.filter((command) => command.surface === 'intent').every((command) => command.name.startsWith('hairness-cmd-')))
+  assert.deepEqual(manifest.commands.filter((command) => command.surface === 'specialized' && command.owner === 'hairness/delivery-controls').map((command) => command.name), ['hairness-publish-pr', 'hairness-merge-pr', 'hairness-publish-release'])
   assert.equal(manifest.commands.find((command) => command.name === 'hairness-cmd-make-recap').resultId, 'response')
   assert.equal(manifest.commands.find((command) => command.name === 'hairness-cmd-save-recap').resultId, 'artifact')
   assert.equal(manifest.commands.some((command) => command.name.startsWith('hairness-x-')), false)
