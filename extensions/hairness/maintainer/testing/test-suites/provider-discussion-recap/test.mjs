@@ -18,6 +18,11 @@ export default {
     const recapPacket = await command(['work', 'make-recap'])
     const result = await write('fixtures/recap-result.json', { summary: recapPacket.summary, payload: recapPacket, proof: [], limits: [], routes: [] })
     await command(['invoke', 'complete', recapPreview.id, '--result-json', result])
+    const terminal = await command(['invoke', 'list', '--state', 'terminal'])
+    const recapInvocation = terminal.invocations.find((item) => item.id === recapPreview.id)
+    if (!recapInvocation || recapInvocation.legacy || recapInvocation.state !== 'completed' || recapInvocation.request.work.segmentId !== 'discussion') {
+      throw new Error(`Recap invocation is incompatible: ${JSON.stringify(recapInvocation ? { legacy: recapInvocation.legacy, state: recapInvocation.state, operation: recapInvocation.request.operation, work: recapInvocation.request.work } : null)}.`)
+    }
     const recap = await command(['work', 'save-recap', '--invocation', recapPreview.id])
     if (recap.revision !== recapPreview.id) throw new Error(`Recap revision mismatch: expected ${recapPreview.id}, received ${recap.revision ?? 'none'} (${recap.status ?? 'no-status'}: ${recap.summary ?? 'no-summary'}).`)
     ok(checks, 'recap-promotes-exact-revision', recap.revision === recapPreview.id)
