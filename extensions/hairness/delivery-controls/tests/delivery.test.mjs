@@ -107,6 +107,8 @@ test('pull-request proposal binds inspected files, head and diff to the executor
   await completeEffect(env, plan, 'prepare')
   await completeEffect(env, plan, 'implement')
   await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'checks:test-22,checks:test-24', head: 'abc1234' }, runtime: env.rt })
+  const specialized = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: { boundary: 'publish-pr' }, runtime: env.rt })
+  assert.equal(specialized.results[0].stage, 'publish-pr')
   const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'publish-pr', head: 'abc1234', 'diff-digest': 'sha256:abcd', files: 'src/a.mjs,tests/a.test.mjs' }, runtime: env.rt })
   const proposalInput = env.runs.get(prepared.runId).assignment.inputs.find((item) => item.pullRequestProposal)
   const proposal = [...env.artifacts.values()].find((item) => item.type === 'pull-request-proposal')
@@ -142,13 +144,44 @@ test('release planning aggregates only conventional release-impacting changes', 
   const collected = (await handleCommand({ root: env.root, target: 'status', flags: {}, runtime: env.rt })).plans.find((item) => item.id === plan.id)
   assert.deepEqual(collected.changes, ['#10 feat(cli): add delivery'])
   assert.equal(collected.versionRecommendation, 'minor')
-  await completeEffect(env, plan, 'release-pr', { head: 'def5678', 'diff-digest': 'sha256:release', files: 'CHANGELOG.md,docs/releases/1.2.0-alpha.0.md' })
-  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'tarball:qualified', head: 'def5678' }, runtime: env.rt })
-  const candidate = await handleCommand({ root: env.root, target: 'release-candidate', action: plan.id, flags: { commit: 'def5678', tarball: '/tmp/example-cli.tgz', sha256: 'sha256:1234', integrity: 'sha512-example', 'dry-run': 'passed' }, runtime: env.rt })
+
+  const specialized = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: { boundary: 'publish-pr' }, runtime: env.rt })
+  assert.equal(specialized.results[0].stage, 'release-pr')
+  const premature = await handleCommand({ root: env.root, target: 'release-candidate', action: plan.id, flags: { commit: 'release-main-head' }, runtime: env.rt })
+  assert.equal(premature.status, 'blocked')
+  assert.match(premature.limits[0], /release-pr/)
+
+  await completeEffect(env, plan, 'release-pr', { head: 'release-pr-head', 'diff-digest': 'sha256:release', files: 'CHANGELOG.md,docs/releases/1.2.0-alpha.0.md' })
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'ci', proof: 'checks:test-22,checks:test-24', head: 'release-pr-head' }, runtime: env.rt })
+  const wrongMerge = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'merge', head: 'different-pr-head' }, runtime: env.rt })
+  assert.equal(wrongMerge.status, 'blocked')
+  await completeEffect(env, plan, 'merge', { head: 'release-pr-head' })
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'verify-main', proof: 'github:main-contains-release', head: 'release-main-head' }, runtime: env.rt })
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'tarball:qualified', head: 'release-main-head' }, runtime: env.rt })
+
+  const wrongCommit = await handleCommand({ root: env.root, target: 'release-candidate', action: plan.id, flags: { commit: 'different-main-head', tarball: '/tmp/example-cli.tgz', sha256: 'sha256:1234', integrity: 'sha512-example', 'dry-run': 'passed' }, runtime: env.rt })
+  assert.equal(wrongCommit.status, 'blocked')
+  assert.match(wrongCommit.limits[0], /exact commit/)
+  const candidate = await handleCommand({ root: env.root, target: 'release-candidate', action: plan.id, flags: { commit: 'release-main-head', tarball: '/tmp/example-cli.tgz', sha256: 'sha256:1234', integrity: 'sha512-example', 'dry-run': 'passed' }, runtime: env.rt })
   assert.equal(candidate.payload.package.name, '@example/cli')
   const preview = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: { auto: true }, runtime: env.rt })
   assert.equal(preview.results[0].stage, 'npm-publish')
-  assert.equal(env.runs.size, 1)
+  assert.equal(env.runs.size, 2)
+  const mismatchedPublish = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'npm-publish', head: 'different-main-head' }, runtime: env.rt })
+  assert.equal(mismatchedPublish.status, 'blocked')
+  assert.match(mismatchedPublish.limits[0], /exact public commit/)
+
+  const releaseState = env.values.get('state.json')
+  const ciReceipt = releaseState.receipts.find((receipt) => receipt.planId === plan.id && receipt.stage === 'ci')
+  ciReceipt.status = 'partial'
+  const partial = await handleCommand({ root: env.root, target: 'release-candidate', action: plan.id, flags: { commit: 'release-main-head', tarball: '/tmp/example-cli.tgz', sha256: 'sha256:changed', integrity: 'sha512-example', 'dry-run': 'passed' }, runtime: env.rt })
+  assert.equal(partial.status, 'blocked')
+  assert.match(partial.limits[0], /ci/)
+  ciReceipt.status = 'succeeded'
+  ciReceipt.observedAt = '2000-01-01T00:00:00.000Z'
+  const stale = await handleCommand({ root: env.root, target: 'release-candidate', action: plan.id, flags: { commit: 'release-main-head', tarball: '/tmp/example-cli.tgz', sha256: 'sha256:changed', integrity: 'sha512-example', 'dry-run': 'passed' }, runtime: env.rt })
+  assert.equal(stale.status, 'blocked')
+  assert.match(stale.limits[0], /ci/)
 })
 
 test('changed policy and partial evidence block progression', async (context) => {
