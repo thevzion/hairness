@@ -1,1 +1,0 @@
-Resolve one initiative into a sequential delivery plan. Surface the next checkpoint and required proof. Never stage, commit, push, open a PR, merge, tag, release or publish directly; dispatch only an explicitly authorized executor and record its typed receipt.
