@@ -8,14 +8,21 @@ function runtime() {
   const events = []
   const planRecords = []
   const runs = []
+  const invocationRecords = []
+  const invocationResults = new Map()
+  const promotedArtifacts = []
   return {
     overlay: { read: async (key, fallback) => values.has(key) ? values.get(key) : fallback, write: async (key, value) => (values.set(key, value), value), append: async (_key, value) => events.push(value), lines: async () => events },
     contracts: { validate: async (_name, value) => value, validateSchema: (schema, value, label) => validateJsonSchema(new URL(`../${schema.slice(2)}`, import.meta.url), value, label) },
-    artifacts: { read: async () => null },
+    artifacts: { read: async () => null, stage: async (_runId, value) => (promotedArtifacts.push(value), value), promote: async () => null },
+    invocations: { list: async () => invocationRecords, result: async (id) => invocationResults.get(id) },
     plans: { write: async (value) => (planRecords.push(value), value) },
-    runs: { create: async (value) => (runs.push(value), value), transition: async () => null, capsule: async (id) => ({ runId: id }) },
+    runs: { create: async (value) => (runs.push(value), value), list: async () => runs, transition: async () => null, capsule: async (id) => ({ runId: id }) },
     planRecords,
     runsCreated: runs,
+    invocationRecords,
+    invocationResults,
+    promotedArtifacts,
     events,
   }
 }
@@ -31,14 +38,18 @@ test('work controls persist one mission, segment and frame', async () => {
   assert.equal(rt.events.length, 3)
 })
 
-test('save-recap creates one bounded producer for its declared operation', async () => {
+test('save-recap promotes the latest compatible make-recap result without resynthesis', async () => {
   const rt = runtime()
   await handleCommand({ target: 'mission', action: 'set', rest: [], flags: { id: 'hairness', summary: 'Build Hairness.' }, runtime: rt })
   await handleCommand({ target: 'segment', action: 'open', rest: [], flags: { id: 'providers', summary: 'Build providers.' }, runtime: rt })
+  const made = await handleCommand({ target: 'make-recap', rest: [], flags: {}, runtime: rt })
+  rt.invocationRecords.push({ id: 'inv-recap', legacy: false, state: 'completed', updatedAt: '2026-07-12T10:00:00.000Z', request: { operation: { capability: 'hairness/work', id: 'recap' }, expectedResult: { contract: { disposition: 'response' } }, work: { segmentId: 'providers' }, origin: { host: 'codex' } } })
+  rt.invocationResults.set('inv-recap', { summary: made.summary, payload: made })
   const result = await handleCommand({ target: 'save-recap', rest: [], flags: {}, runtime: rt })
-  assert.equal(result.status, 'ready')
-  assert.deepEqual(rt.planRecords[0].routes[0].operation, { capability: 'hairness/work', id: 'recap' })
-  assert.equal(rt.runsCreated[0].assignment.inputs.at(-1).artifactContract.owner, 'hairness/work-controls')
+  assert.equal(result.revision, 'inv-recap')
+  assert.deepEqual(result.payload, made.results[0])
+  assert.equal(rt.runsCreated.length, 0)
+  assert.equal(rt.promotedArtifacts.length, 1)
 })
 
 test('show-work and show-method return compact response dashboards', async () => {
@@ -54,6 +65,18 @@ test('show-work and show-method return compact response dashboards', async () =>
   assert.deepEqual(method.results[0].methodShape, ['mission', 'work segment', 'frame', 'recap', 'work-plan', 'checkpoint'])
 })
 
+test('show-trace links the active invocation to child Runs and work trace defaults to the active segment', async () => {
+  const rt = runtime()
+  await handleCommand({ target: 'mission', action: 'set', rest: [], flags: { id: 'hairness', summary: 'Build Hairness.' }, runtime: rt })
+  await handleCommand({ target: 'segment', action: 'open', rest: [], flags: { id: 'providers', summary: 'Build providers.' }, runtime: rt })
+  rt.invocationRecords.push({ id: 'inv-root', legacy: false, state: 'needs-agent', updatedAt: '2026-07-12T10:00:00.000Z', request: { summary: 'Map providers.', work: { segmentId: 'providers' } } })
+  rt.runsCreated.push({ id: 'run-child', parentInvocationId: 'inv-root', routeId: 'map', state: 'running' })
+  const trace = await handleCommand({ target: 'show-trace', rest: [], flags: {}, runtime: rt })
+  assert.equal(trace.results[0].trace[0].runs[0].id, 'run-child')
+  const raw = await handleCommand({ target: 'trace', rest: [], flags: {}, runtime: rt })
+  assert.equal(raw.segment.id, 'providers')
+})
+
 test('plan-system-shape carries reshape-system target controls', async () => {
   const rt = runtime()
   await handleCommand({ target: 'mission', action: 'set', rest: [], flags: { id: 'hairness', summary: 'Build Hairness.' }, runtime: rt })
@@ -67,18 +90,17 @@ test('plan-system-shape carries reshape-system target controls', async () => {
   assert.deepEqual(plan.checkpoints, ['cp-1'])
 })
 
-test('save-plan prepares an enriched work-plan artifact payload', async () => {
+test('save-plan promotes the exact typed make-plan payload', async () => {
   const rt = runtime()
   await handleCommand({ target: 'mission', action: 'set', rest: [], flags: { id: 'hairness', summary: 'Build Hairness.' }, runtime: rt })
   await handleCommand({ target: 'segment', action: 'open', rest: [], flags: { id: 'providers', summary: 'Build providers.' }, runtime: rt })
-  const result = await handleCommand({ target: 'save-plan', rest: [], flags: { planKind: 'system-shape', scope: 'provider', validation: 'npm-test' }, runtime: rt })
-  assert.equal(result.status, 'ready')
-  const payload = rt.runsCreated[0].assignment.inputs.at(-1).artifactContract.requiredPayload
-  await validateJsonSchema(new URL('../schemas/work-plan.schema.json', import.meta.url), payload, 'work-plan')
-  assert.equal(payload.executionBoundary, 'segment:providers')
-  assert.deepEqual(payload.scope, ['provider'])
-  assert.deepEqual(payload.validation, ['npm-test'])
-  assert.ok(payload.targetShape)
+  const made = await handleCommand({ target: 'make-plan', rest: [], flags: { planKind: 'system-shape', scope: 'provider', validation: 'npm-test' }, runtime: rt })
+  rt.invocationRecords.push({ id: 'inv-plan', legacy: false, state: 'completed', updatedAt: '2026-07-12T10:00:00.000Z', request: { operation: { capability: 'hairness/work', id: 'plan' }, expectedResult: { contract: { disposition: 'response' } }, work: { segmentId: 'providers' }, origin: { host: 'claude' } } })
+  rt.invocationResults.set('inv-plan', { summary: made.summary, payload: made })
+  const result = await handleCommand({ target: 'save-plan', rest: [], flags: {}, runtime: rt })
+  await validateJsonSchema(new URL('../schemas/work-plan.schema.json', import.meta.url), result.payload, 'work-plan')
+  assert.deepEqual(result.payload, made.results[0])
+  assert.equal(result.revision, 'inv-plan')
 })
 
 test('closing a segment requires a typed digest', async () => {

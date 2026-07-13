@@ -4,7 +4,10 @@ Artifacts preserve durable orientation produced by runs. Each artifact has one a
 
 Artifacts do not replace live proof. A ticket map can orient an implementation, but Hairness revalidates the ticket and codebase state before granting executor authority.
 
-Scratch remains untyped and never enters context automatically.
+Scratch remains untyped and never enters context automatically. A producer may
+write the requested payload and provenance, but the parent ResultContract fixes
+the owner, type and promotion. The runtime validates those values before
+staging and promotion.
 
 ```bash
 hairness artifact list --owner hairness/work-controls

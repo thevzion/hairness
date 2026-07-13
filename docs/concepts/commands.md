@@ -9,18 +9,19 @@ meaning in metadata and naming:
 
 - `surface=bridge`: the root router, currently `hairness`;
 - `surface=namespace`: a guide for a command namespace such as `hairness-work`;
-- `surface=intent`: a one-intent human command, always prefixed `hairness-x-*`;
+- `surface=intent`: a one-intent human command, always prefixed `hairness-cmd-*`;
 - `surface=specialized`: exact lifecycle or diagnostic purpose.
 
-Capability and preset commands reference an OperationRef. They can set
-`resultId`, prefill controls, provide defaults, and accept modifiers, but cannot
-grant effects or approve checkpoints.
+`CommandSurfaceSpec` is provider-independent. An intent surface declares its
+verb/object/qualifiers lexeme, OperationRef, named result, arguments, immutable
+controls, defaults, modifiers and instruction source. Provider names and the
+ResultContract are derived rather than duplicated in manifests.
 
-The standard alpha surface exposes 24 commands with exact Codex/Claude parity:
-the bridge, cockpit helpers, namespace guides, and the `hairness-x-*` intent
-nucleus. `make-*` commands request `result=response`; `save-*` commands request
-`result=artifact`. `--auto` advances progress only and never changes
-persistence.
+The standard alpha surface exposes 29 commands with exact Codex/Claude parity:
+the bridge, cockpit helpers, namespace guides, and the `hairness-cmd-*` intent
+nucleus. `make-*` requests a typed response. `save-*` promotes the last
+compatible result without resynthesis. `promotion=none|artifact|effect` is
+separate from progress; `--auto` changes progress only and grants no authority.
 
 Removing an extension removes its commands at the next build. Internal CLI
 routes remain available for machine/debug use even when they are not projected

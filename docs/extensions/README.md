@@ -17,7 +17,11 @@ extensions/<owner>/<name>/
 
 `extension.json` declares summary, discovery category, tags, maturity, README, dependencies, capability files, provider commands, services, contributions, modifiers, relation types, artifact schemas, source drivers, and declarative onboarding questions. Categories organize the catalogue but never enter an extension ID or physical path. Each declared implementation file remains inside its owner.
 
-Capability files declare operations. Commands of kind `capability` or `preset` reference one operation. Provider instructions define provider behavior; the compiler adds only common safety guidance.
+Capability files declare operations. Provider-independent CommandSurfaceSpecs
+declare bridge, namespace, intent, or specialized projections. Every non-bridge
+surface references one operation; names and ResultContracts are derived by the
+compiler. Provider instructions define host behavior while fixed intent
+controls remain immutable.
 
 Handlers receive a frozen runtime. Cross-extension services require declared dependencies. Extension state is limited to `.overlay/extensions-state/<extension-id>/`. There is no generic source API: a business extension depends on `hairness/sources` and calls its declared service.
 

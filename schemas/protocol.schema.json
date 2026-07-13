@@ -84,6 +84,8 @@
         "schemaVersion": { "const": 2 },
         "protocolVersion": { "const": "0.2" },
         "id": { "$ref": "#/$defs/Id" },
+        "parentInvocationId": { "$ref": "#/$defs/Id" },
+        "work": { "$ref": "#/$defs/WorkRef" },
         "intent": { "$ref": "#/$defs/Intent" },
         "routes": { "type": "array", "minItems": 1, "maxItems": 32, "items": { "$ref": "#/$defs/RouteSpec" } },
         "fanIn": {
@@ -106,7 +108,16 @@
         "schema": { "$ref": "#/$defs/NonEmpty" },
         "disposition": { "enum": ["response", "run-only", "scratch", "artifact", "effect"] },
         "artifactOwner": { "$ref": "#/$defs/ExtensionId" },
-        "artifactType": { "$ref": "#/$defs/Slug" }
+        "artifactType": { "$ref": "#/$defs/Slug" },
+        "promotableTo": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["artifactOwner", "artifactType"],
+          "properties": {
+            "artifactOwner": { "$ref": "#/$defs/ExtensionId" },
+            "artifactType": { "$ref": "#/$defs/Slug" }
+          }
+        }
       },
       "allOf": [{
         "if": { "properties": { "disposition": { "const": "artifact" } }, "required": ["disposition"] },
@@ -131,11 +142,32 @@
     "ExpectedResult": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "contract"],
+      "required": ["id", "contract", "promotion"],
       "properties": {
         "id": { "$ref": "#/$defs/Slug" },
         "contract": { "$ref": "#/$defs/ResultContract" },
-        "persistence": { "enum": ["none", "local", "published"] }
+        "promotion": { "enum": ["none", "artifact", "effect"] }
+      }
+    },
+    "InvocationOrigin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["bridge", "command", "direct", "methodology"] },
+        "commandId": { "$ref": "#/$defs/DottedId" },
+        "methodologyBindingId": { "$ref": "#/$defs/DottedId" },
+        "host": { "enum": ["codex", "claude", "cli", "unknown"] },
+        "providerSessionId": { "$ref": "#/$defs/NonEmpty" }
+      }
+    },
+    "WorkRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "missionId": { "type": ["string", "null"] },
+        "segmentId": { "type": ["string", "null"] },
+        "frameId": { "type": ["string", "null"] }
       }
     },
     "InvocationDraft": {
@@ -149,6 +181,7 @@
         "summary": { "$ref": "#/$defs/NonEmpty" },
         "inputs": { "type": "object" },
         "controls": { "type": "object" },
+        "origin": { "$ref": "#/$defs/InvocationOrigin" },
         "result": { "$ref": "#/$defs/Slug" },
         "route": { "enum": ["deterministic", "inline", "worker", "external"] },
         "progressPolicy": { "enum": ["preview", "auto"] }
@@ -157,12 +190,14 @@
     "InvocationRequest": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "protocolVersion", "id", "mode", "operation", "summary", "inputs", "controls", "expectedResult", "route", "progressPolicy", "createdAt"],
+      "required": ["schemaVersion", "protocolVersion", "id", "mode", "origin", "work", "operation", "summary", "inputs", "controls", "expectedResult", "route", "progressPolicy", "createdAt"],
       "properties": {
         "schemaVersion": { "const": 2 },
         "protocolVersion": { "const": "0.2" },
         "id": { "$ref": "#/$defs/Id" },
         "mode": { "enum": ["intent", "direct"] },
+        "origin": { "$ref": "#/$defs/InvocationOrigin" },
+        "work": { "$ref": "#/$defs/WorkRef" },
         "operation": { "$ref": "#/$defs/OperationRef" },
         "summary": { "$ref": "#/$defs/NonEmpty" },
         "inputs": { "type": "object" },
@@ -219,6 +254,34 @@
         "data": { "type": "object" }
       }
     },
+    "InvocationResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "invocationId", "resultId", "summary", "payload", "proof", "limits", "routes"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "invocationId": { "$ref": "#/$defs/Id" },
+        "resultId": { "$ref": "#/$defs/Slug" },
+        "summary": { "$ref": "#/$defs/NonEmpty" },
+        "payload": { "type": "object" },
+        "proof": { "type": "array", "items": { "type": "string" } },
+        "limits": { "type": "array", "items": { "type": "string" } },
+        "routes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "InvocationResultRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resultId", "schema", "disposition", "digest", "path"],
+      "properties": {
+        "resultId": { "$ref": "#/$defs/Slug" },
+        "schema": { "$ref": "#/$defs/NonEmpty" },
+        "disposition": { "enum": ["response", "run-only", "scratch", "artifact", "effect"] },
+        "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "path": { "$ref": "#/$defs/NonEmpty" }
+      }
+    },
     "InvocationReceipt": {
       "type": "object",
       "additionalProperties": false,
@@ -230,6 +293,7 @@
         "status": { "enum": ["completed", "blocked", "cancelled"] },
         "operation": { "$ref": "#/$defs/OperationRef" },
         "summary": { "$ref": "#/$defs/NonEmpty" },
+        "result": { "$ref": "#/$defs/InvocationResultRef" },
         "outcome": {},
         "proof": { "type": "array", "items": { "type": "string" } },
         "limits": { "type": "array", "items": { "type": "string" } },
@@ -323,16 +387,33 @@
     "RouteRun": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "protocolVersion", "id", "planId", "state", "assignment", "createdAt", "updatedAt"],
+      "required": ["schemaVersion", "protocolVersion", "id", "planId", "parentInvocationId", "routeId", "parentMode", "state", "assignment", "createdAt", "updatedAt"],
       "properties": {
         "schemaVersion": { "const": 2 },
         "protocolVersion": { "const": "0.2" },
         "id": { "$ref": "#/$defs/Id" },
         "planId": { "$ref": "#/$defs/Id" },
+        "parentInvocationId": { "$ref": "#/$defs/Id" },
+        "routeId": { "$ref": "#/$defs/Id" },
+        "parentMode": { "enum": ["shared", "synthetic"] },
         "state": { "$ref": "#/$defs/RunState" },
         "assignment": { "$ref": "#/$defs/Assignment" },
         "createdAt": { "type": "string" },
         "updatedAt": { "type": "string" }
+      }
+    },
+    "RunEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "runId", "sequence", "type", "at", "data"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "runId": { "$ref": "#/$defs/Id" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "type": { "enum": ["created", "state", "inspect", "source", "effect-requested", "effect-authorized", "result-submitted", "result-accepted", "result-rejected", "completed", "failed"] },
+        "at": { "$ref": "#/$defs/NonEmpty" },
+        "data": { "type": "object" }
       }
     },
     "RunResult": {
@@ -379,7 +460,7 @@
               "additionalProperties": false,
               "required": ["kind", "id"],
               "properties": {
-                "kind": { "enum": ["extension", "methodology", "worker", "import"] },
+                "kind": { "enum": ["extension", "methodology", "worker", "invocation", "import"] },
                 "id": { "$ref": "#/$defs/NonEmpty" },
                 "version": { "type": "string" },
                 "provider": { "type": "string" }
@@ -608,7 +689,86 @@
               "scope": { "$ref": "#/$defs/NonEmpty" }
             }
           }
+        },
+        "migrations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "fromVersion", "toVersion", "digest", "appliedAt"],
+            "properties": {
+              "id": { "$ref": "#/$defs/Slug" },
+              "fromVersion": { "$ref": "#/$defs/NonEmpty" },
+              "toVersion": { "$ref": "#/$defs/NonEmpty" },
+              "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+              "appliedAt": { "$ref": "#/$defs/NonEmpty" }
+            }
+          }
         }
+      }
+    },
+    "MigrationDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "id", "fromVersion", "toVersion", "fromProtocol", "toProtocol", "scopes", "transform", "validations"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "id": { "$ref": "#/$defs/Slug" },
+        "fromVersion": { "$ref": "#/$defs/NonEmpty" },
+        "toVersion": { "$ref": "#/$defs/NonEmpty" },
+        "fromProtocol": { "const": "0.2" },
+        "toProtocol": { "const": "0.2" },
+        "scopes": { "type": "array", "items": { "enum": ["overlay", "extensions", "lock", "providers"] }, "minItems": 1, "uniqueItems": true },
+        "transform": { "$ref": "#/$defs/Slug" },
+        "validations": { "type": "array", "items": { "enum": ["schemas", "doctor", "build-check", "attention-index"] }, "minItems": 1, "uniqueItems": true }
+      }
+    },
+    "MigrationPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "id", "fromVersion", "toVersion", "candidateRoot", "migrations", "changes", "status", "checkpointId", "createdAt", "limits"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "id": { "$ref": "#/$defs/Id" },
+        "fromVersion": { "$ref": "#/$defs/NonEmpty" },
+        "toVersion": { "$ref": "#/$defs/NonEmpty" },
+        "candidateRoot": { "$ref": "#/$defs/NonEmpty" },
+        "migrations": { "type": "array", "items": { "$ref": "#/$defs/MigrationDescriptor" } },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["scope", "path", "status", "summary"],
+            "properties": {
+              "scope": { "enum": ["overlay", "extensions", "lock", "providers"] },
+              "path": { "$ref": "#/$defs/NonEmpty" },
+              "status": { "enum": ["safe", "unchanged", "review-required"] },
+              "summary": { "$ref": "#/$defs/NonEmpty" }
+            }
+          }
+        },
+        "status": { "enum": ["ready", "review-required", "up-to-date"] },
+        "checkpointId": { "$ref": "#/$defs/Id" },
+        "createdAt": { "$ref": "#/$defs/NonEmpty" },
+        "limits": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "MigrationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "planId", "status", "migrations", "checkpointId", "completedAt", "limits"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "planId": { "$ref": "#/$defs/Id" },
+        "status": { "enum": ["succeeded", "unknown"] },
+        "migrations": { "type": "array", "items": { "$ref": "#/$defs/Slug" } },
+        "checkpointId": { "$ref": "#/$defs/Id" },
+        "completedAt": { "$ref": "#/$defs/NonEmpty" },
+        "limits": { "type": "array", "items": { "type": "string" } }
       }
     },
     "MaterialSet": {
@@ -695,20 +855,28 @@
         "tests": { "type": "array", "items": { "$ref": "#/$defs/NonEmpty" }, "uniqueItems": true }
       }
     },
-    "ProviderCommand": {
+    "CommandLexeme": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "summary", "kind", "classification", "surface", "command", "arguments", "result", "instructions"],
+      "required": ["verb"],
+      "properties": {
+        "verb": { "$ref": "#/$defs/Slug" },
+        "object": { "$ref": "#/$defs/Slug" },
+        "qualifiers": { "type": "array", "items": { "$ref": "#/$defs/Slug" }, "uniqueItems": true }
+      }
+    },
+    "CommandSurfaceSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "summary", "classification", "surface", "machineRoute", "arguments", "instructions"],
       "properties": {
         "id": { "$ref": "#/$defs/DottedId" },
-        "name": { "$ref": "#/$defs/Slug" },
         "summary": { "$ref": "#/$defs/NonEmpty" },
-        "kind": { "enum": ["capability", "preset", "bridge"] },
         "classification": { "enum": ["primary", "accelerator", "specialized"] },
         "surface": { "enum": ["bridge", "namespace", "intent", "specialized"] },
-        "command": { "$ref": "#/$defs/NonEmpty" },
+        "lexeme": { "$ref": "#/$defs/CommandLexeme" },
+        "machineRoute": { "$ref": "#/$defs/NonEmpty" },
         "arguments": { "type": "array", "items": { "type": "object" } },
-        "result": { "$ref": "#/$defs/ResultContract" },
         "resultId": { "$ref": "#/$defs/Slug" },
         "operation": { "$ref": "#/$defs/OperationRef" },
         "instructions": { "type": "string", "pattern": "^\\./" },
@@ -720,19 +888,43 @@
         "acceptsModifiers": { "type": "array", "items": { "$ref": "#/$defs/DottedId" }, "uniqueItems": true }
       },
       "allOf": [{
-        "if": { "properties": { "kind": { "enum": ["capability", "preset"] } }, "required": ["kind"] },
-        "then": { "required": ["operation"], "properties": { "operation": { "$ref": "#/$defs/OperationRef" } } }
+        "if": { "properties": { "surface": { "const": "bridge" } }, "required": ["surface"] },
+        "then": { "properties": { "operation": false } },
+        "else": { "required": ["operation"], "properties": { "operation": { "$ref": "#/$defs/OperationRef" } } }
+      }, {
+        "if": { "properties": { "surface": { "const": "intent" } }, "required": ["surface"] },
+        "then": { "required": ["lexeme"], "properties": { "lexeme": { "$ref": "#/$defs/CommandLexeme" } } },
+        "else": { "properties": { "lexeme": false } }
       }]
     },
-    "AttentionSignal": {
+    "AttentionItem": {
       "type": "object",
       "additionalProperties": false,
       "required": ["state", "priority", "summary", "route"],
       "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "kind": { "enum": ["segment", "frame", "invocation", "run", "result", "artifact", "proof", "edge", "extension"] },
         "state": { "enum": ["active", "blocked", "ready", "quarantined"] },
         "priority": { "type": "integer", "minimum": 0, "maximum": 100 },
         "summary": { "$ref": "#/$defs/NonEmpty" },
-        "route": { "$ref": "#/$defs/NonEmpty" }
+        "route": { "$ref": "#/$defs/NonEmpty" },
+        "lastActivityAt": { "$ref": "#/$defs/NonEmpty" },
+        "work": { "$ref": "#/$defs/WorkRef" },
+        "limits": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "AttentionSignal": { "$ref": "#/$defs/AttentionItem" },
+    "AttentionIndex": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "items", "generatedAt", "limits", "routes"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "items": { "type": "array", "maxItems": 20, "items": { "$ref": "#/$defs/AttentionItem" } },
+        "generatedAt": { "$ref": "#/$defs/NonEmpty" },
+        "limits": { "type": "array", "items": { "type": "string" } },
+        "routes": { "type": "array", "items": { "type": "string" } }
       }
     },
     "SourceDefinition": {

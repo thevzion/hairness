@@ -11,6 +11,11 @@ These limitations apply to `0.2.0-alpha.0`.
 - Provider command files are lossy projections of Hairness metadata. The
   canonical model lives in extension manifests, capabilities, invocations and
   generated build metadata.
+- Operational memory covers Hairness intent commands, routed methodology
+  bindings and their Runs. Free conversation, direct third-party skills and raw
+  provider tool calls are not captured.
+- The alpha ledger is append-only and un-compacted. Legacy pre-epoch entries
+  remain inspectable but are excluded from current attention alerts.
 - Codex and Claude provider projections use guarded agent-first-call routing
   where the host cannot guarantee a deterministic command hook.
 - The existing Codex attestation is not a cross-provider guarantee.
@@ -20,8 +25,9 @@ These limitations apply to `0.2.0-alpha.0`.
   are not implemented.
 - External routes define the boundary for execution loops and MCP-backed
   operations, but no generic loop adapter ships in this alpha.
-- Updates are conservative. Diverged source, changed dependencies and edited
-  managed regions require manual review.
+- Updates and migrations are conservative. Diverged source, changed
+  dependencies, linked local extensions and edited managed regions require
+  manual review. Hairness does not codemod arbitrary consumer code.
 - Session intelligence preserves typed digests, not transcripts. It cannot
   reconstruct omitted conversation details.
 - Hairness does not provide generic rollback for partial or unknown effects.

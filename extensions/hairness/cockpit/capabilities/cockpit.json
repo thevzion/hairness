@@ -69,6 +69,27 @@
         }
       ],
       "defaultResult": "default"
+    },
+    {
+      "id": "attention",
+      "class": "observe",
+      "summary": "List recoverable subjects across sessions in deterministic attention order.",
+      "sources": [],
+      "effects": [],
+      "routes": [
+        "deterministic"
+      ],
+      "acceptsModifiers": [],
+      "results": [
+        {
+          "id": "default",
+          "contract": {
+            "schema": "ContextPacket",
+            "disposition": "response"
+          }
+        }
+      ],
+      "defaultResult": "default"
     }
   ]
 }

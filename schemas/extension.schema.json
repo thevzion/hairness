@@ -4,7 +4,7 @@
   "title": "ExtensionManifest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "protocolVersion", "id", "version", "summary", "category", "tags", "maturity", "readme", "module", "capabilities", "commands", "providerCommands"],
+  "required": ["schemaVersion", "protocolVersion", "id", "version", "summary", "category", "tags", "maturity", "readme", "module", "capabilities", "commands", "commandSurfaces"],
   "properties": {
     "$schema": { "type": "string" },
     "schemaVersion": { "const": 2 },
@@ -63,7 +63,7 @@
         }
       }
     },
-    "providerCommands": { "type": "array", "items": { "$ref": "protocol.schema.json#/$defs/ProviderCommand" } },
+    "commandSurfaces": { "type": "array", "items": { "$ref": "protocol.schema.json#/$defs/CommandSurfaceSpec" } },
     "sourceDrivers": { "type": "array", "items": { "type": "string", "pattern": "^\\./" }, "uniqueItems": true },
     "methodologyBindings": {
       "type": "array",

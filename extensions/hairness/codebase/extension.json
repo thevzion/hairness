@@ -20,7 +20,7 @@
     { "type": "system-map", "schema": "./schemas/map.schema.json" }
   ],
   "commands": [{ "namespace": "codebase", "actions": ["list", "show", "doctor", "add", "mount", "unmount", "remove", "map", "entrypoint", "system"] }],
-  "providerCommands": [
-    { "id": "hairness.codebase", "name": "hairness-codebase", "summary": "Guide registered codebase inspection, mounts and map routes.", "kind": "capability", "classification": "primary", "surface": "namespace", "command": "hairness codebase", "arguments": [{ "name": "action", "required": false }, { "name": "id", "required": false }], "result": { "schema": "ContextPacket", "disposition": "response" }, "resultId": "default", "operation": { "capability": "hairness/codebase", "id": "inspect" }, "instructions": "./commands/hairness-codebase.md" }
+  "commandSurfaces": [
+    { "id": "hairness.codebase", "summary": "Guide registered codebase inspection, mounts and map routes.", "classification": "primary", "surface": "namespace", "machineRoute": "hairness codebase", "arguments": [{ "name": "action", "required": false }, { "name": "id", "required": false }], "resultId": "default", "operation": { "capability": "hairness/codebase", "id": "inspect" }, "instructions": "./commands/hairness-codebase.md" }
   ]
 }

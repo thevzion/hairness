@@ -20,5 +20,5 @@
   ],
   "onboarding": [{ "id": "maintenance.gitWarnings", "phase": "maintenance", "question": "Show attention for branches without upstream or unpushed commits?", "options": [{ "value": "on", "label": "Show Git attention" }, { "value": "off", "label": "Do not show it" }], "preferenceKey": "maintenance.gitWarnings" }],
   "commands": [{ "namespace": "maintain", "actions": ["check", "impact", "status", "metrics", "changelog-preview", "test", "eval"] }],
-  "providerCommands": []
+  "commandSurfaces": []
 }

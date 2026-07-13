@@ -35,7 +35,7 @@ async function inspected(root, id) {
   if ((manifest.contributes ?? []).includes('provider-hooks')) assert.equal(typeof module.providerHooks, 'function', `${id} declares provider-hooks without providerHooks`)
   if ((manifest.contributes ?? []).includes('onboarding')) assert.equal(typeof module.onboardingContributions, 'function', `${id} declares onboarding without onboardingContributions`)
   if ((manifest.contributes ?? []).includes('input-resolver')) assert.equal(typeof module.invocationResolvers, 'function', `${id} declares input-resolver without invocationResolvers`)
-  for (const command of manifest.providerCommands) {
+  for (const command of manifest.commandSurfaces) {
     const pathValue = resolve(path, command.instructions)
     assert.ok(!relative(path, pathValue).startsWith('..'), `${command.id} instructions escape ${id}`)
     await access(pathValue)
@@ -113,9 +113,9 @@ export async function runExtensionOwnershipGate(root = new URL('../', import.met
     assert.ok(!modifierOwners.has(modifier.id), `${modifier.id} modifier is owned by ${modifierOwners.get(modifier.id)} and ${value.id}`)
     modifierOwners.set(modifier.id, value.id)
   }
-  for (const value of values.values()) for (const command of value.manifest.providerCommands) if (command.kind !== 'bridge') {
+  for (const value of values.values()) for (const command of value.manifest.commandSurfaces) if (command.surface !== 'bridge') {
     const operation = resolveOperation(operations, command.operation)
-    assert.ok(operation.results.some((result) => JSON.stringify(result.contract) === JSON.stringify(command.result)), `${command.id} result is not declared by ${operation.capability}#${operation.id}`)
+    assert.ok(operation.results.some((result) => result.id === (command.resultId ?? operation.defaultResult)), `${command.id} result is not declared by ${operation.capability}#${operation.id}`)
   }
   for (const recipeName of (await readdir(join(root, 'catalog')).catch((error) => error.code === 'ENOENT' ? [] : Promise.reject(error))).filter((name) => name.endsWith('.json')).map((name) => name.slice(0, -5))) {
     const recipe = JSON.parse(await readFile(join(root, 'catalog', `${recipeName}.json`), 'utf8'))

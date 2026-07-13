@@ -43,6 +43,12 @@ async function activeExtensions(root, includeLocal = false) {
   return { distribution, extensions: values }
 }
 
+function commandName(command) {
+  if (command.surface === 'bridge') return 'hairness'
+  if (command.surface !== 'intent') return `hairness-${command.id.split('.').at(-1)}`
+  return `hairness-cmd-${[command.lexeme.verb, command.lexeme.object, ...(command.lexeme.qualifiers ?? [])].filter(Boolean).join('-')}`
+}
+
 async function projectionModel(root, includeLocal = false) {
   const active = await activeExtensions(root, includeLocal)
   const operationIndex = capabilityIndex(active.extensions)
@@ -61,13 +67,18 @@ async function projectionModel(root, includeLocal = false) {
       if (relative(extension.path, source).startsWith('..')) throw new HairnessError('managed_source_escape', `${extension.id} guidance escapes its extension.`, { exitCode: 2 })
       guidance.push({ ...item, owner: extension.id, content: (await readFile(source, 'utf8')).trim() })
     }
-    for (const command of extension.manifest.providerCommands) {
-      if (command.kind !== 'bridge') {
+    for (const surface of extension.manifest.commandSurfaces) {
+      const command = { ...surface, name: commandName(surface) }
+      if (command.surface !== 'bridge') {
         const operation = resolveOperation(operationIndex, command.operation)
         const resultId = command.resultId ?? operation.defaultResult
         const result = operation.results.find((item) => item.id === resultId)
         if (!result) throw new HairnessError('provider_command_result_missing', `${command.id} references missing result ${resultId}.`, { exitCode: 2 })
-        if (JSON.stringify(result.contract) !== JSON.stringify(command.result)) throw new HairnessError('provider_command_result_mismatch', `${command.id} result ${resultId} does not match its operation contract.`, { exitCode: 2 })
+        command.resultId = resultId
+        command.result = result.contract
+        const promotion = result.contract.disposition === 'artifact' ? 'artifact' : result.contract.disposition === 'effect' ? 'effect' : 'none'
+        if (command.fixed?.controls?.promotion && command.fixed.controls.promotion !== promotion) throw new HairnessError('command_promotion_mismatch', `${command.id} fixes promotion=${command.fixed.controls.promotion}, expected ${promotion}.`, { exitCode: 2 })
+        for (const key of command.overrides ?? []) if (Object.hasOwn(command.fixed?.controls ?? {}, key)) throw new HairnessError('command_fixed_override', `${command.id} cannot override fixed control ${key}.`, { exitCode: 2 })
       }
       const source = resolve(extension.path, command.instructions)
       if (relative(extension.path, source).startsWith('..')) throw new HairnessError('provider_instruction_escape', `${extension.id} instruction escapes its extension.`, { exitCode: 2 })
@@ -98,6 +109,7 @@ function skillMarkdown(command, provider, modifiers) {
     return `\`--${item.argument} <${values}>\` default \`${item.default}\``
   }).join('; ')}.\n` : ''
   const resultText = command.resultId ? ` Set \`draft.result\`=\`${command.resultId}\`.` : ''
+  const originText = ` Set \`draft.origin\`=\`${JSON.stringify({ kind: command.surface === 'bridge' ? 'bridge' : 'command', commandId: command.id })}\`.`
   const fixedText = command.fixed ? `\nFixed: \`${JSON.stringify(command.fixed)}\`.\n` : ''
   const defaultText = command.defaults ? `\nDefaults: \`${JSON.stringify(command.defaults)}\` unless overridden.\n` : ''
   const surfaceText = {
@@ -108,12 +120,12 @@ function skillMarkdown(command, provider, modifiers) {
   }[command.surface]
   const gateway = command.operation
     ? command.entryPolicy === 'opening-first'
-      ? `Use fresh SessionOpening first. If refresh is needed, build compact InvocationDraft.${resultText} Call \`hairness invoke start --operation ${command.operation.capability}:${command.operation.id} --draft-json - --json\`.`
-      : `Build compact InvocationDraft.${resultText} Call \`hairness invoke start --operation ${command.operation.capability}:${command.operation.id} --draft-json - --json\` before questions. \`--auto\` advances progress only. Ask returned gaps; else follow \`preview.next\`.`
-    : 'Resolve the intent to one active operation. Use `hairness help --json` only when ownership is unclear, then submit the operation through `hairness invoke start`.'
+      ? `Use fresh SessionOpening. To refresh, submit InvocationDraft.${originText}${resultText} Run \`hairness invoke start --operation ${command.operation.capability}:${command.operation.id} --draft-json - --json\`.`
+      : `Draft: \`{schemaVersion:2,protocolVersion:"0.2",summary,inputs:{},controls:{}}\`.${originText}${resultText} Run \`hairness invoke start --operation ${command.operation.capability}:${command.operation.id} --draft-json - --json\`. Ask one gap or follow \`next\`. \`--auto\` is progress only. Inline: complete before render. Worker: fan-in completes.`
+    : `Resolve one active operation.${originText} Use \`hairness help --json\` only when ownership is unclear, then submit it through \`hairness invoke start\`.`
   const instructions = command.instructionsText.replace(/^# .+\n\n?/, '')
-  const output = `---\nname: ${command.name}\ndescription: ${command.summary}\n---\n\nInvoke with \`${invocation}\`.\n${surfaceText}\nRoute: \`${command.command}\`.\n${modifierText}${fixedText}${defaultText}${gateway}\n\n${instructions}\n\nNo authority implied.\n`
-  const budget = command.kind === 'bridge' ? 2048 : 1024
+  const output = `---\nname: ${command.name}\ndescription: ${command.summary}\n---\n\n\`${invocation}\`. ${surfaceText} Machine: \`${command.machineRoute}\`.\n${modifierText}${fixedText}${defaultText}${gateway}\n\n${instructions}\n\nNo authority implied.\n`
+  const budget = command.surface === 'bridge' ? 2048 : 1024
   if (Buffer.byteLength(output) > budget) throw new HairnessError('provider_instruction_budget', `${command.id} exceeds ${budget} bytes.`, { exitCode: 2 })
   return output
 }

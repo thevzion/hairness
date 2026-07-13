@@ -2,7 +2,7 @@
 
 ## Value and use cases
 
-Creates standalone source-owned distributions and plans conservative upstream updates.
+Creates standalone source-owned distributions and plans conservative upstream updates and local state migrations.
 
 ## Selection and setup
 
@@ -10,19 +10,19 @@ Selected by every recipe. Provenance and selected materials are pinned in `hairn
 
 ## Capabilities and operations
 
-Owns distribution inspection, update checks, plans and typed update receipts.
+Owns distribution inspection, update and migration status, plans and typed receipts.
 
 ## Inputs, controls and results
 
-Updates accept an explicit source and scope and return a plan before any file mutation.
+Updates accept an explicit source and scope. Migrations declare source/target versions, scopes, structured transforms and validations. Both return a plan before mutation.
 
 ## State and artifacts
 
-The lock is canonical provenance. Update plans and receipts are typed artifacts.
+The lock is canonical provenance and records applied migration digests. Plans, candidates and receipts remain local.
 
 ## Effects and safety
 
-Diverged consumer source returns `review-required`. The extension never automates Git or publication.
+Diverged consumer source and local extension ownership return `review-required`. Candidate transforms run in scratch; apply requires an exact checkpoint. The extension never automates Git or publication.
 
 ## Providers
 
@@ -30,4 +30,4 @@ No standalone provider command is projected in the alpha surface. Update and cre
 
 ## Tests and maturity
 
-Official alpha. Tests cover payload boundaries, safe updates and divergence refusal.
+Official alpha. Tests cover payload boundaries, safe updates, migration idempotence and divergence refusal.

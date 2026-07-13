@@ -21,8 +21,8 @@
     "./drivers/aws/driver.json"
   ],
   "commands": [{ "namespace": "source", "actions": ["list", "doctor", "read"] }],
-  "providerCommands": [
-    { "id": "hairness.source", "name": "hairness-source", "summary": "Guide deterministic source inspection and read-only proof routes.", "kind": "capability", "classification": "primary", "surface": "namespace", "command": "hairness source", "arguments": [{ "name": "action", "required": false }, { "name": "source", "required": false }], "result": { "schema": "ContextPacket", "disposition": "response" }, "resultId": "default", "operation": { "capability": "hairness/sources", "id": "list" }, "instructions": "./commands/sources.md" },
-    { "id": "hairness.x.check-sources", "name": "hairness-x-check-sources", "summary": "Resolve proof gaps using selected sources before broader discovery.", "kind": "preset", "classification": "accelerator", "surface": "intent", "command": "hairness source doctor", "arguments": [{ "name": "focus", "required": false }], "result": { "schema": "DoctorReport", "disposition": "response" }, "resultId": "default", "operation": { "capability": "hairness/sources", "id": "doctor" }, "instructions": "./commands/sources.md", "fixed": { "controls": { "persistence": "none" } } }
+  "commandSurfaces": [
+    { "id": "hairness.source", "summary": "Guide deterministic source inspection and read-only proof routes.", "classification": "primary", "surface": "namespace", "machineRoute": "hairness source", "arguments": [{ "name": "action", "required": false }, { "name": "source", "required": false }], "resultId": "default", "operation": { "capability": "hairness/sources", "id": "list" }, "instructions": "./commands/sources.md" },
+    { "id": "hairness.sources.check", "summary": "Resolve proof gaps using selected sources before broader discovery.", "classification": "accelerator", "surface": "intent", "lexeme": { "verb": "check", "object": "sources" }, "machineRoute": "hairness source doctor", "arguments": [{ "name": "focus", "required": false }], "resultId": "default", "operation": { "capability": "hairness/sources", "id": "doctor" }, "instructions": "./commands/sources.md", "fixed": { "controls": { "promotion": "none" } } }
   ]
 }

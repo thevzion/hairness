@@ -14,5 +14,5 @@
   "dependencies": [],
   "intentModifiers": [{ "id": "hairness.presentation", "argument": "present", "values": ["auto", "compact", "visual", "explicit", "summary", "diagram", "tree", "table", "timeline", "checklist", "matrix", "trace"], "default": "auto" }],
   "commands": [{ "namespace": "present", "actions": ["modes", "request"] }],
-  "providerCommands": []
+  "commandSurfaces": []
 }

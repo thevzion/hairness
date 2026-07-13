@@ -15,5 +15,5 @@
   "contributes": ["authority-policy"],
   "services": ["effective"],
   "commands": [{ "namespace": "constraint", "actions": ["show", "set", "clear"] }],
-  "providerCommands": []
+  "commandSurfaces": []
 }

@@ -57,10 +57,10 @@ for (const name of recipes) {
   const commands = []
   for (const id of recipe.extensions) {
     const extension = JSON.parse(await readFile(join(root, 'extensions', ...id.split('/'), 'extension.json'), 'utf8'))
-    commands.push(...extension.providerCommands)
+    commands.push(...extension.commandSurfaces)
   }
   assert.equal(new Set(commands.map((command) => command.id)).size, commands.length, `${name} has provider command ID collisions`)
-  assert.equal(new Set(commands.map((command) => command.name)).size, commands.length, `${name} has provider command name collisions`)
+  assert.equal(new Set(commands.map((command) => command.id)).size, commands.length, `${name} has command surface collisions`)
 }
 if (manifest.role === 'forge') assert.ok(allFiles.filter((path) => relative(root, path).startsWith('extensions/')).every((path) => relative(root, path).startsWith('extensions/hairness/')), 'generic forge contains a non-generic extension owner')
 for (const path of allFiles.filter((path) => path.endsWith('.mjs'))) {

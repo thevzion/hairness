@@ -23,16 +23,18 @@ Frames are not artifacts. They reference sources, runs, decisions, and artifacts
 
 Provider-facing work controls are chat-first:
 
-- `hairness-x-make-recap` and `hairness-x-make-plan` return response dashboards.
-- `hairness-x-save-recap` and `hairness-x-save-plan` request durable artifacts.
-- `--auto` advances invocation progress but never changes persistence.
+- `hairness-cmd-make-recap` and `hairness-cmd-make-plan` return typed response dashboards.
+- `hairness-cmd-save-recap` and `hairness-cmd-save-plan` promote the exact compatible result.
+- `hairness-cmd-show-work` includes active work and open Invocations.
+- `hairness-cmd-show-trace` links the root Invocation, child Runs and fan-in.
+- `--auto` advances invocation progress but never changes promotion.
 
 `WorkPlan` is the durable Plan Segment. It carries execution boundary, original frame, frames considered, coherence, already-done evidence, goal, scope and non-goals, target shape, ownership changes, compatibility, decision batch, steps, validation, risks, checkpoints and open questions.
 
 The old `reshape-system` flavor is represented as target-shape controls:
 scope, old owner, target owner, legacy kept/deleted, compatibility, proof and
-checkpoint. `hairness-x-plan-system-shape` produces that shape in chat;
-`hairness-x-save-plan` persists it after acceptance.
+checkpoint. `hairness-cmd-plan-system-shape` produces that shape in chat;
+`hairness-cmd-save-plan` promotes it after acceptance.
 
 ```text
 Work Controls preserve trajectory.

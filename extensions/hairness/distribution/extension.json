@@ -16,11 +16,12 @@
   "contributes": ["attention"],
   "commands": [
     { "namespace": "distribution", "actions": ["inspect"] },
-    { "namespace": "update", "actions": ["check", "doctor", "plan", "apply"] }
+    { "namespace": "update", "actions": ["check", "doctor", "plan", "apply"] },
+    { "namespace": "migrate", "actions": ["status", "plan", "apply"] }
   ],
   "artifactSchemas": [
     { "type": "distribution-update-plan", "schema": "./schemas/update-plan.schema.json" },
     { "type": "distribution-update-receipt", "schema": "./schemas/update-receipt.schema.json" }
   ],
-  "providerCommands": []
+  "commandSurfaces": []
 }

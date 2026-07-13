@@ -26,7 +26,7 @@ Understanding operations cannot invent evidence or request effects.
 
 ## Providers
 
-Projects `hairness-x-show-structure` as the provider-facing structure intent. `map`, `explain` and `compare` remain internal operation routes.
+Projects `hairness-cmd-show-structure` and `hairness-cmd-compare-options` as provider-facing intents. `map`, `explain` and `compare` remain owner operations.
 
 ## Tests and maturity
 

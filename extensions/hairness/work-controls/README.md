@@ -26,7 +26,7 @@ Execute requires an accepted WorkPlan, current constraints and explicit authorit
 
 ## Providers
 
-Projects `hairness-work` as the namespace guide and `hairness-x-*` intents for method, dashboard, frame, discuss, recap, plan, next, system-wire, system-shape and execution checkpoints.
+Projects `hairness-work` as the namespace guide and `hairness-cmd-*` intents for method, dashboard, trace, frame, discuss, recap, plan, next, system-wire, system-shape and execution checkpoints.
 
 ## Tests and maturity
 

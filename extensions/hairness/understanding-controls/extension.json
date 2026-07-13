@@ -17,7 +17,8 @@
     { "namespace": "explain", "actions": ["request"] },
     { "namespace": "compare", "actions": ["request"] }
   ],
-  "providerCommands": [
-    { "id": "hairness.x.show-structure", "name": "hairness-x-show-structure", "summary": "Show the relationships needed to understand one focus.", "kind": "preset", "classification": "accelerator", "surface": "intent", "command": "hairness map", "arguments": [{ "name": "focus", "required": false }], "result": { "schema": "ContextPacket", "disposition": "response" }, "resultId": "default", "operation": { "capability": "hairness/understanding", "id": "map" }, "instructions": "./commands/understanding.md", "fixed": { "controls": { "persistence": "none", "view": "structure" } }, "acceptsModifiers": ["hairness.presentation"] }
+  "commandSurfaces": [
+    { "id": "hairness.understanding.show-structure", "summary": "Show the relationships needed to understand one focus.", "classification": "accelerator", "surface": "intent", "lexeme": { "verb": "show", "object": "structure" }, "machineRoute": "hairness map", "arguments": [{ "name": "focus", "required": false }], "resultId": "default", "operation": { "capability": "hairness/understanding", "id": "map" }, "instructions": "./commands/understanding.md", "fixed": { "controls": { "promotion": "none", "view": "structure" } }, "acceptsModifiers": ["hairness.presentation"] },
+    { "id": "hairness.understanding.compare-options", "summary": "Compare explicit options and their tradeoffs without manufacturing a decision.", "classification": "accelerator", "surface": "intent", "lexeme": { "verb": "compare", "object": "options" }, "machineRoute": "hairness compare", "arguments": [{ "name": "focus", "required": false }], "resultId": "default", "operation": { "capability": "hairness/understanding", "id": "compare" }, "instructions": "./commands/understanding.md", "fixed": { "controls": { "promotion": "none", "view": "comparison" } }, "acceptsModifiers": ["hairness.presentation"] }
   ]
 }

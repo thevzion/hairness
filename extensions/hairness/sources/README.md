@@ -26,7 +26,7 @@ Bundled drivers are read-only. Provider connectors remain best-effort adapters.
 
 ## Providers
 
-Projects `hairness-source` as the namespace guide and `hairness-x-check-sources` as the provider-facing proof intent.
+Projects `hairness-source` as the namespace guide and `hairness-cmd-check-sources` as the provider-facing proof intent.
 
 ## Tests and maturity
 

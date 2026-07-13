@@ -5,10 +5,10 @@ Current target: `0.2.0-alpha.0`
 ## Now
 
 - `npm-alpha`
-  - Outcome: The experimental package, documentation and release evidence are ready for a separate publication checkpoint.
+  - Outcome: Qualify the intent language, operational memory, exact promotion and migrations before npm/public release.
   - State: active
-  - Gate: Deterministic package and distribution validation passes.
-  - Evidence: Content-addressed tarball, known limitations, release candidate receipt and the existing Codex attestation.
+  - Gate: Repository/package checks pass and both providers complete the full dogfood path.
+  - Evidence: Command parity, trace, migration receipt, content-addressed tarball and two provider attestations.
 
 ## Next
 
@@ -34,7 +34,7 @@ Current target: `0.2.0-alpha.0`
 - Minimal, standard and forge payloads contain selected source only.
 - Generic package contains no local state, private composition, secret, transcript or private path.
 - Node.js 22 and 24 checks pass.
-- Additional native provider qualification is non-blocking alpha follow-up evidence.
+- Fresh Codex and Claude dogfood is blocking for npm, GitHub release and public communication.
 
 ## References
 

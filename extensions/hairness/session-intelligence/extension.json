@@ -16,7 +16,7 @@
   "contributes": ["attention", "session-opening"],
   "commands": [{ "namespace": "session", "actions": ["open", "opening", "status", "digest", "reconcile"] }],
   "artifactSchemas": [{ "type": "session-handoff", "schema": "./schemas/session-handoff.schema.json" }],
-  "providerCommands": [],
+  "commandSurfaces": [],
   "preferences": [{ "id": "session.transcript", "default": false }],
   "onboarding": [{ "id": "session.transcript", "phase": "privacy", "question": "Allow volatile transcript input for session digests?", "options": [{ "value": "off", "label": "No transcript access" }, { "value": "on", "label": "Opt in with a local inbox" }], "preferenceKey": "session.transcript" }]
 }

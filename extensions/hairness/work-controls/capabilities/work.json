@@ -100,7 +100,11 @@
           "id": "response",
           "contract": {
             "schema": "ContextPacket",
-            "disposition": "response"
+            "disposition": "response",
+            "promotableTo": {
+              "artifactOwner": "hairness/work-controls",
+              "artifactType": "segment-digest"
+            }
           }
         },
         {
@@ -133,7 +137,11 @@
           "id": "response",
           "contract": {
             "schema": "ContextPacket",
-            "disposition": "response"
+            "disposition": "response",
+            "promotableTo": {
+              "artifactOwner": "hairness/work-controls",
+              "artifactType": "work-plan"
+            }
           }
         },
         {

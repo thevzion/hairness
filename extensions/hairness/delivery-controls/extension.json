@@ -14,5 +14,5 @@
   "dependencies": ["hairness/initiative-controls", "hairness/work-controls"],
   "commands": [{ "namespace": "delivery", "actions": ["plan", "status", "checkpoint", "receipt", "release-candidate"] }],
   "artifactSchemas": [{ "type": "release-candidate", "schema": "./schemas/release-candidate.schema.json" }],
-  "providerCommands": []
+  "commandSurfaces": []
 }

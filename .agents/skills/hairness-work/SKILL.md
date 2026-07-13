@@ -3,11 +3,9 @@ name: hairness-work
 description: Guide the Work Controls namespace and route active-work intents.
 ---
 
-Invoke with `$hairness-work`.
-Surface: namespace guide.
-Route: `hairness work status`.
-Build compact InvocationDraft. Set `draft.result`=`dashboard`. Call `hairness invoke start --operation hairness/work:inspect --draft-json - --json` before questions. `--auto` advances progress only. Ask returned gaps; else follow `preview.next`.
+`$hairness-work`. Surface: namespace guide. Machine: `hairness work show-work`.
+Draft: `{schemaVersion:2,protocolVersion:"0.2",summary,inputs:{},controls:{}}`. Set `draft.origin`=`{"kind":"command","commandId":"hairness.work"}`. Set `draft.result`=`dashboard`. Run `hairness invoke start --operation hairness/work:inspect --draft-json - --json`. Ask one gap or follow `next`. `--auto` is progress only. Inline: complete before render. Worker: fan-in completes.
 
-Keep mission, segment, frame, boundaries and accepted artifacts aligned. Chat-first: `make-*` responds, `save-*` prepares artifacts, `--auto` only advances progress. Dashboards show status, result, links, proof, limits and next. Effects require an explicit checkpoint; the work graph never grants authority.
+Keep work aligned. `make-*` returns chat; `save-*` promotes the exact compatible result. Show a dashboard. Effects need a checkpoint; state grants no authority.
 
 No authority implied.

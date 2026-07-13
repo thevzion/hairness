@@ -15,5 +15,5 @@
   "services": ["active", "list"],
   "contributes": ["attention"],
   "commands": [{ "namespace": "initiative", "actions": ["status", "list", "show", "open", "close", "publish"] }],
-  "providerCommands": []
+  "commandSurfaces": []
 }

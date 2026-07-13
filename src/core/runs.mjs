@@ -1,7 +1,10 @@
+import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { HairnessError } from './errors.mjs'
 import { appendJsonLine, assertSafeId, ensureOverlay, now, readJson, workspacePaths, writeJsonAtomic } from './io.mjs'
 import { validateContract } from './contracts.mjs'
+import { acceptInvocationResult, appendInvocationEvent, createSyntheticInvocation } from './invocations.mjs'
 
 const transitions = {
   planned: ['ready', 'cancelled'],
@@ -30,16 +33,23 @@ function runPaths(root, runId) {
   }
 }
 
-export async function createRun(root, { id, planId, assignment }) {
+export async function createRun(root, { id, planId, assignment, parentInvocationId: requestedParent, routeId: requestedRoute }) {
   await validateContract('Assignment', assignment)
   await ensureOverlay(root)
   const paths = runPaths(root, id)
   const timestamp = now()
+  const linkedPlan = planId ? await readJson(join(workspacePaths(root).plans, `${planId}.json`), null) : null
+  const inheritedParent = requestedParent ?? linkedPlan?.parentInvocationId
+  const parentInvocationId = inheritedParent ?? await createSyntheticInvocation(root, id, assignment)
+  const parentMode = inheritedParent ? 'shared' : 'synthetic'
   const run = {
     schemaVersion: 2,
     protocolVersion: '0.2',
     id,
     planId,
+    parentInvocationId,
+    routeId: requestedRoute ?? id,
+    parentMode,
     state: 'planned',
     assignment,
     createdAt: timestamp,
@@ -49,8 +59,20 @@ export async function createRun(root, { id, planId, assignment }) {
   const existing = await readJson(paths.task, null)
   if (existing) throw new HairnessError('run_exists', `Run already exists: ${id}`, { exitCode: 2 })
   await writeJsonAtomic(paths.task, run)
-  await appendJsonLine(paths.events, { at: timestamp, type: 'state', from: null, to: 'planned' })
+  await appendRunEvent(root, id, 'created', { planId, parentInvocationId, routeId: run.routeId })
+  await appendInvocationEvent(root, parentInvocationId, 'route-dispatched', { runId: id, routeId: run.routeId })
   return run
+}
+
+export async function runEvents(root, runId) {
+  try { return (await readFile(runPaths(root, runId).events, 'utf8')).trim().split('\n').filter(Boolean).map(JSON.parse) }
+  catch (error) { if (error.code === 'ENOENT') return []; throw error }
+}
+
+export async function appendRunEvent(root, runId, type, data = {}) {
+  const event = await validateContract('RunEvent', { schemaVersion: 2, protocolVersion: '0.2', runId, sequence: (await runEvents(root, runId)).length + 1, type, at: now(), data })
+  await appendJsonLine(runPaths(root, runId).events, event)
+  return event
 }
 
 export async function readRun(root, runId) {
@@ -73,7 +95,7 @@ export async function transitionRun(root, runId, state, detail = {}) {
   const next = { ...run, state, updatedAt: timestamp }
   await validateContract('RouteRun', next)
   await writeJsonAtomic(paths.task, next)
-  await appendJsonLine(paths.events, { at: timestamp, type: 'state', from: run.state, to: state, detail })
+  await appendRunEvent(root, runId, 'state', { from: run.state, to: state, detail })
   return next
 }
 
@@ -84,8 +106,16 @@ export async function submitRunResult(root, result) {
   if (run.state !== 'running') {
     throw new HairnessError('run_not_running', `Run ${run.id} is ${run.state}, not running.`, { exitCode: 2 })
   }
+  const digest = `sha256:${createHash('sha256').update(JSON.stringify(result)).digest('hex')}`
+  await appendRunEvent(root, result.runId, 'result-submitted', { digest, status: result.status })
+  await appendInvocationEvent(root, run.parentInvocationId, 'result-submitted', { runId: run.id, routeId: run.routeId, digest })
   await writeJsonAtomic(paths.result, result)
   await transitionRun(root, result.runId, result.status, { summary: result.summary })
+  await appendRunEvent(root, result.runId, 'result-accepted', { digest, status: result.status })
+  await appendInvocationEvent(root, run.parentInvocationId, 'result-accepted', { runId: run.id, routeId: run.routeId, digest })
+  const terminal = ['succeeded', 'failed', 'invalid', 'cancelled'].includes(result.status)
+  if (terminal) await appendRunEvent(root, result.runId, result.status === 'succeeded' ? 'completed' : 'failed', { status: result.status })
+  if (terminal && run.parentMode === 'synthetic') await acceptInvocationResult(root, { schemaVersion: 2, protocolVersion: '0.2', invocationId: run.parentInvocationId, resultId: 'run', summary: result.summary, payload: result, proof: result.proof, limits: result.limits, routes: result.routes }, { schema: 'RunResult', disposition: 'response' })
   return result
 }
 

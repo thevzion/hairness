@@ -5,17 +5,18 @@ import { promisify } from 'node:util'
 import { cp, mkdir, mkdtemp, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve } from 'node:path'
 import { HairnessError } from '../core/errors.mjs'
-import { artifactHistory, promoteArtifact, readArtifact, stageArtifact } from '../core/artifacts.mjs'
+import { artifactHistory, listArtifacts, promoteArtifact, readArtifact, stageArtifact } from '../core/artifacts.mjs'
 import { acquireLocks, grantCheckpoint, quarantineLocks, releaseLocks } from '../core/authority.mjs'
 import { createExtensionRuntime } from '../core/extension-runtime/index.mjs'
 import { readJson, userPaths, workspacePaths, writeJsonAtomic } from '../core/io.mjs'
 import { readPlan, reduceStoredPlan, writePlan } from '../core/plans.mjs'
 import { buildWorkerCapsule, createRun, readRun, readRunResult, submitRunResult, transitionRun } from '../core/runs.mjs'
-import { invocationEvents, listInvocations } from '../core/invocations.mjs'
+import { invocationEvents, listInvocations, readInvocationResult } from '../core/invocations.mjs'
 import { validateContract, validateJsonSchema } from '../core/contracts.mjs'
 import { capabilityIndex, loadCapabilities, resolveOperation, validateOperationProfile } from '../core/capabilities.mjs'
 import { resolvePreferences } from './preferences.mjs'
 import { applyDistributionUpdate, checkDistributionUpdate, doctorDistribution, inspectDistribution, planDistributionUpdate } from './update-engine.mjs'
+import { applyMigration, migrationStatus, planMigration } from './migrations.mjs'
 
 const exec = promisify(execFile)
 
@@ -92,8 +93,8 @@ async function enabledInspected(root) {
 function validateCapabilities(values) {
   const index = capabilityIndex(values)
   const modifiers = new Set(values.flatMap((value) => (value.manifest.intentModifiers ?? []).map((item) => item.id)))
-  for (const value of values) for (const command of value.manifest.providerCommands) {
-    if (command.kind !== 'bridge') resolveOperation(index, command.operation)
+  for (const value of values) for (const command of value.manifest.commandSurfaces) {
+    if (command.surface !== 'bridge') resolveOperation(index, command.operation)
     for (const modifier of command.acceptsModifiers ?? []) if (!modifiers.has(modifier)) throw new HairnessError('modifier_unknown', `${command.id} accepts unknown modifier ${modifier}.`, { exitCode: 2 })
   }
   return index
@@ -174,6 +175,10 @@ async function runtimeFor(root, owner, stack = []) {
         doctor: () => doctorDistribution(root),
         plan: (options = {}) => planDistributionUpdate(root, options),
         apply: (planId, checkpointId) => applyDistributionUpdate(root, planId, checkpointId),
+      }, migration: {
+        status: (options = {}) => migrationStatus(root, options),
+        plan: (options = {}) => planMigration(root, options),
+        apply: (planId, checkpointId) => applyMigration(root, planId, checkpointId),
       } } : {}),
     },
     runs: {
@@ -182,9 +187,9 @@ async function runtimeFor(root, owner, stack = []) {
       capsule: (id) => buildWorkerCapsule(root, id), checkpoint: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
     },
     plans: { read: (id) => readPlan(root, id), write: async (value) => writePlan(root, await validatePlanOperations(root, value)), reduce: (id) => reduceStoredPlan(root, id) },
-    invocations: { list: () => listInvocations(root), events: (id) => invocationEvents(root, id) },
+    invocations: { list: (options) => listInvocations(root, options), events: (id) => invocationEvents(root, id), result: (id) => readInvocationResult(root, id) },
     artifacts: {
-      read: (id, revision) => readArtifact(root, id, revision), history: (id) => artifactHistory(root, id),
+      read: (id, revision) => readArtifact(root, id, revision), history: (id) => artifactHistory(root, id), list: (filters) => listArtifacts(root, filters),
       stage: async (runId, value) => { await validateArtifactPayload(root, value); return stageArtifact(root, runId, value) }, promote: (runId) => promoteArtifact(root, runId),
     },
     authority: {
@@ -274,6 +279,14 @@ export async function operationIndex(root) {
   return index
 }
 
+export async function commandSurface(root, id) {
+  for (const extension of await enabledInspected(root)) {
+    const surface = extension.manifest.commandSurfaces.find((item) => item.id === id)
+    if (surface) return { ...surface, owner: extension.manifest.id }
+  }
+  throw new HairnessError('command_surface_unknown', `Unknown command surface: ${id}`, { exitCode: 2 })
+}
+
 export async function collectOnboardingContributions(root, phase, input = {}, options = {}) {
   if (input.trustDecision !== 'trust') throw new HairnessError('workspace_untrusted', 'Extension onboarding requires an explicit trust decision.', { exitCode: 3 })
   const output = []
@@ -331,10 +344,15 @@ export async function validateArtifactPayload(root, envelope) {
 }
 
 export async function listExtensions(root) {
+  const surfaceName = (command) => command.surface === 'bridge'
+    ? 'hairness'
+    : command.surface === 'intent'
+      ? `hairness-cmd-${[command.lexeme.verb, command.lexeme.object, ...(command.lexeme.qualifiers ?? [])].filter(Boolean).join('-')}`
+      : `hairness-${command.id.split('.').at(-1)}`
   return Promise.all((await descriptors(root)).map(async (descriptor) => {
     const inspected = await descriptorManifest(descriptor)
     const legacy = descriptor.source === 'local' && (!inspected.manifest || !Array.isArray(inspected.manifest.capabilities))
-    return { id: descriptor.id, source: descriptor.source, enabled: descriptor.enabled && !legacy, valid: !inspected.error && !legacy, ignored: legacy, error: legacy ? 'legacy-extension-state' : inspected.error, path: descriptor.path, methodologyBindings: inspected.manifest?.methodologyBindings ?? [], providerCommands: legacy ? [] : (inspected.manifest?.providerCommands ?? []).map(({ name, summary, command, classification }) => ({ name, summary, classification, owner: descriptor.id, route: command })) }
+    return { id: descriptor.id, source: descriptor.source, enabled: descriptor.enabled && !legacy, valid: !inspected.error && !legacy, ignored: legacy, error: legacy ? 'legacy-extension-state' : inspected.error, path: descriptor.path, methodologyBindings: inspected.manifest?.methodologyBindings ?? [], commandSurfaces: legacy ? [] : (inspected.manifest?.commandSurfaces ?? []).map((command) => ({ id: command.id, name: surfaceName(command), summary: command.summary, classification: command.classification, surface: command.surface, owner: descriptor.id, route: command.machineRoute })) }
   }))
 }
 
@@ -348,7 +366,7 @@ async function initLocalExtension(root, id) {
   const path = join(workspacePaths(root).extensions, namespace, name)
   if (await readJson(join(path, 'extension.json'), null)) throw new HairnessError('extension_exists', `Extension already exists: ${id}`, { exitCode: 2 })
   await mkdir(path, { recursive: true })
-  await writeJsonAtomic(join(path, 'extension.json'), { $schema: join(root, 'schemas/extension.schema.json'), schemaVersion: 2, protocolVersion: '0.2', id, version: '0.2.0-alpha.0', summary: `${id} local capability.`, category: 'ecosystem', tags: ['local'], maturity: 'experimental', readme: './README.md', module: './index.mjs', capabilities: [], dependencies: [], commands: [], providerCommands: [], services: [], contributes: [], artifactSchemas: [] })
+  await writeJsonAtomic(join(path, 'extension.json'), { $schema: join(root, 'schemas/extension.schema.json'), schemaVersion: 2, protocolVersion: '0.2', id, version: '0.2.0-alpha.0', summary: `${id} local capability.`, category: 'ecosystem', tags: ['local'], maturity: 'experimental', readme: './README.md', module: './index.mjs', capabilities: [], dependencies: [], commands: [], commandSurfaces: [], services: [], contributes: [], artifactSchemas: [] })
   await writeFile(join(path, 'index.mjs'), 'export const services = {}\n')
   await writeFile(join(path, 'README.md'), `# ${id}\n\n## Value and use cases\n\nDescribe the one capability this extension adds.\n\n## Selection and setup\n\nThis extension is local, disabled by default and must be explicitly trusted.\n\n## Capabilities and operations\n\nAdd only operations that the extension owns.\n\n## Inputs, controls and results\n\nDeclare typed inputs and results in the extension source.\n\n## State and artifacts\n\nLocal state is owner-scoped. Scratch is never authoritative.\n\n## Effects and safety\n\nNo effect or authority is implied by installation.\n\n## Providers\n\nProvider commands are compiled from this extension when enabled.\n\n## Tests and maturity\n\nMaturity: experimental. Add one runnable proof for every non-trivial behavior.\n`)
   const config = await readJson(workspacePaths(root).config, { schemaVersion: 2, protocolVersion: '0.2', extensions: { disabled: [], local: [] } })
