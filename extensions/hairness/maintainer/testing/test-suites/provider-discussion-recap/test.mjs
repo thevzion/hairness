@@ -18,7 +18,7 @@ export default {
     const recapPacket = await command(['work', 'make-recap'])
     const result = await write('fixtures/recap-result.json', { summary: recapPacket.summary, payload: recapPacket, proof: [], limits: [], routes: [] })
     await command(['invoke', 'complete', recapPreview.id, '--result-json', result])
-    const recap = await command(['work', 'save-recap'])
+    const recap = await command(['work', 'save-recap', '--invocation', recapPreview.id])
     ok(checks, 'recap-promotes-exact-result', recap.revision === recapPreview.id && recap.payload.segmentId === 'discussion')
   },
 }
