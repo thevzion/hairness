@@ -275,7 +275,7 @@ async function coreCommand(root, positionals, flags) {
 
 export async function runCli(argv = process.argv.slice(2), streams = { stdout: process.stdout, stderr: process.stderr }) {
   const { flags, positionals } = parseArguments(argv)
-  if (flags.version || positionals[0] === '--version') {
+  if (flags.version === true && positionals.length === 0) {
     streams.stdout.write(`hairness ${packageJson.version}\nprotocol ${PROTOCOL_VERSION}\n`)
     return 0
   }
