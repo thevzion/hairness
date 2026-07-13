@@ -259,7 +259,7 @@ async function selectSourceDrivers(target, selected) {
 }
 
 function generatedReadme(state, selectedRecipe) {
-  return `# ${state.answers.displayName}\n\nThis source-owned Hairness distribution gives coding agents the shared context and commands required by this team.\n\n## Start\n\n\`\`\`bash\nnpm install\nhairness onboarding next\nhairness build --check\n\`\`\`\n\nProvider commands are already versioned in this repository. Start a new provider session after installation.\n\n## Distribution\n\n- Protocol: 0.2\n- Starter: ${selectedRecipe.id}\n- Provider prefix: ${state.answers.providerPrefix}\n- Local state: \`.overlay/\`\n\nUse \`hairness help\` to inspect the active command surface.\n`
+  return `# ${state.answers.displayName}\n\nThis source-owned Hairness distribution gives coding agents the shared context and commands required by this team.\n\n## Start\n\n\`\`\`bash\nnpm install\nnpm exec -- hairness onboarding next\nnpm exec -- hairness build --check\n\`\`\`\n\nProvider commands are already versioned in this repository. Start a new provider session after installation.\n\n## Distribution\n\n- Protocol: 0.2\n- Starter: ${selectedRecipe.id}\n- Provider prefix: ${state.answers.providerPrefix}\n- Local state: \`.overlay/\`\n\nUse \`npm exec -- hairness help\` to inspect the active command surface.\n`
 }
 
 function generatedStatus(state) {
@@ -347,7 +347,7 @@ export async function applyCreate(id, checkpointId, options = {}) {
   }
   state.status = 'applied'
   await saveState(state)
-  return { summary: `Created ${state.answers.displayName}.`, status: 'applied', target: state.target, providers: plan.providers, extensions: activeExtensions, limits: [], routes: [`cd ${state.target}`, 'hairness onboarding next'] }
+  return { summary: `Created ${state.answers.displayName}.`, status: 'applied', target: state.target, providers: plan.providers, extensions: activeExtensions, limits: [], routes: [`cd ${state.target}`, 'npm exec -- hairness onboarding next'] }
 }
 
 export async function createStatus(id) {

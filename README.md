@@ -146,27 +146,23 @@ requires review. There is no mandatory Hairness service or daemon.
 Provider independence is an architectural boundary, not a claim of universal
 support. Protocol 0.2 currently ships projections for Codex and Claude only.
 
-## Evaluate the alpha
+## Try the npm alpha
 
-> [!NOTE]
-> The npm package is prepared but not published. The future
-> `npx @hairness/cli@next create ...` bootstrap is not available yet.
-
-Clone the forge to inspect and test the current alpha:
+Hairness currently requires Node.js 22 or newer. The alpha is experimental, so
+use the `next` channel to follow prereleases or pin the exact version for a
+reproducible evaluation. No global installation is required.
 
 ```bash
-git clone https://github.com/thevzion/hairness.git
-cd hairness
-npm install
-node bin/hairness.mjs opening --json
-node bin/hairness.mjs build --check
-npm run check
-npm test
+npx --yes @hairness/cli@next create ./my-hairness
+# or pin the exact version
+npx --yes @hairness/cli@0.2.0-alpha.0 create ./my-hairness
+cd my-hairness
+npm exec -- hairness onboarding next
 ```
 
-Then open a fresh trusted Codex or Claude session in the checkout and use the
-repo-local Hairness command surface. Review the [known limitations](docs/known-limitations.md)
-before testing effects.
+Then open a fresh trusted Codex or Claude session in the generated distribution
+and use its repo-local Hairness command surface. Review the
+[known limitations](docs/known-limitations.md) before testing effects.
 
 ## Documentation
 
@@ -184,6 +180,8 @@ before testing effects.
 ## Development
 
 ```bash
+git clone https://github.com/thevzion/hairness.git
+cd hairness
 npm install
 node bin/hairness.mjs build --check
 npm run check
@@ -195,4 +193,3 @@ npm run check:pack
 Contributions should start with [CONTRIBUTING.md](CONTRIBUTING.md). Security
 reports follow [SECURITY.md](SECURITY.md). Hairness is licensed under the
 [MIT License](LICENSE).
-
