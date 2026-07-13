@@ -19,6 +19,7 @@ export default {
     const result = await write('fixtures/recap-result.json', { summary: recapPacket.summary, payload: recapPacket, proof: [], limits: [], routes: [] })
     await command(['invoke', 'complete', recapPreview.id, '--result-json', result])
     const recap = await command(['work', 'save-recap', '--invocation', recapPreview.id])
+    if (recap.revision !== recapPreview.id) throw new Error(`Recap revision mismatch: expected ${recapPreview.id}, received ${recap.revision ?? 'none'} (${recap.status ?? 'no-status'}: ${recap.summary ?? 'no-summary'}).`)
     ok(checks, 'recap-promotes-exact-revision', recap.revision === recapPreview.id)
     ok(checks, 'recap-promotes-discussion-segment', recap.payload.segmentId === 'discussion')
   },
