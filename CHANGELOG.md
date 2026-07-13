@@ -6,6 +6,11 @@ entries.
 
 ## Unreleased
 
+### Added
+
+- Added a manual, protected npm Trusted Publishing workflow that qualifies Node.js 22 and 24, promotes one exact tarball between jobs and publishes through OIDC without a long-lived npm token.
+- Recorded the public npm alpha, exact Git tag, GitHub prerelease and registry digests as durable release evidence.
+
 ### Changed
 
 - Preserve partial, failed and unknown delivery receipts as immutable evidence and resume only through append-only `accept-deviation`, `retry` or `abort` reconciliation decisions.

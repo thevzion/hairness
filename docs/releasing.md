@@ -91,8 +91,37 @@ After npm verification, create the annotated Git tag, push it, and create the
 GitHub prerelease through three separate stages, Runs and checkpoints. Download the registry
 tarball and compare integrity and SHA-256 with the candidate before tagging.
 The post-release traceability PR records date, commit, tag, npm URL and digests;
-it also introduces Trusted Publishing without `NPM_TOKEN`. The future workflow
-publishes one previously qualified artifact after approval by the protected
-`npm` environment and never creates a Git tag or GitHub Release.
+it also introduces Trusted Publishing without a long-lived npm token.
+
+## Trusted Publishing workflow
+
+`.github/workflows/release.yml` is manual-only. It requires the exact public
+`main` commit, qualifies Node.js 22 and 24, produces one tarball, records its
+digests and uploads it as a workflow artifact. A separate publish job waits for
+the protected `npm` environment, downloads and revalidates the same artifact,
+checks that the version is absent, then publishes through OIDC. The job verifies
+registry integrity, provenance, the requested dist-tag and that `latest` did
+not change.
+
+The workflow uses a GitHub-hosted runner, Node.js 24 and npm 11.5.1 for the OIDC
+publish boundary. Configure the npm trusted publisher with these exact values:
+
+```text
+package: @hairness/cli
+repository: thevzion/hairness
+workflow file: release.yml
+environment: npm
+allowed action: npm publish
+```
+
+After this PR is merged, create the protected GitHub environment before
+configuring npm. Verify the final relationship with:
+
+```bash
+npm trust list @hairness/cli
+```
+
+The workflow never creates a Git tag or GitHub Release. Those remain separate
+delivery stages and authority boundaries.
 
 The alpha release notes live in [releases/0.2.0-alpha.0.md](releases/0.2.0-alpha.0.md).
