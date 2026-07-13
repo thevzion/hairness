@@ -10,7 +10,7 @@ Forge-only and dependent on Initiative, Work and Sources. The distribution confi
 
 ## Capabilities and operations
 
-Owns brief drafting/promotion, idempotent change and release plans, next-boundary previews, checkpoints, receipts, pull-request proposals and release candidates.
+Owns brief drafting/promotion, idempotent change and release plans, next-boundary previews, checkpoints, append-only receipt reconciliation, pull-request proposals and release candidates.
 
 ## Inputs, controls and results
 
@@ -18,11 +18,13 @@ An initiative may carry multiple parallel change plans. Each external effect req
 
 ## State and artifacts
 
-Drafts, plans and receipts stay owner-scoped. Delivery briefs, pull-request proposals and release candidates are typed revisioned artifacts.
+Drafts, plans, receipts, reconciliation checkpoints and reconciliation decisions stay owner-scoped. A partial or unknown receipt is never rewritten: an exact, fresh checkpoint records `accept-deviation`, `retry` or `abort` as a separate decision. Delivery briefs, pull-request proposals and release candidates are typed revisioned artifacts.
 
 ## Effects and safety
 
-The handler never stages, commits, pushes, opens or merges a PR, tags, releases or publishes. `--auto` cannot cross effects; stale, partial or unknown proof blocks. Native agents act only after exact Run/checkpoint approval.
+The handler never stages, commits, pushes, opens or merges a PR, tags, releases or publishes. `--auto` cannot cross effects or apply a reconciliation decision; stale, partial or unknown proof blocks. Native agents act only after exact Run/checkpoint approval. Local tag creation and remote tag push are distinct release stages and grants.
+
+Stage completion remains ordered across the pre-commit and post-commit heads. The merge boundary compares the exact pull-request receipt and fresh CI receipt to the requested head instead of retroactively invalidating a pre-commit qualification.
 
 ## Providers
 

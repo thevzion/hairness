@@ -12,7 +12,8 @@ DeliveryBrief → ChangeDeliveryPlan
         │
         ▼ accepted merged plans
 ReleaseDeliveryPlan
-  collect → release PR → qualify tarball → npm → Git tag → GitHub Release
+  collect → release PR → CI → merge → verify main → qualify tarball → npm
+  → create Git tag → push Git tag → GitHub Release
         │
         ▼
 operation checkpoints + typed receipts
@@ -35,9 +36,21 @@ partial or unknown proof blocks progression. A `ReleaseCandidate` binds the
 package, version, tag, commit, checks, changes, tarball path, SHA-256, npm
 integrity, dry-run and limitations.
 
+A partial, failed or unknown receipt remains immutable. Progress resumes only
+through a separately checkpointed reconciliation decision: `accept-deviation`,
+`retry` or `abort`. The decision binds the exact receipt, current policy and
+fresh observed proof. `--auto` may prepare this checkpoint but never apply it;
+accepting a deviation resolves only that receipt and does not weaken policy for
+future effects.
+
 The handler prepares checkpoints and records proof, but never stages, commits,
 pushes, opens a PR, merges, tags, releases, publishes npm, or posts externally.
-Those are separate provider-native executor Runs; npm, Git tag, tag push and
-GitHub Release can never share implicit authority.
+Those are separate provider-native executor Runs; npm, local Git tag creation,
+remote tag push and GitHub Release can never share implicit authority.
+
+Stage order survives the transition from a qualified pre-commit diff to its
+resulting pull-request head. Merge authority is granted only when the
+pull-request receipt and fresh CI receipt both match the exact requested head;
+the later head does not retroactively invalidate the earlier qualification.
 
 This boundary lets Hairness improve itself without becoming a Git bot: the native agent performs an approved operation and returns a receipt; the extension preserves the plan and evidence.

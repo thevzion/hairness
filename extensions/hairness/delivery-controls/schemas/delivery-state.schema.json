@@ -3,13 +3,15 @@
   "$id": "https://hairness.dev/extensions/delivery-controls/delivery-state.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "protocolVersion", "drafts", "plans", "receipts", "activePlanId", "updatedAt"],
+  "required": ["schemaVersion", "protocolVersion", "drafts", "plans", "receipts", "reconciliationCheckpoints", "reconciliations", "activePlanId", "updatedAt"],
   "properties": {
     "schemaVersion": { "const": 2 },
     "protocolVersion": { "const": "0.2" },
     "drafts": { "type": "array", "items": { "$ref": "#/$defs/brief" } },
     "plans": { "type": "array", "items": { "$ref": "#/$defs/plan" } },
     "receipts": { "type": "array", "items": { "$ref": "#/$defs/receipt" } },
+    "reconciliationCheckpoints": { "type": "array", "items": { "$ref": "#/$defs/reconciliationCheckpoint" } },
+    "reconciliations": { "type": "array", "items": { "$ref": "#/$defs/reconciliation" } },
     "activePlanId": { "type": ["string", "null"] },
     "updatedAt": { "type": "string" }
   },
@@ -80,6 +82,47 @@
         "effects": { "type": "array", "items": { "type": "string" } },
         "proof": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
         "head": { "type": ["string", "null"] },
+        "policyDigest": { "type": "string", "pattern": "^sha256:" },
+        "observedAt": { "type": "string" }
+      }
+    },
+    "reconciliationCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "id", "planId", "stage", "receiptId", "decision", "reason", "proof", "target", "receiptDigest", "policyDigest", "createdAt"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "id": { "type": "string", "minLength": 1 },
+        "planId": { "type": "string", "minLength": 1 },
+        "stage": { "type": "string", "minLength": 1 },
+        "receiptId": { "type": "string", "minLength": 1 },
+        "decision": { "enum": ["accept-deviation", "retry", "abort"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "proof": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "receiptDigest": { "type": "string", "pattern": "^sha256:" },
+        "policyDigest": { "type": "string", "pattern": "^sha256:" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "reconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "id", "planId", "stage", "receiptId", "checkpointId", "decision", "reason", "proof", "target", "receiptDigest", "policyDigest", "observedAt"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "id": { "type": "string", "minLength": 1 },
+        "planId": { "type": "string", "minLength": 1 },
+        "stage": { "type": "string", "minLength": 1 },
+        "receiptId": { "type": "string", "minLength": 1 },
+        "checkpointId": { "type": "string", "minLength": 1 },
+        "decision": { "enum": ["accept-deviation", "retry", "abort"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "proof": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "receiptDigest": { "type": "string", "pattern": "^sha256:" },
         "policyDigest": { "type": "string", "pattern": "^sha256:" },
         "observedAt": { "type": "string" }
       }

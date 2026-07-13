@@ -41,6 +41,11 @@ checkpointed native executor. GitHub and npm remain source drivers and URI
 targets; the kernel knows only plans, effects, policies, checkpoints, locks and
 receipts.
 
+Partial, failed and unknown receipts remain immutable; append-only
+reconciliation records resolve them through an exact decision checkpoint.
+Release delivery also separates local tag creation from remote tag push so
+neither effect can inherit the other's authority.
+
 ```text
 core owns grammar
 extensions own behavior

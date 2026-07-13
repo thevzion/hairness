@@ -5,10 +5,10 @@ Current target: `0.2.0-alpha.0`
 ## Now
 
 - `npm-alpha`
-  - Outcome: Dogfood policy-driven agentic delivery, merge one release PR, and publish the exact qualified `@hairness/cli` alpha.
+  - Outcome: Complete the public alpha through reconciled npm proof, an exact Git tag and a GitHub prerelease.
   - State: active
-  - Gate: The feature PR and release PR pass Node.js 22/24 plus delivery policy; fresh Codex dogfood produces one validated ReleaseCandidate and explicit npm checkpoint.
-  - Evidence: Deterministic Codex/Claude command parity, correlated delivery receipts, public release commit, content-addressed tarball and npm integrity.
+  - Gate: Reconcile the observed dist-tag deviation, then create the tag, push it and publish the GitHub prerelease through separate checkpoints.
+  - Evidence: Public npm version, matching registry integrity and bootstrap, immutable publication receipt, reconciliation record and exact release commit.
 
 ## Next
 
@@ -40,7 +40,7 @@ Current target: `0.2.0-alpha.0`
 - Minimal, standard and forge payloads contain selected source only.
 - Generic package contains no local state, private composition, secret, transcript or private path.
 - Node.js 22 and 24 checks pass.
-- Fresh Codex delivery dogfood is blocking for npm. Codex/Claude projections must remain deterministically identical; live Claude authentication is not required.
+- Fresh Codex delivery dogfood is blocking for release effects. Codex/Claude projections must remain deterministically identical; live Claude authentication is not required.
 
 ## References
 
