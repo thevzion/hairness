@@ -16,7 +16,7 @@ async function migrationFixture() {
     protocolVersion: '0.2',
     role: 'distribution',
     recipe: { id: 'standard', digest: 'sha256:fixture' },
-    generatedFrom: { source: '@hairness/hairness', implementationVersion: '0.2.0-alpha.0', protocolVersion: '0.2' },
+    generatedFrom: { source: '@hairness/cli', implementationVersion: '0.2.0-alpha.0', protocolVersion: '0.2' },
     updateSource: { kind: 'path', spec: repositoryRoot },
     materials: [],
   }))

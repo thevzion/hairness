@@ -273,7 +273,7 @@ export async function runCli(argv = process.argv.slice(2), streams = { stdout: p
   try {
     if (positionals[0] === 'create') {
       const bootstrap = new URL('./bootstrap/create.mjs', import.meta.url)
-      await access(bootstrap).catch(() => { throw new HairnessError('bootstrap_unavailable', 'This team distribution does not contain the forge bootstrap. Run create through @hairness/hairness or a company forge.', { exitCode: 4 }) })
+      await access(bootstrap).catch(() => { throw new HairnessError('bootstrap_unavailable', `This team distribution does not contain the forge bootstrap. Run create through ${packageJson.name} or a company forge.`, { exitCode: 4 }) })
       const { createCommand, interactiveCreate } = await import('./bootstrap/create.mjs')
       const args = positionals.slice(1)
       const modes = new Set(['start', 'status', 'next', 'answer', 'plan', 'apply'])

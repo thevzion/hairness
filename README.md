@@ -185,7 +185,7 @@ The npm alpha is not published yet. After publication under the `next` tag, the
 bootstrap will be:
 
 ```bash
-npx @hairness/hairness@next create ./acme-hairness
+npx @hairness/cli@next create ./acme-hairness
 cd acme-hairness
 npm install
 hairness onboarding next
