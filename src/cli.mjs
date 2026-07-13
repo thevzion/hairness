@@ -4,6 +4,7 @@ import packageJson from '../package.json' with { type: 'json' }
 import {
   HairnessError,
   annotateArtifact,
+  appendRunEvent,
   artifactHistory,
   artifactGraph,
   asHairnessError,
@@ -109,17 +110,20 @@ async function coreCommand(root, positionals, flags) {
   if (!namespace) throw new HairnessError('usage', 'Usage: hairness <namespace> <target> [action]', { exitCode: 2 })
 
   if (namespace === 'invoke') {
-    const { answerInvocation, cancelInvocation, resumeInvocation, showInvocation, startInvocation } = await import('./distribution/invocation.mjs')
+    const { answerInvocation, blockInvocation, cancelInvocation, completeInvocation, listInvocationRecords, resumeInvocation, showInvocation, startInvocation } = await import('./distribution/invocation.mjs')
     const mode = target
     if (mode === 'start') {
       const draft = await jsonFlag(flags, 'draft-json')
       if (flags.operation) draft.operation = operationReference(flags.operation)
       return startInvocation(root, draft, { mode: flags.direct ? 'direct' : 'intent', auto: Boolean(flags.auto) })
     }
-    if (!action) throw new HairnessError('usage', 'Usage: hairness invoke show|answer|resume|cancel <id>', { exitCode: 2 })
+    if (mode === 'list') return listInvocationRecords(root, flags.state ?? 'all')
+    if (!action) throw new HairnessError('usage', 'Usage: hairness invoke show|answer|resume|complete|block|cancel <id>', { exitCode: 2 })
     if (mode === 'show') return showInvocation(root, action)
     if (mode === 'answer') return answerInvocation(root, action, await jsonFlag(flags, 'answers-json'))
     if (mode === 'resume') return resumeInvocation(root, action, { auto: Boolean(flags.auto) })
+    if (mode === 'complete') return completeInvocation(root, action, await jsonFlag(flags, 'result-json'))
+    if (mode === 'block') return blockInvocation(root, action, String(flags.reason ?? 'Invocation blocked by explicit reconciliation.'))
     if (mode === 'cancel') return cancelInvocation(root, action)
     throw new HairnessError('unknown_command', `Unknown invoke action: ${mode}`, { exitCode: 2 })
   }
@@ -159,16 +163,20 @@ async function coreCommand(root, positionals, flags) {
     if (mode === 'inspect') {
       const run = await readRun(root, target)
       if (flags.start && run.state === 'ready') await transitionRun(root, target, 'running', { reason: 'worker started' })
+      await appendRunEvent(root, target, 'inspect', { start: Boolean(flags.start) })
       return buildWorkerCapsule(root, target)
     }
     if (mode === 'source') {
       const capsule = await buildWorkerCapsule(root, target)
+      await appendRunEvent(root, target, 'source', { routes: capsule.allowedSources })
       return { summary: 'Allowed source routes.', sources: capsule.allowedSources, limits: [], routes: capsule.allowedSources }
     }
     if (mode === 'effect') {
       if (!flags.effect || !flags.target) throw new HairnessError('usage', 'worker effect requires --effect and --target.', { exitCode: 2 })
       const { aggregateAuthorityPolicy } = await import('./distribution/registry.mjs')
+      await appendRunEvent(root, target, 'effect-requested', { effect: flags.effect, target: flags.target })
       const grant = await assertEffectAllowed(root, target, flags.effect, flags.target, (effects) => aggregateAuthorityPolicy(root, effects, { runId: target, target: flags.target }))
+      await appendRunEvent(root, target, 'effect-authorized', { grantId: grant.id, effect: flags.effect, target: flags.target })
       return { summary: 'Effect is authorized for this run.', status: 'authorized', grantId: grant.id, effect: flags.effect, target: flags.target, limits: [], routes: [] }
     }
     if (mode === 'submit') {

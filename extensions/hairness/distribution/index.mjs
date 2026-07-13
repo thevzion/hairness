@@ -1,5 +1,15 @@
 export async function handleCommand({ root, namespace, target, action, flags, runtime }) {
   if (namespace === 'distribution') return runtime.distribution.update.inspect()
+  if (namespace === 'migrate') {
+    const mode = target ?? 'status'
+    if (mode === 'status') return runtime.distribution.migration.status({ to: flags.to ?? 'current' })
+    if (mode === 'plan') return runtime.distribution.migration.plan({ to: flags.to ?? 'current' })
+    if (mode === 'apply') {
+      if (!action || !flags.checkpoint) throw new Error('Usage: hairness migrate apply <plan-id> --checkpoint <id>')
+      return runtime.distribution.migration.apply(action, flags.checkpoint)
+    }
+    throw new Error(`Unknown migrate action: ${mode}`)
+  }
   const mode = target ?? 'check'
   if (mode === 'check') return runtime.distribution.update.check()
   if (mode === 'doctor') return runtime.distribution.update.doctor()

@@ -44,7 +44,17 @@ An InvocationDraft MAY be proposed by a provider model or constructed directly. 
 
 An InvocationPreview MUST remain below 4 KiB and expose resolved inputs, controls, route, expected result, effects, gaps, limits, and next action. `--auto` MAY bypass only preview confirmation. It MUST NOT bypass trust, ambiguity, budget escalation, authority, target or effect expansion, result validation, publication, or partial effects.
 
-Invocation events MUST be append-only and state MUST be reconstructible from them. Events and receipts MUST NOT contain transcripts, provider output, or internal reasoning.
+Invocation events MUST be append-only and state MUST be reconstructible from
+them. Every invocation MUST record InvocationOrigin and the available mission,
+segment, and frame WorkRef. Missing provider-session binding MUST be an explicit
+limit and MUST NOT block an otherwise valid request.
+
+An accepted InvocationResult MUST be immutable and stored separately from its
+events and receipt. Events and receipts MUST contain only semantic references,
+digests, proof, limits, and routes. They MUST NOT contain transcripts, raw
+provider responses, or internal reasoning. Rejected results MAY be corrected;
+interrupted Invocations MUST remain explicitly completable, blockable, or
+cancellable without inferred outcomes.
 
 Provider projections MUST direct a main-session model to submit an InvocationDraft before asking a user question. The model MUST ask only an InvocationGap returned by Hairness. A host adapter MUST report `strict`, `guarded`, or `unsupported` and MUST NOT claim a native fast hook when it uses the agent-first-call fallback.
 
@@ -71,7 +81,16 @@ planned ready running needs-input needs-budget needs-authority needs-split
 succeeded failed invalid cancelled unknown
 ```
 
-The kernel MUST validate transitions and persist task, append-only events, and canonical result. An invalid result MUST be rejected before promotion and MAY be corrected within the same logical run.
+The kernel MUST validate transitions and persist task, append-only RunEvents,
+and canonical result. Every post-epoch Run MUST reference one root Invocation
+and route ID. A ContextPlan's Runs MUST share its root Invocation; mechanical or
+semantic fan-in MUST complete that root with the reduced typed result. A direct
+Run MUST receive a synthetic root. An invalid result MUST be rejected before
+promotion and MAY be corrected within the same logical run.
+
+Worker inspect, source, effect, submit, and fail actions MUST be RunEvents, not
+new Invocations. A worker MUST NOT spawn a nested worker. Work that cannot fit
+its capsule MUST return `needs-split` to the parent.
 
 ## 7. Results and artifacts
 
@@ -79,7 +98,15 @@ Result disposition MUST be `response`, `run-only`, `scratch`, `artifact`, or `ef
 
 An artifact MUST have a stable ID, active owner, type, revision history, JSON payload, generated rendering, append-only annotations, labels, signals, relations, freshness, and provenance. The owner extension MUST provide its payload schema. Promotion MUST be atomic.
 
-Scratch MUST remain local, namespaced, non-authoritative, and never auto-promoted. Artifacts orient; current source evidence proves.
+The selected result MUST expose promotion `none`, `artifact`, or `effect`.
+Promotion MUST remain independent from progress and MUST NOT confer authority.
+A producer MAY create the payload and provenance requested by its parent, but
+MUST NOT change the fixed owner, artifact type, or promotion.
+
+Scratch MUST remain local, namespaced, non-authoritative, and never
+auto-promoted. A `save-*` intent MUST promote the exact latest compatible typed
+result, use the source Invocation as revision, and be idempotent. It MUST NOT
+resynthesize the payload. Artifacts orient; current source evidence proves.
 
 ## 8. Effects, authority, and recovery
 
@@ -121,6 +148,13 @@ Intent composition MAY combine operation, focus, source policy, boundary, execut
 
 Work Controls MUST keep an append-only event log and reconstructible current state. Only one segment MAY be active. Closing a segment MUST require a valid SegmentDigest and make the segment immutable. Resuming a closed subject MUST open a related segment. Work state MUST NOT contain transcripts or reasoning.
 
+Operational attention MUST be a derived AttentionIndex, not an independent work
+store. It SHOULD combine active work, open Invocations and Runs, required input
+or authority, stale proof, recent results, extension contributions, and open
+edges from closed SegmentDigests. SessionOpening MUST include no more than the
+three highest-priority signals. Read-only topic recovery MUST NOT reopen a
+closed segment implicitly.
+
 ## 11. Sources
 
 The kernel MUST NOT know concrete source IDs. The `hairness/sources` extension owns source discovery, selection, doctor, evidence validation, redaction, and freshness. Source drivers MUST be declared assets with read-only operations and optional parser modules.
@@ -139,7 +173,16 @@ Provider doctor states are `blocked`, `stale`, `projected`, `verification-requir
 
 ## 13. Provider projections
 
-Provider commands MUST be compiled from active extension-owned definitions. Commands of kind `capability` or `preset` MUST reference an active OperationRef. The bridge router MAY omit one.
+Provider commands MUST be compiled from active extension-owned
+CommandSurfaceSpecs. A surface MUST be `bridge`, `namespace`, `intent`, or
+`specialized`. Intent surfaces MUST declare a verb/object/qualifiers lexeme,
+OperationRef, named result, arguments, fixed controls, defaults, modifiers, and
+instructions as applicable. Provider names and ResultContracts MUST be derived,
+not duplicated. The bridge router MAY omit an OperationRef.
+
+Human intent commands MUST use the `hairness-cmd-*` namespace. Controls that
+define the command's intent MUST be immutable; only explicitly declared
+presentation, workload, budget, or route overrides MAY vary.
 
 Shared projections MUST be tracked and repo-local. Managed regions and entries MUST preserve foreign content, reject ambiguous edits, and remove only intact owned content. Local-extension projections MUST remain ignored and separately inventoried.
 
@@ -157,11 +200,21 @@ Create MUST NOT commit, create a remote, push, tag, release, or publish. A Distr
 
 Update MUST be explicit and conservative. Intact owned material MAY update mechanically. Consumer divergence, changed dependencies, owner conflicts, or edited managed regions MUST require review. Update MUST NOT silently merge or mutate Git.
 
+A MigrationDescriptor MUST identify source/target implementation and protocol
+versions, scopes, one declared structured transform, and validations. Migration
+planning MUST materialize affected state in scratch, reject path escape and
+unknown transforms, rebuild generated projections, and present divergence and
+an exact checkpoint. Apply MUST stage validated state, emit a receipt, record
+applied migration IDs and digests in DistributionLock, and report `unknown` on
+partial application. Consumer-owned divergent material and linked local
+extensions MUST remain `review-required`; Hairness MUST NOT apply an arbitrary
+consumer codemod or merge.
+
 ## 15. Codebases and local state
 
 A CodebaseContract MUST identify one repository, accepted remotes, requirement, and tests. A mount MUST identify a named local checkout and capture canonical realpath, remote, branch, HEAD, and dirty baseline. Mounting MUST NOT grant authority or mutate the checkout.
 
-`.hairness/` MAY contain only tracked distribution-owned policies and explicitly published artifacts. `.overlay/` MUST remain unversioned and MAY hold local config, mounts, runs, artifacts, scratch, local extensions, local projections, and owner-scoped state. `~/.hairness/` MAY hold preferences, trust, and global realpath locks. Presence in any state directory MUST NOT activate an extension or grant authority.
+`.hairness/` MAY contain only tracked distribution-owned policies and explicitly published artifacts. `.overlay/` MUST remain unversioned and MAY hold local config, mounts, the append-only Semantic Ledger, runs, artifacts, scratch, local extensions, local projections, and owner-scoped state. Legacy pre-epoch ledger entries MUST remain inspectable but MUST NOT create current completeness alerts. Automatic ledger deletion or compaction is forbidden during the alpha. `~/.hairness/` MAY hold preferences, trust, and global realpath locks. Presence in any state directory MUST NOT activate an extension or grant authority.
 
 Hairness MUST NOT store secrets, credentials, auth artifacts, customer data, private production data, transcripts, or hidden reasoning.
 
@@ -182,6 +235,9 @@ Conformance requires:
 - selected-only minimal, standard, and forge payloads;
 - effect refusal without authority;
 - invalid worker result rejection, correction, and fan-in;
+- Invocation to child Runs to fan-in trace reconstruction;
+- exact make-to-save promotion and AttentionIndex ranking;
+- migration plan/apply, idempotence, divergence and lock recording;
 - no secrets, transcripts, private paths, dormant assets, or private composition in the package.
 
 ## 18. CLI and errors

@@ -29,6 +29,8 @@ intent surface and gives agents deterministic routes to current context,
 sources, constraints, artifacts, and typed results. The provider keeps its
 model, UI, sandbox, tools, and native workers.
 
+**Repositories are targets. Hairness is the agent's home.**
+
 **Shared reality. Shared cognition. Safe leverage.**
 
 ## Control the main session
@@ -38,41 +40,45 @@ brings intent, taste, priorities, and decisions. The agent brings synthesis,
 reach, continuity, and execution. Hairness keeps both grounded without turning
 the conversation into infrastructure work.
 
-Provider commands are the human interface:
+Provider commands are a lossy native projection of Hairness's richer internal
+model. Providers expose “skills” or slash commands; Hairness distinguishes the
+bridge, namespace guides, human intent commands, operations, and CLI routes:
 
 ```text
-hairness                         route an intent
-hairness-help                    show the active surface
-hairness-onboarding              configure one decision at a time
-hairness-wake-up                 show current attention
+hairness                         bridge: route an intent
+hairness-help                    namespace guide: show the active surface
+hairness-work                    namespace guide: active work
+hairness-source                  namespace guide: deterministic proof
+hairness-codebase                namespace guide: registered repositories
 
-hairness-work                    inspect or steer persistent work
-hairness-discuss                 reason without effects
-hairness-recap                   preserve a segment digest
-hairness-plan                    produce an accepted work plan
-hairness-act                     apply one bounded frame
-hairness-execute                 execute an accepted plan
-
-hairness-map                     organize known relationships
-hairness-explain                 clarify a concept
-hairness-compare                 put options in tension
-hairness-ideate                  explore possibilities
-hairness-propose                 converge on a recommendation
-
-hairness-codebase                inspect mounted repositories
-hairness-map-codebase            map a codebase with a bounded producer
-hairness-source                  read selected deterministic sources
-hairness-check-sources           resolve proof gaps
-hairness-constraint              narrow the allowed boundary
-hairness-session                 inspect local session continuity
-hairness-handoff                 preserve meaning without a transcript
-hairness-update                  propose source-owned updates
-hairness-maintain                maintain and qualify a forge
+hairness-cmd-show-topics         recover work across sessions
+hairness-cmd-show-method         show the method and work-segment shape
+hairness-cmd-show-work           show active work and open invocations
+hairness-cmd-show-trace          trace Invocation -> Runs -> result
+hairness-cmd-open-frame          open one bounded frame
+hairness-cmd-discuss             discuss without effects
+hairness-cmd-check-sources       resolve proof gaps
+hairness-cmd-show-structure      map the structure needed to understand
+hairness-cmd-compare-options     compare explicit options
+hairness-cmd-ideate              explore divergent directions
+hairness-cmd-propose             converge on one recommendation
+hairness-cmd-propose-creative    make one lateral recommendation
+hairness-cmd-make-recap          return a chat SegmentDigest
+hairness-cmd-save-recap          promote that exact SegmentDigest
+hairness-cmd-make-plan           return a chat WorkPlan
+hairness-cmd-save-plan           promote that exact WorkPlan
+hairness-cmd-show-next           show next routes
+hairness-cmd-ask-next            ask the next unblocking question
+hairness-cmd-plan-system-wire    plan system wiring
+hairness-cmd-plan-system-shape   plan target shape / reshape-system
+hairness-cmd-do-frame            act through a checkpoint
+hairness-cmd-do-plan             execute an accepted plan
 ```
 
-Forge distributions also add `hairness-roadmap` and `hairness-ship` for typed
-initiative and delivery planning. Codex invokes `$hairness-…`; Claude invokes
-`/hairness-…`. Every name resolves to the same extension-owned operation.
+Codex invokes `$hairness-…`; Claude invokes `/hairness-…`. `make-*` stays in
+chat. `save-*` promotes the last compatible typed result. `--auto` advances
+progress only; it never changes promotion or authority. The CLI remains the deterministic machine
+surface for exact routes such as `hairness work status --json`.
 
 ## Hairness in action
 
@@ -82,7 +88,7 @@ already known, and the human is asked only for an irreducible decision.
 ### Resolve one real gap
 
 ```text
-Human: $hairness-map
+Human: $hairness-cmd-show-structure
 Hairness: What should be mapped?
 Human: The provider projection flow.
 Agent: [submits the resolved invocation and renders the typed map]
@@ -95,9 +101,10 @@ This behavior is covered by the
 ### Preserve meaning, not conversation noise
 
 ```text
-Human: $hairness-recap --present compact
-Agent: [produces a bounded SegmentDigest]
-Hairness: decisions, proof, limits, open edges and next routes
+Human: $hairness-cmd-make-recap --present compact
+Agent: [renders a chat-first recap dashboard]
+Human: save it
+Agent: [uses $hairness-cmd-save-recap and promotes that exact SegmentDigest]
 ```
 
 The result passes its owner schema and fan-in before it reaches the main
@@ -107,7 +114,7 @@ session. See the
 ### Stop before an effect
 
 ```text
-Human: $hairness-act --auto
+Human: $hairness-cmd-do-frame --auto
 Hairness: resolved the target and constraints; needs authority
 Agent: [shows the exact checkpoint instead of mutating the target]
 ```
@@ -151,12 +158,26 @@ intent -> draft -> deterministic resolution -> preview -> route -> result gate -
 In intent mode, the native model proposes a draft and submits it before asking
 a question. In direct mode, a script provides the canonical operation and
 inputs. Both modes create the same request, append-only events, hard gates, and
-receipt. Hairness does not contain a model or store provider output.
+receipt. Child Runs share the Invocation root and complete it at fan-in.
+Hairness does not contain a model or store provider output.
 
 Controls such as `--present auto` and `--creative divergent` change strategy or
 rendering without changing available evidence. Persistent session, segment,
 and frame controls remove repeated prose while constraints can only narrow the
 allowed boundary.
+
+## Recover work, not transcripts
+
+Hairness derives an Attention Index from active work, open Invocations and
+Runs, stale proof, recent typed results, and the open edges of closed segment
+digests. `wake-up` injects only the top three signals;
+`hairness-cmd-show-topics` exposes up to twenty recoverable subjects; and
+`hairness-cmd-show-trace` shows the current Invocation tree.
+
+The Semantic Ledger stores semantic requests, events, result digests, proof,
+limits and receipts. It stores no transcript, hidden reasoning, or raw provider
+response. Free conversation and direct third-party skill calls remain outside
+this guarantee.
 
 ## Create a source-owned distribution
 
@@ -199,11 +220,16 @@ base digests. Updates are explicit proposals:
 hairness update check
 hairness update plan --scope extension:hairness/cockpit
 hairness update apply <plan-id> --checkpoint <id>
+hairness migrate status
+hairness migrate plan --to current
+hairness migrate apply <plan-id> --checkpoint <id>
 ```
 
-Intact owned material can be updated mechanically. Consumer divergence,
-dependency changes, or edited managed regions require review. Hairness never
-performs a silent merge or Git mutation.
+Intact owned material can be updated mechanically. Versioned migrations first
+transform a scratch copy of owned local state, validate it, then apply through
+an exact checkpoint and receipt. Consumer divergence, dependency changes,
+local extension ownership, or edited managed regions require review. Hairness
+never performs a silent merge, arbitrary consumer codemod, or Git mutation.
 
 ## Build an extension without provider internals
 

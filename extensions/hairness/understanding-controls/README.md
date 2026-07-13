@@ -26,7 +26,7 @@ Understanding operations cannot invent evidence or request effects.
 
 ## Providers
 
-Projects `hairness-map`, `hairness-explain` and `hairness-compare`.
+Projects `hairness-cmd-show-structure` and `hairness-cmd-compare-options` as provider-facing intents. `map`, `explain` and `compare` remain owner operations.
 
 ## Tests and maturity
 

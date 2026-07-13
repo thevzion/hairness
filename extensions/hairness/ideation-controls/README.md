@@ -26,7 +26,7 @@ Ideation cannot invent proof or grant effects.
 
 ## Providers
 
-Projects `hairness-ideate` and `hairness-propose` to Codex and Claude.
+Projects `hairness-cmd-ideate`, `hairness-cmd-propose` and `hairness-cmd-propose-creative` with divergent, convergent and lateral strategies.
 
 ## Tests and maturity
 

@@ -21,8 +21,8 @@
     "./drivers/aws/driver.json"
   ],
   "commands": [{ "namespace": "source", "actions": ["list", "doctor", "read"] }],
-  "providerCommands": [
-    { "id": "hairness.source", "name": "hairness-source", "summary": "Inspect or read a selected deterministic source.", "kind": "capability", "classification": "specialized", "command": "hairness source", "arguments": [{ "name": "action", "required": false }, { "name": "source", "required": false }], "result": { "schema": "SourceEvidence", "disposition": "response" }, "operation": { "capability": "hairness/sources", "id": "list" }, "instructions": "./commands/sources.md" },
-    { "id": "hairness.check-sources", "name": "hairness-check-sources", "summary": "Resolve proof gaps using selected sources before broader discovery.", "kind": "preset", "classification": "accelerator", "command": "hairness source doctor", "arguments": [{ "name": "focus", "required": false }], "result": { "schema": "DoctorReport", "disposition": "response" }, "operation": { "capability": "hairness/sources", "id": "doctor" }, "instructions": "./commands/sources.md" }
+  "commandSurfaces": [
+    { "id": "hairness.source", "summary": "Guide deterministic source inspection and read-only proof routes.", "classification": "primary", "surface": "namespace", "machineRoute": "hairness source", "arguments": [{ "name": "action", "required": false }, { "name": "source", "required": false }], "resultId": "default", "operation": { "capability": "hairness/sources", "id": "list" }, "instructions": "./commands/sources.md" },
+    { "id": "hairness.sources.check", "summary": "Resolve proof gaps using selected sources before broader discovery.", "classification": "accelerator", "surface": "intent", "lexeme": { "verb": "check", "object": "sources" }, "machineRoute": "hairness source doctor", "arguments": [{ "name": "focus", "required": false }], "resultId": "default", "operation": { "capability": "hairness/sources", "id": "doctor" }, "instructions": "./commands/sources.md", "fixed": { "controls": { "promotion": "none" } } }
   ]
 }

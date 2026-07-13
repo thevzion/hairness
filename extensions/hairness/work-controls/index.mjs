@@ -14,9 +14,177 @@ async function save(runtime, value, event) {
   return runtime.overlay.write('current.json', value)
 }
 function activeSegment(value) { return value.segments.find((segment) => segment.id === value.activeSegmentId) ?? null }
+function activeFrame(value) { return value.frames.filter((frame) => frame.segmentId === value.activeSegmentId && frame.status === 'open').at(-1) ?? null }
 function boundary(scope, constraints = []) { return { scope, constraints: [...new Set(constraints)] } }
 function relationFlags(flags) {
   return [...relations].flatMap((type) => flags[type] ? [{ type, target: { kind: 'segment', id: flags[type] } }] : [])
+}
+
+function contextPacket(intent, summary, results, limits = [], routes = [], proof = [], effects = [], tests = []) {
+  const value = {
+    schemaVersion: 2,
+    protocolVersion: '0.2',
+    planId: `work-${Date.now().toString(36)}`,
+    intent,
+    status: 'succeeded',
+    summary,
+    results,
+    proof,
+    effects,
+    tests,
+    limits,
+    routes,
+    byteSize: 0,
+  }
+  value.byteSize = Buffer.byteLength(JSON.stringify(value))
+  return value
+}
+
+function workLinks(value) {
+  const segment = activeSegment(value)
+  const frame = activeFrame(value)
+  return [
+    'hairness work status --json',
+    segment ? `hairness work resume ${segment.id} --json` : 'hairness work segment open --summary <summary> --json',
+    frame ? `hairness work trace ${frame.segmentId} --json` : null,
+  ].filter(Boolean)
+}
+
+async function dashboardResult(value, view = 'work', runtime) {
+  const segment = activeSegment(value)
+  const frame = activeFrame(value)
+  const controls = effectiveControls(value)
+  const invocations = runtime?.invocations ? (await runtime.invocations.list({ state: 'open' })).filter((item) => !segment || item.request?.work?.segmentId === segment.id) : []
+  const result = {
+    view,
+    mission: value.mission ? { id: value.mission.id, summary: value.mission.summary, status: value.mission.status } : null,
+    activeWork: segment ? { id: segment.id, summary: segment.summary, status: segment.status, boundary: segment.boundary } : null,
+    activeFrame: frame ? { id: frame.id, summary: frame.summary, posture: frame.posture, boundary: frame.boundary } : null,
+    controls,
+    artifacts: segment?.artifacts ?? [],
+    openInvocations: invocations.map((item) => ({ id: item.id, summary: item.request.summary, state: item.state, route: `hairness invoke show ${item.id}` })),
+  }
+  if (view === 'method') {
+    result.method = value.methodologyBinding ?? null
+    result.methodShape = ['mission', 'work segment', 'frame', 'recap', 'work-plan', 'checkpoint']
+  }
+  if (view === 'next') {
+    result.next = segment
+      ? ['hairness-cmd-discuss', 'hairness-cmd-check-sources', 'hairness-cmd-make-recap', 'hairness-cmd-make-plan']
+      : ['hairness work mission set', 'hairness work segment open']
+  }
+  if (view === 'question') {
+    result.question = segment
+      ? 'Quel intent doit-on résoudre maintenant dans ce work segment ?'
+      : 'Quel work segment faut-il ouvrir ?'
+  }
+  if (view === 'trace') {
+    const all = runtime?.invocations ? await runtime.invocations.list() : []
+    const selected = all.filter((item) => !segment || item.request?.work?.segmentId === segment.id).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 20)
+    const runs = runtime?.runs ? await runtime.runs.list() : []
+    result.trace = selected.map((item) => ({ invocationId: item.id, state: item.state, summary: item.request.summary, result: item.result ?? null, runs: runs.filter((run) => run.parentInvocationId === item.id).map((run) => ({ id: run.id, routeId: run.routeId, state: run.state })) }))
+  }
+  return result
+}
+
+async function dashboardPacket(value, view = 'work', runtime) {
+  const result = await dashboardResult(value, view, runtime)
+  const summary = view === 'method'
+    ? 'Active method and work-segment shape.'
+    : view === 'next'
+      ? 'Next routes for the active work.'
+      : view === 'trace'
+        ? 'Invocation and child Run trace for the active work.'
+      : view === 'question'
+        ? 'One next question for the active work.'
+        : 'Active work dashboard.'
+  return contextPacket(
+    `show ${view}`,
+    summary,
+    [result],
+    ['Generated as a provider-facing dashboard; live sources still prove current truth.'],
+    workLinks(value),
+  )
+}
+
+function frameSummaries(value, segmentId) {
+  return value.frames.filter((frame) => frame.segmentId === segmentId).map((frame) => `${frame.id}: ${frame.summary} (${frame.posture}/${frame.status})`)
+}
+
+function targetShape(kind, flags = {}) {
+  const summary = flags.shape ?? flags.focus ?? (kind === 'system-shape' ? 'Target system shape to validate.' : 'Target system wiring to validate.')
+  return {
+    summary,
+    scope: flags.scope ? String(flags.scope).split(',').filter(Boolean) : [],
+    oldOwner: flags.oldOwner ?? flags['old-owner'] ?? null,
+    targetOwner: flags.targetOwner ?? flags['target-owner'] ?? null,
+    legacyKept: flags.legacyKept ? String(flags.legacyKept).split(',').filter(Boolean) : flags['legacy-kept'] ? String(flags['legacy-kept']).split(',').filter(Boolean) : [],
+    legacyDeleted: flags.legacyDeleted ? String(flags.legacyDeleted).split(',').filter(Boolean) : flags['legacy-deleted'] ? String(flags['legacy-deleted']).split(',').filter(Boolean) : [],
+    compatibility: flags.compatibility ? String(flags.compatibility).split(',').filter(Boolean) : [],
+    proof: flags.proof ? String(flags.proof).split(',').filter(Boolean) : [],
+    checkpoint: flags.checkpoint ?? null,
+  }
+}
+
+function workPlanPayload(kind, value, flags = {}) {
+  const segment = activeSegment(value)
+  if (!segment) throw new Error('Open a segment first.')
+  const frames = frameSummaries(value, segment.id)
+  const shape = targetShape(kind, flags)
+  const goal = flags.goal ?? flags.focus ?? segment.summary
+  return {
+    segmentId: segment.id,
+    executionBoundary: `segment:${segment.id}`,
+    originalFrame: activeFrame(value)?.id ?? null,
+    framesConsidered: frames,
+    coherence: 'Fits the active mission, segment boundary and inherited controls until contradicted by fresher proof.',
+    alreadyDone: (segment.artifacts ?? []).map((artifact) => `${artifact.id}@${artifact.revision}`),
+    goal,
+    scope: flags.scope ? String(flags.scope).split(',').filter(Boolean) : [segment.summary],
+    nonGoals: flags.nonGoals ? String(flags.nonGoals).split(',').filter(Boolean) : flags['non-goals'] ? String(flags['non-goals']).split(',').filter(Boolean) : [],
+    targetShape: shape,
+    ownershipChanges: [shape.oldOwner || shape.targetOwner ? `${shape.oldOwner ?? 'current owner'} -> ${shape.targetOwner ?? 'target owner'}` : null].filter(Boolean),
+    compatibility: shape.compatibility,
+    decisionBatch: ['Confirm the target shape before executor effects.', 'Keep provider commands chat-first unless a save-* intent requests an artifact.'],
+    steps: flags.steps ? String(flags.steps).split('|').filter(Boolean) : ['Resolve proof gaps.', 'Confirm target shape and compatibility.', 'Execute each accepted route through its owning operation.'],
+    validation: flags.validation ? String(flags.validation).split(',').filter(Boolean) : [],
+    risks: flags.risks ? String(flags.risks).split(',').filter(Boolean) : [],
+    checkpoints: shape.checkpoint ? [shape.checkpoint] : ['executor checkpoint before mutation'],
+    openQuestions: flags.questions ? String(flags.questions).split('|').filter(Boolean) : [],
+    constraints: segment.boundary.constraints,
+  }
+}
+
+function recapPacket(value) {
+  const segment = activeSegment(value)
+  if (!segment) throw new Error('Open a segment first.')
+  return contextPacket(
+    'make recap',
+    `Recap for active work segment ${segment.id}.`,
+    [{
+      segmentId: segment.id,
+      summary: segment.summary,
+      decisions: [],
+      artifacts: segment.artifacts,
+      proof: frameSummaries(value, segment.id),
+      openEdges: [],
+      limits: [],
+      routes: ['hairness-cmd-save-recap', 'hairness-cmd-make-plan'],
+    }],
+    ['Chat recap only. Use hairness-cmd-save-recap to promote this exact SegmentDigest.'],
+    ['hairness-cmd-save-recap', 'hairness-cmd-make-plan'],
+  )
+}
+
+function planPacket(kind, value, flags = {}) {
+  const payload = workPlanPayload(kind, value, flags)
+  return contextPacket(
+    kind === 'system-wire' ? 'plan system wire' : kind === 'system-shape' ? 'plan system shape' : 'make plan',
+    `Draft work plan for segment ${payload.segmentId}.`,
+    [payload],
+    ['Chat plan only. Use hairness-cmd-save-plan to promote this exact WorkPlan.'],
+    ['hairness-cmd-save-plan', 'hairness-cmd-do-plan'],
+  )
 }
 
 async function setBoundary(runtime, input) {
@@ -76,6 +244,19 @@ export async function sessionContributions({ runtime, manifest }) {
   const segment = activeSegment(value)
   const frame = value.frames.filter((item) => item.status === 'open').at(-1)
   return [{ owner: manifest.id, section: 'work', priority: 80, summary: `${value.mission?.summary ?? 'No mission'} · ${segment?.summary ?? 'no active segment'}`, data: { missionId: value.mission?.id ?? null, segmentId: segment?.id ?? null, frameId: frame?.id ?? null, boundary: frame?.boundary ?? segment?.boundary ?? null }, routes: segment ? ['hairness work status'] : ['hairness work segment open'], limits: [], freshness: value.updatedAt, byteSize: 0 }]
+}
+
+export async function attentionSignals({ runtime }) {
+  const value = await state(runtime)
+  const items = []
+  const segment = activeSegment(value)
+  if (segment) items.push({ id: segment.id, kind: 'segment', state: 'active', priority: 85, summary: segment.summary, route: `hairness work resume ${segment.id}`, lastActivityAt: segment.updatedAt, work: { missionId: value.mission?.id ?? null, segmentId: segment.id, frameId: activeFrame(value)?.id ?? null }, limits: [] })
+  for (const frame of value.frames.filter((item) => item.status === 'open')) items.push({ id: frame.id, kind: 'frame', state: 'active', priority: frame.segmentId === value.activeSegmentId ? 80 : 55, summary: frame.summary, route: `hairness work resume ${frame.segmentId}`, lastActivityAt: frame.updatedAt, work: { missionId: value.mission?.id ?? null, segmentId: frame.segmentId, frameId: frame.id }, limits: [] })
+  for (const closed of value.segments.filter((item) => item.status === 'closed' && item.digestArtifact)) {
+    const digest = await runtime.artifacts.read(closed.digestArtifact.id, closed.digestArtifact.revision).catch((error) => ['artifact_not_found', 'artifact_revision_not_found'].includes(error.code) ? null : Promise.reject(error))
+    for (const [index, edge] of (digest?.payload?.openEdges ?? []).entries()) items.push({ id: `edge-${closed.id}-${index + 1}`, kind: 'edge', state: 'ready', priority: 50, summary: edge, route: `hairness work resume ${closed.id}`, lastActivityAt: closed.updatedAt, work: { missionId: value.mission?.id ?? null, segmentId: closed.id, frameId: null }, limits: [] })
+  }
+  return items
 }
 
 async function missionCommand(action, flags, runtime) {
@@ -162,24 +343,40 @@ function postureIntent(target, action, rest, flags, value) {
   return { schemaVersion: 2, protocolVersion: '0.2', intent: { action: target, focus, mode: flags.mode ?? (target === 'discuss' ? 'discuss' : 'auto'), budget: flags.budget ?? (['plan', 'execute'].includes(target) ? 'deep' : 'balanced'), presentation: flags.present ?? 'auto' }, work: { missionId: value.mission?.id ?? null, segmentId: value.activeSegmentId }, status: mutation ? 'needs-checkpoint' : 'needs-inference', summary: `Resolved ${target} inside the active work trajectory.`, authority: [], limits: [mutation ? 'Mutation requires a WorkPlan and explicit checkpoint.' : 'Inference remains in the main session.'].filter(Boolean), routes: [] }
 }
 
-async function artifactProducer(kind, runtime, value) {
+async function artifactProducer(kind, runtime, value, flags = {}) {
   const segment = activeSegment(value)
   if (!segment) throw new Error('Open a segment first.')
-  const stamp = Date.now().toString(36)
   const type = kind === 'recap' ? 'segment-digest' : 'work-plan'
-  const planId = `work-${kind}-${stamp}`
-  const runId = `${planId}-producer`
-  const fanIn = `${planId}-fan-in`
-  const operation = { capability: 'hairness/work', id: kind }
-  const route = { schemaVersion: 2, protocolVersion: '0.2', id: runId, operation, kind: 'worker', profile: 'producer', requirement: 'required', resultSchema: 'ArtifactEnvelope', fanIn, workload: kind === 'recap' ? 'balanced' : 'deep' }
-  await runtime.plans.write({ schemaVersion: 2, protocolVersion: '0.2', id: planId, intent: { schemaVersion: 2, protocolVersion: '0.2', id: `${planId}-intent`, summary: kind === 'recap' ? `Digest segment ${segment.id}.` : `Plan accepted work for segment ${segment.id}.`, outcome: `A typed ${type} artifact.`, targets: [], limits: [] }, routes: [route], fanIn: { id: fanIn, mode: 'mechanical' } })
-  const payload = kind === 'recap'
-    ? { segmentId: segment.id, summary: segment.summary, decisions: [], artifacts: segment.artifacts, proof: [], openEdges: [], limits: [], routes: [] }
-    : { segmentId: segment.id, goal: segment.summary, steps: ['Resolve the accepted implementation routes.'], validation: [], constraints: segment.boundary.constraints }
-  const assignment = { schemaVersion: 2, protocolVersion: '0.2', id: `produce-${type}`, operation, profile: 'producer', goal: kind === 'recap' ? 'Reduce the active segment into its minimum durable meaning.' : 'Turn accepted segment decisions into one executable bounded plan.', outcome: `Artifact work/${segment.id}-${kind} of type ${type}.`, workload: route.workload, budget: 1, inputs: [{ mission: value.mission }, { segment }, { frames: value.frames.filter((frame) => frame.segmentId === segment.id) }, { artifactContract: { id: `work/${segment.id}-${kind}`, type, owner: 'hairness/work-controls', metadata: { labels: ['work'], signals: [kind], relations: [{ type: 'informs', target: { kind: 'segment', id: segment.id } }], freshness: { policy: 'manual' }, provenance: { kind: 'extension', id: 'hairness/work-controls', version: '0.2.0-alpha.0' } }, requiredPayload: payload } }], targets: [], exclusions: ['target mutation', 'Git mutation', 'external source mutation', 'nested subagents', 'transcript storage'], allowedSources: ['artifact:read', 'work:read'], requestedEffects: [], result: { schema: 'ArtifactEnvelope', disposition: 'artifact', artifactOwner: 'hairness/work-controls', artifactType: type } }
-  await runtime.runs.create({ id: runId, planId, assignment })
-  await runtime.runs.transition(runId, 'ready')
-  return { summary: `Prepared one bounded ${type} producer.`, status: 'ready', planId, runId, fanIn, capsule: await runtime.runs.capsule(runId), limits: [], routes: [`hairness worker ${runId} inspect --start --json`, `hairness plan ${planId} reduce --json`] }
+  const candidates = (await runtime.invocations.list({ state: 'terminal' }))
+    .filter((item) => !item.legacy && item.state === 'completed' && item.request.operation.capability === 'hairness/work' && item.request.operation.id === kind && item.request.expectedResult.contract.disposition === 'response' && item.request.work.segmentId === segment.id)
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+  const selected = flags.invocation ? candidates.find((item) => item.id === flags.invocation) : candidates[0]
+  if (!selected) return { summary: `No completed ${kind} result is available for ${segment.id}.`, status: 'needs-input', limits: [`Run hairness-cmd-make-${kind} first.`], routes: [`hairness-cmd-make-${kind}`] }
+  if (!flags.invocation && candidates[1]?.updatedAt === selected.updatedAt) return { summary: `Choose the ${kind} invocation to promote.`, status: 'needs-input', candidates: candidates.slice(0, 2).map((item) => item.id), limits: ['Multiple equally recent compatible results exist.'], routes: candidates.slice(0, 2).map((item) => `hairness work save-${kind} --invocation ${item.id}`) }
+  const result = await runtime.invocations.result(selected.id)
+  const payload = result?.payload?.results?.[0]
+  if (!payload) throw new Error(`Invocation ${selected.id} has no promotable payload.`)
+  const artifactId = `work/${segment.id}-${kind}`
+  const existing = await runtime.artifacts.read(artifactId, selected.id).catch((error) => ['artifact_not_found', 'artifact_revision_not_found'].includes(error.code) ? null : Promise.reject(error))
+  const envelope = existing ?? {
+    schemaVersion: 2,
+    protocolVersion: '0.2',
+    id: artifactId,
+    type,
+    owner: 'hairness/work-controls',
+    revision: selected.id,
+    runId: selected.id,
+    summary: payload.summary ?? result.summary,
+    metadata: { labels: ['work'], signals: [kind], relations: [{ type: 'informs', target: { kind: 'segment', id: segment.id } }], freshness: { policy: 'manual' }, provenance: { kind: 'invocation', id: selected.id, provider: selected.request.origin.host } },
+    payload,
+    createdAt: new Date().toISOString(),
+  }
+  if (!existing) { await runtime.artifacts.stage(selected.id, envelope); await runtime.artifacts.promote(selected.id) }
+  if (!segment.artifacts.some((artifact) => artifact.id === artifactId && artifact.revision === selected.id)) {
+    segment.artifacts.push({ kind: 'artifact', id: artifactId, revision: selected.id })
+    await save(runtime, value, { type: 'artifact.promoted', id: artifactId, revision: selected.id, sourceInvocationId: selected.id })
+  }
+  return envelope
 }
 
 async function executePlan(action, flags, runtime, value) {
@@ -206,7 +403,7 @@ export async function handleCommand({ target, action, rest, flags, runtime }) {
   if (!target || target === 'status') return value
   if (target === 'history') return { events: await runtime.overlay.lines('events.jsonl'), limits: ['Use trace or resume for compact context.'], routes: [] }
   if (target === 'trace') {
-    const id = action ?? flags.id
+    const id = action ?? flags.id ?? value.activeSegmentId
     return { mission: value.mission?.id === id ? value.mission : null, segment: value.segments.find((item) => item.id === id) ?? null, frames: value.frames.filter((item) => item.segmentId === id), limits: [], routes: [] }
   }
   if (target === 'resume') {
@@ -215,8 +412,21 @@ export async function handleCommand({ target, action, rest, flags, runtime }) {
     return { summary: selected.summary, status: selected.status, mission: value.mission, segment: selected, frames: value.frames.filter((item) => item.segmentId === selected.id), artifacts: selected.artifacts, proof: [], limits: ['Artifact bodies are not included. Revalidate volatile sources.'], routes: selected.status === 'closed' ? [`hairness work segment open --continues ${selected.id}`] : [] }
   }
   if (target === 'method') return methodCommand(action, rest, runtime)
+  if (target === 'show-method') return dashboardPacket(value, 'method', runtime)
+  if (target === 'show-work') return dashboardPacket(value, 'work', runtime)
+  if (target === 'show-trace') return dashboardPacket(value, 'trace', runtime)
+  if (target === 'show-next') return dashboardPacket(value, 'next', runtime)
+  if (target === 'ask-next') return dashboardPacket(value, 'question', runtime)
+  if (target === 'open-frame') return frameCommand('open', { ...flags, summary: [action, ...rest].filter(Boolean).join(' ') || flags.focus || flags.summary }, runtime)
   if (target === 'new-frame') return frameCommand('open', { ...flags, summary: [action, ...rest].filter(Boolean).join(' ') || flags.focus }, runtime)
-  if (target === 'recap' || target === 'plan') return artifactProducer(target, runtime, value)
+  if (target === 'make-recap' || target === 'recap') return recapPacket(value)
+  if (target === 'save-recap') return artifactProducer('recap', runtime, value, flags)
+  if (target === 'make-plan' || target === 'plan') return planPacket(flags.planKind ?? 'default', value, flags)
+  if (target === 'save-plan') return artifactProducer('plan', runtime, value, flags)
+  if (target === 'plan-system-wire') return planPacket('system-wire', value, { ...flags, focus: [action, ...rest].filter(Boolean).join(' ') || flags.focus })
+  if (target === 'plan-system-shape') return planPacket('system-shape', value, { ...flags, focus: [action, ...rest].filter(Boolean).join(' ') || flags.focus })
+  if (target === 'do-frame') return postureIntent('act', action, rest, flags, value)
+  if (target === 'do-plan') return executePlan(action, flags, runtime, value)
   if (target === 'execute') return executePlan(action, flags, runtime, value)
   if (postures.has(target)) return postureIntent(target, action, rest, flags, value)
   throw new Error(`Unknown work action: ${target}`)

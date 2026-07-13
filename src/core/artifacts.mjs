@@ -21,7 +21,22 @@ function renderArtifact(envelope) {
     labels: envelope.metadata.labels,
     signals: envelope.metadata.signals,
   }
-  return `---\nhairness: ${JSON.stringify(metadata)}\n---\n\n<!-- Generated from artifact.json. Annotate or revise; do not edit this projection. -->\n\n# ${envelope.id}\n\n${envelope.summary}\n\n## Payload\n\n\`\`\`json\n${JSON.stringify(envelope.payload, null, 2)}\n\`\`\`\n`
+  const array = (title, values) => Array.isArray(values) && values.length ? `\n## ${title}\n\n${values.map((value) => `- ${typeof value === 'string' ? value : JSON.stringify(value)}`).join('\n')}\n` : ''
+  const object = (title, value) => value && typeof value === 'object' ? `\n## ${title}\n\n${Object.entries(value).map(([key, item]) => `- ${key}: ${Array.isArray(item) ? item.join(', ') : item ?? 'none'}`).join('\n')}\n` : ''
+  const payload = envelope.payload ?? {}
+  const digest = [
+    payload.goal ? `\n## Goal\n\n${payload.goal}\n` : '',
+    payload.coherence ? `\n## Coherence\n\n${payload.coherence}\n` : '',
+    array('Decisions', payload.decisions ?? payload.decisionBatch),
+    array('Steps', payload.steps),
+    array('Validation', payload.validation),
+    object('Target Shape', payload.targetShape),
+    array('Proof', payload.proof),
+    array('Open Questions', payload.openQuestions ?? payload.openEdges),
+    array('Limits', payload.limits),
+    array('Routes', payload.routes),
+  ].filter(Boolean).join('')
+  return `---\nhairness: ${JSON.stringify(metadata)}\n---\n\n<!-- Generated from artifact.json. Annotate or revise; do not edit this projection. -->\n\n# ${envelope.id}\n\n## Summary\n\n${envelope.summary}\n\n## Dashboard\n\n- Owner: ${envelope.owner}\n- Type: ${envelope.type}\n- Revision: ${envelope.revision}\n- Labels: ${envelope.metadata.labels.join(', ') || 'none'}\n- Signals: ${envelope.metadata.signals.join(', ') || 'none'}\n${digest}\n## Payload JSON\n\n\`\`\`json\n${JSON.stringify(envelope.payload, null, 2)}\n\`\`\`\n`
 }
 
 export async function stageArtifact(root, runId, envelope) {

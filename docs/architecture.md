@@ -15,6 +15,8 @@ flowchart TD
   route --> gates["Schemas · fan-in · policy · authority · locks"]
   gates --> result["Typed Result"]
   result --> main
+  result --> ledger["Semantic Ledger + Attention Index"]
+  ledger --> opening
   sources["Selected source drivers"] --> registry
   targets["Mounted codebase checkouts"] --> gates
 ```
@@ -67,6 +69,7 @@ Git tracked
 
 .overlay (workspace local)
 ├── config and named codebase mounts
+├── invocation ledger and epoch
 ├── runs, artifacts and scratch
 ├── extension-owned state
 └── local-only extension projections

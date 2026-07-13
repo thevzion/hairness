@@ -6,6 +6,7 @@
     "planId": { "type": "string" },
     "status": { "const": "succeeded" },
     "materials": { "type": "array", "items": { "type": "string" } },
+    "migrations": { "type": "array", "items": { "type": "string" } },
     "checkpointId": { "type": "string" },
     "completedAt": { "type": "string" },
     "limits": { "type": "array", "items": { "type": "string" } }

@@ -26,7 +26,7 @@ Constraints deny effects; they never grant authority. Grants remain operation-sc
 
 ## Providers
 
-Projects the single `hairness-constraint` command to Codex and Claude.
+No standalone provider command is projected in the alpha surface. Constraint inspection and changes remain available through deterministic CLI routes.
 
 ## Tests and maturity
 

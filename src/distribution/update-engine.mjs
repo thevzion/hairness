@@ -6,6 +6,7 @@ import { basename, dirname, join, relative, resolve } from 'node:path'
 import { HairnessError } from '../core/errors.mjs'
 import { readJson, workspacePaths, writeJsonAtomic } from '../core/io.mjs'
 import { validateContract } from '../core/contracts.mjs'
+import { applyMigration, planMigration } from './migrations.mjs'
 
 const exec = promisify(execFile)
 
@@ -96,6 +97,9 @@ export async function planDistributionUpdate(root, options = {}) {
     const exists = await lstat(sourcePath).catch((error) => error.code === 'ENOENT' ? null : Promise.reject(error))
     if (exists) { await mkdir(dirname(targetPath), { recursive: true }); await cp(sourcePath, targetPath, { recursive: true }) }
   }
+  const targetPackage = await readJson(join(materialized.path, 'package.json'), {})
+  const targetVersion = targetPackage.version ?? lock.generatedFrom.implementationVersion
+  const migrationPlan = await planMigration(root, { to: targetVersion, sourceRoot: materialized.path })
   await materialized.cleanup()
   const changes = []
   for (const material of lock.materials.filter((item) => scopeMatches(item, options.scope))) {
@@ -106,7 +110,8 @@ export async function planDistributionUpdate(root, options = {}) {
     changes.push({ materialId: material.id, owner: material.owner, path: material.path, sourcePath: material.sourcePath, scope: material.scope, policy: material.policy, baseDigest: material.baseDigest, currentDigest, nextDigest, status })
   }
   const ambiguous = changes.filter((change) => change.status === 'review-required')
-  const plan = { schemaVersion: 2, protocolVersion: '0.2', id, source, scope: options.scope ?? 'all', candidateRoot, changes, status: ambiguous.length ? 'review-required' : 'ready', checkpointId: `update-${createHash('sha256').update(JSON.stringify({ source, changes })).digest('hex').slice(0, 16)}`, createdAt: new Date().toISOString(), limits: ambiguous.map((change) => `${change.path} contains consumer divergence`) }
+  const migrationBlocked = migrationPlan.status === 'review-required'
+  const plan = { schemaVersion: 2, protocolVersion: '0.2', id, source, targetVersion, scope: options.scope ?? 'all', candidateRoot, changes, migrationPlan: { id: migrationPlan.id, status: migrationPlan.status, checkpointId: migrationPlan.checkpointId, migrations: migrationPlan.migrations.map((item) => item.id) }, status: ambiguous.length || migrationBlocked ? 'review-required' : 'ready', checkpointId: `update-${createHash('sha256').update(JSON.stringify({ source, changes, migrationPlan: migrationPlan.id })).digest('hex').slice(0, 16)}`, createdAt: new Date().toISOString(), limits: [...ambiguous.map((change) => `${change.path} contains consumer divergence`), ...migrationPlan.limits] }
   await writeJsonAtomic(join(workspacePaths(root).overlay, 'extensions-state', 'hairness', 'distribution', 'plans', `${id}.json`), plan)
   return plan
 }
@@ -134,13 +139,14 @@ export async function applyDistributionUpdate(root, planId, checkpointId) {
       } else await rm(target, { recursive: true, force: true })
       updated.set(change.materialId, change.nextDigest)
     }
-    lock.materials = lock.materials.map((material) => updated.has(material.id) ? { ...material, baseDigest: updated.get(material.id) } : material)
-    lock.generatedFrom = { ...lock.generatedFrom, ...(plan.source.kind === 'path' ? {} : { source: plan.source.spec }), createdAt: new Date().toISOString() }
+    lock.materials = lock.materials.map((material) => updated.has(material.id) ? { ...material, version: plan.targetVersion, baseDigest: updated.get(material.id) } : material)
+    lock.generatedFrom = { ...lock.generatedFrom, implementationVersion: plan.targetVersion, ...(plan.source.kind === 'path' ? {} : { source: plan.source.spec }), createdAt: new Date().toISOString() }
     await validateContract('DistributionLock', lock)
     await writeJsonAtomic(join(root, 'hairness.lock.json'), lock)
     const { buildProviders } = await import('../providers/compiler.mjs')
     await buildProviders(root)
-    const receipt = { schemaVersion: 2, protocolVersion: '0.2', planId, status: 'succeeded', materials: [...updated.keys()], checkpointId, completedAt: new Date().toISOString(), limits: [] }
+    const migrationReceipt = plan.migrationPlan?.status === 'ready' ? await applyMigration(root, plan.migrationPlan.id, plan.migrationPlan.checkpointId) : null
+    const receipt = { schemaVersion: 2, protocolVersion: '0.2', planId, status: 'succeeded', materials: [...updated.keys()], checkpointId, completedAt: new Date().toISOString(), limits: [], ...(migrationReceipt ? { migrations: migrationReceipt.migrations } : {}) }
     await writeJsonAtomic(join(workspacePaths(root).overlay, 'extensions-state', 'hairness', 'distribution', 'receipts', `${planId}.json`), receipt)
     return receipt
   } catch (error) {

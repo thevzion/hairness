@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { answerInvocation, cancelInvocation, resumeInvocation, showInvocation, startInvocation } from '../src/distribution/invocation.mjs'
+import { answerInvocation, blockInvocation, cancelInvocation, completeInvocation, listInvocationRecords, resumeInvocation, showInvocation, startInvocation } from '../src/distribution/invocation.mjs'
 import { temporaryWorkspace } from './helpers.mjs'
 
 function draft(operation = 'produce', inputs = {}) {
@@ -51,6 +51,53 @@ test('invocation state is rebuilt from its append-only event stream', async () =
   assert.deepEqual(after.request, before.request)
   assert.deepEqual(after.preview, before.preview)
   assert.equal(after.state, before.state)
+})
+
+test('named result controls promotion and --auto only advances progress', async () => {
+  const root = await temporaryWorkspace()
+  process.env.HAIRNESS_HOME = join(root, 'home')
+  const response = await startInvocation(root, { ...draft('produce', { topic: 'billing' }), result: 'response' }, { mode: 'direct', auto: true })
+  assert.equal(response.expectedResult.id, 'response')
+  assert.equal(response.expectedResult.promotion, 'none')
+  assert.equal(response.state, 'needs-agent')
+  const artifact = await startInvocation(root, { ...draft('produce', { topic: 'billing' }), result: 'artifact' }, { mode: 'direct', auto: true })
+  assert.equal(artifact.expectedResult.id, 'artifact')
+  assert.equal(artifact.expectedResult.promotion, 'artifact')
+  assert.equal(artifact.state, 'needs-agent')
+})
+
+test('completion rejects an invalid result without closing the invocation, then accepts an immutable result', async () => {
+  const root = await temporaryWorkspace()
+  process.env.HAIRNESS_HOME = join(root, 'home')
+  const preview = await startInvocation(root, { ...draft('produce', { topic: 'billing' }), result: 'response' }, { mode: 'direct', auto: true })
+  await assert.rejects(completeInvocation(root, preview.id, { summary: 'Invalid.', payload: {}, proof: [], limits: [], routes: [] }), (error) => error.code === 'contract_invalid')
+  assert.equal((await showInvocation(root, preview.id)).receipt, null)
+  const payload = { schemaVersion: 2, protocolVersion: '0.2', planId: 'inline-result', intent: 'produce', status: 'succeeded', summary: 'Produced.', results: [{ value: 'ok' }], proof: [], effects: [], tests: [], limits: [], routes: [], byteSize: 0 }
+  const receipt = await completeInvocation(root, preview.id, { summary: 'Produced.', payload, proof: [], limits: [], routes: [] })
+  assert.equal(receipt.status, 'completed')
+  assert.equal((await showInvocation(root, preview.id)).result.payload.results[0].value, 'ok')
+  await assert.rejects(completeInvocation(root, preview.id, { summary: 'Changed.', payload, proof: [], limits: [], routes: [] }), (error) => error.code === 'invocation_terminal')
+  await assert.rejects(cancelInvocation(root, preview.id), (error) => error.code === 'invocation_terminal')
+})
+
+test('completion reconciles an identical immutable result written before interruption', async () => {
+  const root = await temporaryWorkspace()
+  process.env.HAIRNESS_HOME = join(root, 'home')
+  const preview = await startInvocation(root, { ...draft('produce', { topic: 'billing' }), result: 'response' }, { mode: 'direct', auto: true })
+  const payload = { schemaVersion: 2, protocolVersion: '0.2', planId: 'reconciled', intent: 'produce', status: 'succeeded', summary: 'Produced.', results: [], proof: [], effects: [], tests: [], limits: [], routes: [], byteSize: 0 }
+  const result = { schemaVersion: 2, protocolVersion: '0.2', invocationId: preview.id, resultId: 'response', summary: 'Produced.', payload, proof: [], limits: [], routes: [] }
+  await writeFile(join(root, '.overlay/invocations', preview.id, 'result.json'), JSON.stringify(result))
+  const receipt = await completeInvocation(root, preview.id, { summary: result.summary, payload, proof: [], limits: [], routes: [] })
+  assert.equal(receipt.status, 'completed')
+})
+
+test('open invocation listing and explicit block support reconciliation', async () => {
+  const root = await temporaryWorkspace()
+  process.env.HAIRNESS_HOME = join(root, 'home')
+  const preview = await startInvocation(root, draft('produce', { topic: 'billing' }), { mode: 'direct', auto: true })
+  assert.deepEqual((await listInvocationRecords(root, 'open')).invocations.map((item) => item.id), [preview.id])
+  assert.equal((await blockInvocation(root, preview.id, 'Needs external authority.')).status, 'blocked')
+  assert.deepEqual((await listInvocationRecords(root, 'open')).invocations, [])
 })
 
 test('--auto never bypasses effect authority and cancellation is terminal', async () => {

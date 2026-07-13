@@ -10,15 +10,24 @@ const root = new URL('../', import.meta.url).pathname.replace(/\/$/, '')
 test('provider compiler emits the same active command set for Codex and Claude', async () => {
   await buildProviders(root, { check: true })
   const manifest = JSON.parse(await readFile(join(root, 'hairness.build.json')))
-  assert.equal(manifest.commands.length, 26)
-  assert.equal(new Set(manifest.commands.map((command) => command.name)).size, 26)
+  assert.equal(manifest.commands.length, 29)
+  assert.equal(new Set(manifest.commands.map((command) => command.name)).size, 29)
   assert.deepEqual(manifest.commands.map((command) => command.name), [
-    'hairness', 'hairness-help', 'hairness-onboarding', 'hairness-wake-up', 'hairness-update',
-    'hairness-work', 'hairness-discuss', 'hairness-recap', 'hairness-plan', 'hairness-act', 'hairness-execute',
-    'hairness-map', 'hairness-explain', 'hairness-compare', 'hairness-ideate', 'hairness-propose',
-    'hairness-constraint', 'hairness-session', 'hairness-handoff', 'hairness-maintain', 'hairness-roadmap', 'hairness-ship',
-    'hairness-codebase', 'hairness-map-codebase', 'hairness-source', 'hairness-check-sources',
+    'hairness', 'hairness-help', 'hairness-onboarding', 'hairness-wake-up',
+    'hairness-cmd-show-topics',
+    'hairness-work', 'hairness-cmd-show-method', 'hairness-cmd-show-work', 'hairness-cmd-show-trace', 'hairness-cmd-open-frame', 'hairness-cmd-discuss',
+    'hairness-cmd-make-recap', 'hairness-cmd-save-recap', 'hairness-cmd-make-plan', 'hairness-cmd-save-plan',
+    'hairness-cmd-show-next', 'hairness-cmd-ask-next', 'hairness-cmd-plan-system-wire', 'hairness-cmd-plan-system-shape',
+    'hairness-cmd-do-frame', 'hairness-cmd-do-plan',
+    'hairness-cmd-show-structure', 'hairness-cmd-compare-options', 'hairness-cmd-ideate', 'hairness-cmd-propose', 'hairness-cmd-propose-creative',
+    'hairness-codebase', 'hairness-source', 'hairness-cmd-check-sources',
   ])
+  assert.deepEqual(manifest.commands.filter((command) => command.surface === 'bridge').map((command) => command.name), ['hairness'])
+  assert.deepEqual(manifest.commands.filter((command) => command.surface === 'namespace').map((command) => command.name), ['hairness-help', 'hairness-work', 'hairness-codebase', 'hairness-source'])
+  assert.ok(manifest.commands.filter((command) => command.surface === 'intent').every((command) => command.name.startsWith('hairness-cmd-')))
+  assert.equal(manifest.commands.find((command) => command.name === 'hairness-cmd-make-recap').resultId, 'response')
+  assert.equal(manifest.commands.find((command) => command.name === 'hairness-cmd-save-recap').resultId, 'artifact')
+  assert.equal(manifest.commands.some((command) => command.name.startsWith('hairness-x-')), false)
   for (const command of manifest.commands) {
     const codex = join(root, '.agents/skills', command.name, 'SKILL.md')
     const claude = join(root, '.claude/skills', command.name, 'SKILL.md')
@@ -30,6 +39,9 @@ test('provider compiler emits the same active command set for Codex and Claude',
     assert.equal(await readFile(claude, 'utf8'), content.replace(`\`$${command.name}\``, `\`/${command.name}\``))
   }
   assert.match(await readFile(join(root, '.agents/skills/hairness-wake-up/SKILL.md'), 'utf8'), /fresh SessionOpening/)
+  assert.match(await readFile(join(root, '.agents/skills/hairness-cmd-save-plan/SKILL.md'), 'utf8'), /draft\.result.*artifact/)
+  assert.match(await readFile(join(root, '.agents/skills/hairness-cmd-make-plan/SKILL.md'), 'utf8'), /draft\.result.*response/)
+  assert.match(await readFile(join(root, '.agents/skills/hairness-cmd-propose-creative/SKILL.md'), 'utf8'), /creative.*lateral/)
   await assert.rejects(access(join(root, '.codex-plugin')))
   await assert.rejects(access(join(root, '.claude-plugin')))
 })

@@ -16,11 +16,12 @@
   "contributes": ["attention"],
   "commands": [
     { "namespace": "distribution", "actions": ["inspect"] },
-    { "namespace": "update", "actions": ["check", "doctor", "plan", "apply"] }
+    { "namespace": "update", "actions": ["check", "doctor", "plan", "apply"] },
+    { "namespace": "migrate", "actions": ["status", "plan", "apply"] }
   ],
   "artifactSchemas": [
     { "type": "distribution-update-plan", "schema": "./schemas/update-plan.schema.json" },
     { "type": "distribution-update-receipt", "schema": "./schemas/update-receipt.schema.json" }
   ],
-  "providerCommands": [{ "id": "hairness.update", "name": "hairness-update", "summary": "Inspect and safely update source-owned Hairness materials.", "kind": "capability", "classification": "specialized", "command": "hairness update doctor", "arguments": [{ "name": "action", "required": false }], "result": { "schema": "ContextPacket", "disposition": "run-only" }, "operation": { "capability": "hairness/distribution-lifecycle", "id": "inspect" }, "instructions": "./commands/update.md" }]
+  "commandSurfaces": []
 }

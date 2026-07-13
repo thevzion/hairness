@@ -26,7 +26,7 @@ No provider transcript or internal reasoning is durable.
 
 ## Providers
 
-Projects `hairness-session` and `hairness-handoff` to Codex and Claude.
+No standalone provider command is projected in the alpha surface. Session inspection and handoff remain available through deterministic CLI routes.
 
 ## Tests and maturity
 

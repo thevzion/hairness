@@ -6,7 +6,7 @@ const suites = {
   'cockpit-language': { prompt: 'Use the injected Hairness opening. Reply with one short sentence confirming the active language. Do not use tools.', gates: ['language', 'tool-count:0', 'compact'] },
   'cockpit-wake-up': { prompt: 'Run the Hairness wake-up behavior from the fresh opening. Return the highest-priority signal and next route. Do not refresh.', gates: ['route', 'tool-count:0', 'compact'] },
   'cockpit-help': { prompt: 'Explain the primary Hairness commands only. Keep the answer compact.', gates: ['route', 'no-exploration', 'compact'] },
-  'intent-map-gap': { prompt: '$hairness-map\nNo focus was provided. Follow the active skill without inspecting files or loading another skill: submit the draft to Hairness, then ask only the returned gap.', gates: ['first-call', 'tool-count:1', 'gap-only', 'compact'] },
+  'intent-map-gap': { prompt: '$hairness-cmd-show-structure\nNo focus was provided. Follow the active skill without inspecting files or loading another skill: submit the draft to Hairness, then ask only the returned gap.', gates: ['first-call', 'tool-count:1', 'gap-only', 'compact'] },
 }
 const effort = { fast: 'low', balanced: 'medium', deep: 'high' }
 const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
@@ -40,21 +40,31 @@ async function runProvider(root, plan) {
   const openingOutput = await runCommand(process.execPath, [join(root, 'bin/hairness.mjs'), 'opening', '--host', plan.provider, '--json'], { cwd: root, timeout: 5_000 })
   const opening = JSON.parse(openingOutput).data
   const openingBytes = Buffer.byteLength(JSON.stringify(opening))
-  const prompt = `Hairness SessionOpening:\n${JSON.stringify(opening)}\n\nUser intent:\n${plan.prompt}`
+  const providerPrompt = plan.provider === 'claude' ? plan.prompt.replace(/^\$hairness-/m, '/hairness-') : plan.prompt
+  const prompt = `Hairness SessionOpening:\n${JSON.stringify(opening)}\n\nUser intent:\n${providerPrompt}`
   let stdout
   if (plan.provider === 'codex') {
-    const args = ['exec', '--ephemeral', '--ignore-user-config', '--json', '--sandbox', 'read-only', '-C', root, '-c', `model_reasoning_effort="${effort[plan.profile]}"`]
+    const args = ['exec', '--ephemeral', '--ignore-user-config', '--json', '--sandbox', 'workspace-write', '-C', root, '-c', `model_reasoning_effort="${effort[plan.profile]}"`]
     if (plan.model) args.push('--model', plan.model)
     args.push(prompt)
     stdout = await runCommand('codex', args, { cwd: root })
   } else {
-    const args = ['--print', '--output-format', 'json', '--effort', effort[plan.profile], '--permission-mode', 'plan', '--no-session-persistence']
+    const args = ['--print', '--verbose', '--output-format', 'stream-json', '--effort', effort[plan.profile], '--permission-mode', 'auto', '--no-session-persistence']
     if (plan.model) args.push('--model', plan.model)
     args.push(prompt)
     stdout = await runCommand('claude', args, { cwd: root })
   }
   const durationMs = Math.round((performance.now() - started) * 100) / 100
-  if (plan.provider !== 'codex') return { durationMs, openingBytes, text: JSON.parse(stdout).result ?? '', toolCount: 0, firstCall: null }
+  if (plan.provider !== 'codex') {
+    const events = stdout.trim().split('\n').flatMap((line) => { try { return [JSON.parse(line)] } catch { return [] } })
+    const content = events.flatMap((event) => event.message?.content ?? [])
+    const toolUses = content.filter((item) => item.type === 'tool_use')
+    const invocationCalls = toolUses.filter((item) => item.name === 'Bash' && /hairness(?:\.mjs)? invoke start/.test(item.input?.command ?? '')).length
+    const text = events.findLast((event) => event.type === 'result')?.result ?? content.filter((item) => item.type === 'text').at(-1)?.text ?? ''
+    const firstTool = events.findIndex((event) => (event.message?.content ?? []).some((item) => item.type === 'tool_use'))
+    const questionBeforeTool = firstTool < 0 || events.slice(0, firstTool).some((event) => (event.message?.content ?? []).some((item) => item.type === 'text' && /\?/.test(item.text ?? '')))
+    return { durationMs, openingBytes, text, toolCount: toolUses.length, invocationCalls, otherToolCalls: toolUses.length - invocationCalls, firstCall: firstTool >= 0 && !questionBeforeTool }
+  }
   const events = stdout.trim().split('\n').flatMap((line) => { try { return [JSON.parse(line)] } catch { return [] } })
   const text = events.flatMap((event) => event.type === 'item.completed' && event.item?.type === 'agent_message' ? [event.item.text] : []).at(-1) ?? ''
   const toolEvents = events.filter((event) => event.type === 'item.completed' && ['command_execution', 'mcp_tool_call', 'web_search'].includes(event.item?.type))
