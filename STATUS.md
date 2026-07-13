@@ -4,11 +4,18 @@ Current target: `0.2.0-alpha.0`
 
 ## Now
 
-- `npm-alpha`
-  - Outcome: Complete the public alpha through reconciled npm proof, an exact Git tag and a GitHub prerelease.
+- `trusted-publishing`
+  - Outcome: Make future npm releases use GitHub OIDC with one qualified artifact and no long-lived publish token.
   - State: active
-  - Gate: Reconcile the observed dist-tag deviation, then create the tag, push it and publish the GitHub prerelease through separate checkpoints.
-  - Evidence: Public npm version, matching registry integrity and bootstrap, immutable publication receipt, reconciliation record and exact release commit.
+  - Gate: Merge the manual release workflow, protect the `npm` environment, configure the exact npm trusted publisher and verify it live.
+  - Evidence: `.github/workflows/release.yml`, environment approval rules and `npm trust list @hairness/cli`.
+
+## Completed
+
+- `npm-alpha`
+  - Outcome: Published the public alpha with reconciled npm proof, an exact Git tag and a GitHub prerelease.
+  - State: completed
+  - Evidence: [npm package](https://www.npmjs.com/package/@hairness/cli/v/0.2.0-alpha.0), [GitHub prerelease](https://github.com/thevzion/hairness/releases/tag/v0.2.0-alpha.0), matching registry integrity and release receipts.
 
 ## Next
 

@@ -152,6 +152,11 @@ Hairness currently requires Node.js 22 or newer. The alpha is experimental, so
 use the `next` channel to follow prereleases or pin the exact version for a
 reproducible evaluation. No global installation is required.
 
+The first public alpha is available as
+[`@hairness/cli@0.2.0-alpha.0`](https://www.npmjs.com/package/@hairness/cli/v/0.2.0-alpha.0)
+and as a
+[GitHub prerelease](https://github.com/thevzion/hairness/releases/tag/v0.2.0-alpha.0).
+
 ```bash
 npx --yes @hairness/cli@next create ./my-hairness
 # or pin the exact version

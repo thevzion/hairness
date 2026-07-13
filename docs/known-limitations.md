@@ -5,6 +5,10 @@ These limitations apply to `0.2.0-alpha.0`.
 - The first npm alpha was published through `next`, but the registry also
   exposed `latest`. This observed deviation is not a stability guarantee. Pin
   `@hairness/cli@0.2.0-alpha.0` for reproducible evaluation.
+- The first alpha used a manual npm checkpoint. Future publication is designed
+  for `.github/workflows/release.yml`, but the protected GitHub environment
+  and npm trusted-publisher binding remain external configuration that must be
+  verified live for this repository.
 - Package publication, Git tagging and GitHub Release creation remain separate
   authority boundaries. A successful pull-request merge never grants them.
 - Protocol, command, capability and extension contracts may change before 1.0.

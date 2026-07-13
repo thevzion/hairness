@@ -19,9 +19,20 @@
 
 ## npm alpha
 
-- Complete package and clean-install smokes from the public history.
+- Published `@hairness/cli@0.2.0-alpha.0` through `next` with exact tarball,
+  registry, tag and GitHub prerelease evidence.
+- Reconciled the registry-created `latest` tag as an observed deviation rather
+  than a stable-channel promise.
 - Treat additional native Codex tasks and live Claude tasks as non-blocking alpha follow-up evidence after the required fresh Codex delivery dogfood.
-- Publish `@hairness/cli@0.2.0-alpha.0` only after a separate checkpoint.
+
+## Trusted publishing
+
+- Qualify future release commits under Node.js 22 and 24.
+- Produce one tarball, retain its SHA-256 and npm integrity, and transfer that
+  exact artifact to a protected `npm` environment.
+- Publish from `.github/workflows/release.yml` through npm OIDC without a
+  long-lived write token, then verify registry integrity, provenance and tags.
+- Keep Git tags and GitHub Releases outside the npm workflow.
 
 ## Alpha hardening
 
