@@ -38,7 +38,7 @@ Start with the [README](../README.md) for the product and commands, then use the
 - [Maintaining Hairness](maintaining.md)
 - [Releasing](releasing.md)
 - [Known limitations](known-limitations.md)
-- [0.2.0-alpha.0 release draft](releases/0.2.0-alpha.0.md)
+- [0.2.0-alpha.0 release notes](releases/0.2.0-alpha.0.md)
 - [Security model](security-model.md)
 - [Compatibility](compatibility.md)
 

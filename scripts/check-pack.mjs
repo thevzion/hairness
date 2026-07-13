@@ -6,7 +6,10 @@ import { join } from 'node:path'
 
 const exec = promisify(execFile)
 const root = new URL('../', import.meta.url).pathname
+const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url)))
 const retiredPackageName = ['@hairness', 'hairness'].join('/')
+const exactVersionAbsenceClaim = `${packageJson.name}@${packageJson.version} does not exist`
+const staleReleaseDraftLabel = `${packageJson.version} release draft`
 const { stdout } = await exec('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: root, encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 })
 const [pack] = JSON.parse(stdout)
 const files = pack.files.map((entry) => entry.path)
@@ -15,11 +18,13 @@ for (const path of files) {
   assert.ok(!/(^|\/)(?:\.overlay|node_modules|transcripts?|\.env)(?:\/|$)/.test(path), `tarball contains forbidden path ${path}`)
   if (path.startsWith('extensions/')) assert.ok(path.startsWith('extensions/hairness/'), `tarball contains non-generic extension ${path}`)
   if (path.startsWith('catalog/')) assert.ok(['catalog/minimal.json', 'catalog/standard.json', 'catalog/forge.json'].includes(path) || path.startsWith('catalog/materials/'), `tarball contains non-generic recipe ${path}`)
-  assert.ok(!String(await readFile(join(root, path))).includes(retiredPackageName), `tarball contains the retired package name in ${path}`)
+  const content = String(await readFile(join(root, path)))
+  assert.ok(!content.includes(retiredPackageName), `tarball contains the retired package name in ${path}`)
+  assert.ok(!content.includes(exactVersionAbsenceClaim), `tarball contains a stale exact-version absence claim in ${path}`)
+  assert.ok(!content.toLowerCase().includes(staleReleaseDraftLabel.toLowerCase()), `tarball contains a stale release-draft label in ${path}`)
 }
 for (const excluded of ['STATUS.md', 'ROADMAP.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'SPEC.md', 'SECURITY.md']) assert.ok(!files.includes(excluded), `tarball contains forge-only documentation ${excluded}`)
-assert.equal(pack.version, '0.2.0-alpha.0')
-const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url)))
+assert.equal(pack.version, packageJson.version)
 assert.equal(packageJson.name, '@hairness/cli')
 assert.deepEqual(packageJson.bin, { hairness: 'bin/hairness.mjs' })
 assert.equal(pack.name, packageJson.name)

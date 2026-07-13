@@ -2,8 +2,8 @@
 
 A Hairness release is an explicit `ReleaseDeliveryPlan`. Planning and
 validation may advance automatically, but publication always stops at a named
-authority boundary. The first npm alpha is published manually from one exact
-candidate; later versions will use GitHub Trusted Publishing behind a protected
+authority boundary. Initial npm alphas may be published manually from one exact
+candidate; later versions use GitHub Trusted Publishing behind a protected
 environment approval.
 
 ## Alpha policy
@@ -45,12 +45,12 @@ npm pack --dry-run --json
 npm publish --dry-run --access public --tag next
 ```
 
-Immediately before the first publish, Sources must revalidate:
+Immediately before publishing a version, Sources must revalidate:
 
 ```text
 npm identity is thevzion
-thevzion remains a package owner
-@hairness/cli@0.2.0-alpha.0 does not exist
+thevzion remains authorized to publish under @hairness
+the target package/version is absent before a first attempt, or matches the reconciled receipt after an unknown result
 latest is absent or unchanged
 package, version, registry, commit, tarball and digests match the candidate
 ```
@@ -84,4 +84,4 @@ it also introduces Trusted Publishing without `NPM_TOKEN`. The future workflow
 publishes one previously qualified artifact after approval by the protected
 `npm` environment and never creates a Git tag or GitHub Release.
 
-The prepared alpha notes live in [releases/0.2.0-alpha.0.md](releases/0.2.0-alpha.0.md).
+The alpha release notes live in [releases/0.2.0-alpha.0.md](releases/0.2.0-alpha.0.md).
