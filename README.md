@@ -73,6 +73,11 @@ hairness-cmd-plan-system-wire    plan system wiring
 hairness-cmd-plan-system-shape   plan target shape / reshape-system
 hairness-cmd-do-frame            act through a checkpoint
 hairness-cmd-do-plan             execute an accepted plan
+hairness-cmd-want-ship           draft one coherent change delivery brief
+hairness-cmd-ship-it             resolve only the next delivery boundary
+hairness-publish-pr              prepare commit, push and PR authority
+hairness-merge-pr                prepare squash-merge authority
+hairness-publish-release         prepare exact npm publication authority
 ```
 
 Codex invokes `$hairness-…`; Claude invokes `/hairness-…`. `make-*` stays in
@@ -124,6 +129,24 @@ authority, target expansion, or result validation. See the
 [effect-gate fixture](extensions/hairness/maintainer/testing/test-suites/provider-plan-effect-gate/test.mjs).
 
 The design goal is simple: hide the mechanics and surface the judgment.
+
+### Ship through conversation
+
+```text
+Human: $hairness-cmd-want-ship Add semantic PR checks
+Agent: [proposes type, outcome, acceptance, scope, branch and release impact]
+Human: accepted
+Agent: [promotes the brief and opens one ChangeDeliveryPlan]
+Human: $hairness-cmd-ship-it --auto
+Agent: [qualifies effect-free work, then stops at the exact branch checkpoint]
+Human: go
+Agent: [approves only that checkpoint and returns its executor capsule]
+```
+
+One coherent change maps to one pull request, not one release. A
+`ReleaseDeliveryPlan` later aggregates accepted conventional pull requests,
+freezes a changelog in a release PR, qualifies one tarball, and presents
+separate npm, Git tag and GitHub Release boundaries. No command chains them.
 
 ## Agentic assets are software
 
@@ -291,7 +314,7 @@ keeping the model inside the tool built for it.
 
 - Selecting an extension, command, source, mount, artifact, or worker grants no authority.
 - Observe and derive operations cannot request effects.
-- Effects require an exact checkpoint, current policy, worker capsule, target, and valid lock.
+- Effects require a stored exact checkpoint, current policy, worker capsule, target, and valid lock. `go` approves only the checkpoint currently displayed.
 - Tightening a constraint invalidates an incompatible grant.
 - Partial or unknown effects stop recovery and quarantine the affected target.
 - Hairness stores no transcript, hidden reasoning, secret, credential, customer data, or production data.

@@ -17,11 +17,14 @@ verb/object/qualifiers lexeme, OperationRef, named result, arguments, immutable
 controls, defaults, modifiers and instruction source. Provider names and the
 ResultContract are derived rather than duplicated in manifests.
 
-The standard alpha surface exposes 29 commands with exact Codex/Claude parity:
-the bridge, cockpit helpers, namespace guides, and the `hairness-cmd-*` intent
-nucleus. `make-*` requests a typed response. `save-*` promotes the last
-compatible result without resynthesis. `promotion=none|artifact|effect` is
-separate from progress; `--auto` changes progress only and grants no authority.
+The standard alpha surface exposes 29 commands. The forge adds five Delivery
+Controls for 34 total commands, with exact Codex/Claude parity. `make-*`
+requests a typed response. `save-*` promotes the last compatible result without
+resynthesis. `want-ship` drafts a brief; `ship-it` and the specialized PR,
+merge, and release commands expose one next boundary. `promotion=none|artifact|effect`
+is separate from progress; `--auto` changes progress only and grants no
+authority. A natural `go` can approve only the stored checkpoint currently
+shown by the agent.
 
 Removing an extension removes its commands at the next build. Internal CLI
 routes remain available for machine/debug use even when they are not projected

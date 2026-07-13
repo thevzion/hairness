@@ -34,7 +34,12 @@ flowchart TD
 
 The generic invocation store and event lifecycle live in the kernel. Operation lookup, preferences and trusted resolver contributions live in the distribution layer. Provider models may propose drafts but never mutate canonical invocation state directly.
 
-Forge-only Initiative and Delivery Controls sit above Work Controls. They preserve macro outcomes and sequential delivery evidence while delegating every Git or publication effect to an explicitly checkpointed native executor.
+Forge-only Initiative and Delivery Controls sit above Work Controls. They
+preserve macro outcomes, parallel change plans and aggregated release evidence
+while delegating every GitHub Flow or publication effect to a separately
+checkpointed native executor. GitHub and npm remain source drivers and URI
+targets; the kernel knows only plans, effects, policies, checkpoints, locks and
+receipts.
 
 ```text
 core owns grammar
@@ -77,7 +82,7 @@ Git tracked
 ~/.hairness (user local)
 ├── preferences
 ├── workspace and local-extension trust
-└── canonical-realpath locks
+└── canonical path and credential-free URI locks
 ```
 
 Tracked `.hairness/` state belongs to the distribution. Ignored `.overlay/` state belongs to the local workspace. Personal preferences and trust live in `~/.hairness/`. None of these locations activates an extension by presence.

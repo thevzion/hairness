@@ -70,7 +70,7 @@ The CLI MUST be deterministic and MUST NOT embed an LLM. Semantic choices MAY re
 
 ## 6. Plans, runs, and workers
 
-An Intent MUST state an outcome. A ContextPlan MUST contain routes and fan-in. An Assignment MUST contain its OperationRef, goal, outcome, workload, exact inputs, targets, exclusions, sources, requested effects, and ResultContract.
+An Intent MUST state an outcome. A ContextPlan MUST contain routes and fan-in. An Assignment MUST contain its OperationRef, goal, outcome, workload, exact inputs, targets, exclusions, sources, requested effects, and ResultContract. Requested effects MUST be a subset of the effects declared by the referenced Operation.
 
 A WorkerCapsule MUST expose only the assignment identity, OperationRef, profile, goal, outcome, precise inputs, targets, exclusions, allowlists, workload, ResultContract, and submit/fail/source/effect routes. Workers MUST NOT spawn nested workers in protocol `0.2`.
 
@@ -120,9 +120,9 @@ requested effect
 ∩ exact target and valid lock
 ```
 
-A checkpoint MUST show intent, resolved targets, effects, exclusions, proof, risk, and non-actions. Grants MUST be operation-scoped and store the effective policy digest. Policy MUST be recomputed before every effect; a newly denied effect MUST revoke the grant.
+A checkpoint MUST show intent, resolved targets, effects, exclusions, proof, risk, and non-actions. It MUST be stored with the Run before approval and MUST NOT exceed the Assignment. Approval MUST address the exact Run/checkpoint pair, revalidate the stored policy digest, acquire locks, and only then make the executor ready. Grants MUST be operation-scoped and store the effective policy digest. Policy MUST be recomputed before every effect; a newly denied effect MUST revoke the grant.
 
-Locks MUST use canonical target realpaths and be acquired atomically. A dirty target requires a recorded baseline and no overlap. Crash, partial receipt, or ambiguous state MUST produce `unknown` or a partial receipt and a recovery route. The kernel MUST NOT promise generic rollback.
+Locks MUST use canonical local realpaths or normalized credential-free URI target identities and be acquired atomically. URI targets MUST NOT contain credentials, query parameters or fragments. A dirty target requires a recorded baseline and no overlap. Crash, partial receipt, or ambiguous state MUST produce `unknown` or a partial receipt and a recovery route. The kernel MUST NOT promise generic rollback.
 
 ## 9. Extension contract
 

@@ -22,7 +22,7 @@ Constraint state is local and owner-scoped. It does not create semantic artifact
 
 ## Effects and safety
 
-Constraints deny effects; they never grant authority. Grants remain operation-scoped core records.
+Constraints deny effects; they never grant authority. `no-git` covers local Git and GitHub mutations. Grants remain operation-scoped core records.
 
 ## Providers
 

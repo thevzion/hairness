@@ -4,8 +4,9 @@ These limitations apply to `0.2.0-alpha.0`.
 
 - The npm package is prepared but not published. The documented `npx` flow is
   unavailable until a separate publication checkpoint completes.
-- Public npm/social launch is blocked until the ergonomic command surface is
-  dogfooded end-to-end in fresh Codex and Claude sessions.
+- Public npm launch is blocked until the ergonomic delivery surface is
+  dogfooded end-to-end in a fresh Codex task and its exact release candidate is
+  approved. Deterministic Codex/Claude projection parity remains mandatory.
 - Protocol, command, capability and extension contracts may change before 1.0.
   Exact version pinning is required.
 - Provider command files are lossy projections of Hairness metadata. The
@@ -18,13 +19,15 @@ These limitations apply to `0.2.0-alpha.0`.
   remain inspectable but are excluded from current attention alerts.
 - Codex and Claude provider projections use guarded agent-first-call routing
   where the host cannot guarantee a deterministic command hook.
-- The existing Codex attestation is not a cross-provider guarantee.
-  Deterministic fixtures do not prove native UI behavior by themselves.
-- Claude live qualification depends on a locally authenticated Claude CLI.
+- Fresh Codex dogfood is not a cross-provider runtime guarantee. Deterministic
+  fixtures prove projection parity, not native UI behavior on every host.
 - The community catalogue, PackManifest, remote registry and extension search
   are not implemented.
 - External routes define the boundary for execution loops and MCP-backed
   operations, but no generic loop adapter ships in this alpha.
+- Delivery Controls coordinates one session at a time. Workspace/global task
+  registries, leases, cross-session ownership, attention scheduling, autonomous
+  issue intake and PR-only loops remain post-alpha work.
 - Updates and migrations are conservative. Diverged source, changed
   dependencies, linked local extensions and edited managed regions require
   manual review. Hairness does not codemod arbitrary consumer code.
