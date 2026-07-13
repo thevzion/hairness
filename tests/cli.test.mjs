@@ -15,6 +15,22 @@ function stream() {
   }
 }
 
+test('CLI reserves a bare --version for the top-level command only', async () => {
+  const root = await temporaryWorkspace()
+  process.env.HAIRNESS_ROOT = root
+  const versionOut = stream(); const versionErr = stream()
+  assert.equal(await runCli(['--version'], { stdout: versionOut, stderr: versionErr }), 0)
+  assert.match(versionOut.read(), /^hairness 0\.2\.0-alpha\.0\nprotocol 0\.2\n$/)
+  assert.equal(versionErr.read(), '')
+
+  const nestedOut = stream(); const nestedErr = stream()
+  assert.equal(await runCli(['onboarding', 'status', '--version', '0.2.0-alpha.0', '--json'], { stdout: nestedOut, stderr: nestedErr }), 0)
+  const nested = JSON.parse(nestedOut.read())
+  assert.equal(nested.ok, true)
+  assert.equal(nested.data.state, 'new')
+  assert.equal(nestedErr.read(), '')
+})
+
 test('CLI returns a versioned JSON envelope', async () => {
   const root = await temporaryWorkspace()
   process.env.HAIRNESS_ROOT = root

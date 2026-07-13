@@ -14,6 +14,12 @@ reported by the CLI.
 
 ## Release candidate
 
+Start the explicit release plan with a nested version argument:
+
+```bash
+hairness delivery plan --kind release --version <version> --baseline <commit-or-tag>
+```
+
 1. Collect all conventional pull requests merged since the previous tag, or
    the configured bootstrap baseline when no tag exists. Exclude release PRs
    and `releaseImpact: none`.
