@@ -18,6 +18,11 @@ test('contract validation rejects unexpected fields', async () => {
   )
 })
 
+test('change receipts may bind proof to an exact repository head', async () => {
+  const receipt = { schemaVersion: 2, protocolVersion: '0.2', runId: 'delivery-run', status: 'succeeded', summary: 'Published the pull request.', targets: ['github://example/widget/pulls/fix/release'], files: [], effects: ['github:pull-request'], tests: [], proof: ['pr:42'], head: 'abc1234', limits: [], routes: [] }
+  assert.equal((await validateContract('ChangeReceipt', receipt)).head, 'abc1234')
+})
+
 test('host capability reports the honest provider intent path', async () => {
   const value = await validateContract('HostCapabilities', { schemaVersion: 2, protocolVersion: '0.2', host: 'codex', level: 'guarded', intentPath: 'agent-first-call', capabilities: { sessionStart: true }, limits: ['no native command hook'] })
   assert.equal(value.intentPath, 'agent-first-call')

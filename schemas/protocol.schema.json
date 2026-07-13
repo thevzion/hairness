@@ -555,6 +555,7 @@
         },
         "tests": { "type": "array", "items": { "type": "string" } },
         "proof": { "type": "array", "items": { "type": "string" } },
+        "head": { "type": ["string", "null"] },
         "limits": { "type": "array", "items": { "type": "string" } },
         "routes": { "type": "array", "items": { "type": "string" } }
       }

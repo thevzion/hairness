@@ -14,7 +14,7 @@ Owns brief drafting/promotion, idempotent change and release plans, next-boundar
 
 ## Inputs, controls and results
 
-An initiative may carry multiple parallel change plans. Each external effect requires fresh policy/evidence, one stored checkpoint and a correlated typed receipt.
+An initiative may carry multiple parallel change plans. Each external effect requires fresh policy/evidence, one stored checkpoint and a correlated typed receipt. Release PR, CI and merge receipts share the exact pull-request head; verification, qualification and the release candidate share the exact public `main` commit.
 
 ## State and artifacts
 
@@ -30,4 +30,4 @@ Projects `hairness-cmd-want-ship`, `hairness-cmd-ship-it`, `hairness-publish-pr`
 
 ## Tests and maturity
 
-Experimental alpha. Tests prove parallel/idempotent plans, generic policy, stale gates, diff-bound PR proposals, release aggregation, safe auto mode and zero provider effects from handlers.
+Experimental alpha. Tests prove parallel/idempotent plans, generic policy, stale gates, diff-bound PR proposals, the complete release PR lifecycle, release aggregation, safe auto mode and zero provider effects from handlers.
