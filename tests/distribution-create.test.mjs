@@ -22,7 +22,7 @@ test('create collects one gap at a time and materializes standalone sources', as
   await access(join(target, 'src/cli.mjs'))
   await assert.rejects(access(join(target, 'catalog/extensions/hairness/cockpit/extension.json')))
   const manifest = JSON.parse(await readFile(join(target, 'hairness.json')))
-  assert.equal(manifest.generatedFrom.source, '@hairness/hairness')
+  assert.equal(manifest.generatedFrom.source, '@hairness/cli')
   assert.equal(manifest.role, 'distribution')
   assert.equal(manifest.catalogRoots.length, 0)
   assert.equal(manifest.extensions.length, 10)
@@ -37,6 +37,8 @@ test('create collects one gap at a time and materializes standalone sources', as
   assert.doesNotMatch(await readFile(join(target, 'src/cli.mjs'), 'utf8'), /Users\/alexisrobert\/Projects\/hairness/)
   assert.deepEqual(await readdir(join(target, 'schemas')).then((names) => names.sort()), ['capability.schema.json', 'distribution.schema.json', 'extension.schema.json', 'protocol.schema.json'])
   const lock = JSON.parse(await readFile(join(target, 'hairness.lock.json'), 'utf8'))
+  assert.equal(lock.generatedFrom.source, '@hairness/cli')
+  assert.equal(lock.updateSource.spec, '@hairness/cli')
   assert.ok(lock.materials.some((material) => material.scope === 'material-set:runtime'))
 })
 

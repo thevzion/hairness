@@ -1,5 +1,5 @@
 {
-  "name": "@hairness/hairness",
+  "name": "@hairness/cli",
   "version": "0.2.0-alpha.0",
   "description": "The intent control layer for native AI agents and source-owned agentic assets.",
   "private": false,

@@ -7,14 +7,14 @@
     "digest": "sha256:920cdcbe53623727a63b468327a2783977998d2d9cb918edfbc8dd116da92c6f"
   },
   "generatedFrom": {
-    "source": "@hairness/hairness",
+    "source": "@hairness/cli",
     "implementationVersion": "0.2.0-alpha.0",
     "protocolVersion": "0.2",
     "createdAt": "2026-07-12T11:35:57.698Z"
   },
   "updateSource": {
     "kind": "npm",
-    "spec": "@hairness/hairness",
+    "spec": "@hairness/cli",
     "channel": "next"
   },
   "materials": [
@@ -270,4 +270,3 @@
     }
   ]
 }
-

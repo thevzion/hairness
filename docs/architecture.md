@@ -47,7 +47,7 @@ providers own execution
 
 ```mermaid
 flowchart LR
-  package["@hairness/hairness"] --> recipe["minimal · standard · forge recipe"]
+  package["@hairness/cli"] --> recipe["minimal · standard · forge recipe"]
   recipe --> generated["Standalone source-owned repository"]
   generated --> codex["Codex projection"]
   generated --> claude["Claude projection"]

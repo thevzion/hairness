@@ -6,6 +6,7 @@ import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
+import packageJson from '../../package.json' with { type: 'json' }
 import { HairnessError } from '../core/errors.mjs'
 import { PROTOCOL_VERSION, SCHEMA_VERSION, readJson, userPaths, writeJsonAtomic } from '../core/io.mjs'
 import { validateContract } from '../core/contracts.mjs'
@@ -13,7 +14,8 @@ import { digestMaterial } from '../distribution/update-engine.mjs'
 
 const exec = promisify(execFile)
 const sourceRoot = fileURLToPath(new URL('../../', import.meta.url))
-const implementationVersion = '0.2.0-alpha.0'
+const implementationVersion = packageJson.version
+const packageName = packageJson.name
 
 function slug(value) {
   const output = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -277,8 +279,8 @@ async function distributionLock(state, selectedRecipe, extensions, graph) {
     protocolVersion: '0.2',
     role: state.role,
     recipe: { id: selectedRecipe.id, digest: `sha256:${createHash('sha256').update(JSON.stringify(selectedRecipe)).digest('hex')}` },
-    generatedFrom: { source: '@hairness/hairness', implementationVersion, protocolVersion: '0.2', createdAt: new Date().toISOString() },
-    updateSource: { kind: 'npm', spec: '@hairness/hairness', channel: 'next' },
+    generatedFrom: { source: packageName, implementationVersion, protocolVersion: '0.2', createdAt: new Date().toISOString() },
+    updateSource: { kind: 'npm', spec: packageName, channel: 'next' },
     materials,
   }
 }
@@ -308,7 +310,7 @@ export async function applyCreate(id, checkpointId, options = {}) {
     displayName: state.answers.displayName,
     providerPrefix: slug(state.answers.providerPrefix),
     ...(state.answers.cliAlias !== 'none' ? { cliAlias: slug(state.answers.cliAlias) } : {}),
-    generatedFrom: { source: '@hairness/hairness', implementationVersion, protocolVersion: PROTOCOL_VERSION, createdAt: new Date().toISOString() },
+    generatedFrom: { source: packageName, implementationVersion, protocolVersion: PROTOCOL_VERSION, createdAt: new Date().toISOString() },
     core: './src/core/index.mjs',
     defaults: { interaction: { language: state.answers.language } },
     extensions: activeExtensions.map((extensionId) => ({ id: extensionId, path: `./extensions/${extensionId}` })),
