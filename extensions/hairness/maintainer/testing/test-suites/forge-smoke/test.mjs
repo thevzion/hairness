@@ -8,7 +8,7 @@ export default {
     await command(['onboarding', 'apply', '--checkpoint', plan.checkpointId])
     checks.push({ name: 'onboarding', ok: true })
     await command(['build', '--check'])
-    const opening = await command(['session', 'opening', '--host', 'codex'], 500)
+    const opening = await command(['opening', '--host', 'codex'], 500)
     await write('evidence/session-opening.json', opening)
     checks.push({ name: 'session-opening-language', ok: opening.profile.language === 'fr' && opening.instruction.includes('fr') })
   },
