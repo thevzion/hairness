@@ -11,7 +11,9 @@
     "adapters": [],
     "schemas": [],
     "gates": [],
-    "onboarding": [],
+    "onboarding": [
+      { "id": "codebase.focus", "question": "Which part of the first Target should the agent learn first?", "when": { "targetPresent": true }, "explanation": "Maps stay focused and rely on live source evidence." }
+    ],
     "tests": []
   }
 }

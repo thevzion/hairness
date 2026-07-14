@@ -16,7 +16,9 @@
     "adapters": [],
     "schemas": [],
     "gates": [],
-    "onboarding": [],
+    "onboarding": [
+      { "id": "work.boundaries", "question": "Which decisions or handoffs should become durable Scratch notes?", "explanation": "Hairness records semantic boundaries, never a transcript." }
+    ],
     "tests": []
   }
 }

@@ -23,5 +23,5 @@ async function testFiles(directory) {
 const extensionTests = (await Promise.all(extensionIds.map((id) => testFiles(join(root, 'extensions', ...id.split('/'), 'tests'))))).flat()
 const files = [...await testFiles(join(root, 'tests')), ...extensionTests].sort()
 
-const child = spawn(process.execPath, ['--test', ...files], { stdio: 'inherit' })
+const child = spawn(process.execPath, ['--test', '--test-concurrency=1', ...files], { stdio: 'inherit' })
 child.on('exit', (code, signal) => process.exit(signal ? 1 : code ?? 1))

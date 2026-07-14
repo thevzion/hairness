@@ -26,13 +26,13 @@ export async function inspectExtension(path) {
 }
 
 export async function resolveExtensionSource(source, options = {}) {
-  if (/^https?:\/\//.test(source) || /^git@/.test(source)) return resolveGitSource(source, options)
+  if (/^(?:https?|file):\/\//.test(source) || /^git@/.test(source)) return resolveGitSource(source, options)
   const path = source.startsWith('.') || source.startsWith('/') ? resolve(options.cwd ?? process.cwd(), source) : officialPath(source)
   const inspected = await inspectExtension(path)
   const kind = path.startsWith(officialRoot) ? 'official' : 'path'
   return {
     ...inspected,
-    provenance: { kind, source, requestedRef: null, resolvedCommit: null, path: '.', digest: inspected.digest },
+    provenance: { kind, source: kind === 'path' ? path : source, requestedRef: null, resolvedCommit: null, path: '.', digest: inspected.digest },
     cleanup: async () => {},
   }
 }
@@ -97,4 +97,3 @@ export function validateComposition(extensions) {
   }
   return { capabilities, recipes }
 }
-
