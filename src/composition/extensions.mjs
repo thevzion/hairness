@@ -70,7 +70,8 @@ async function resolveGitSource(source, options) {
 export async function activeExtensions(root, home) {
   const values = []
   for (const id of home.spec.extensions) {
-    const installed = join(root, 'extensions', ...id.split('/'))
+    let installed = join(root, 'extensions', ...id.split('/'))
+    if (!await exists(join(installed, 'extension.json'))) installed = join(root, 'assets', 'extensions', ...id.split('/'))
     values.push(await inspectExtension(installed))
   }
   validateComposition(values)

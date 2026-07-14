@@ -1,5 +1,0 @@
-# hairness:begin id="agent-limits" owner="hairness/cockpit" schema="1" digest="sha256:5445ecedb3b2bac637f2031ba276cf7ce7d0e5a5fcd629edf8056055bc6e13b4"
-[agents]
-max_threads = 3
-max_depth = 1
-# hairness:end id="agent-limits"

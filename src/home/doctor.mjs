@@ -21,9 +21,12 @@ export async function doctorHome(root, options = {}) {
     if (current !== entry.installedBaseDigest) limits.push(`extension-diverged:${entry.id}`)
   }
   if (!options.allowMissingDependency) {
-    await access(join(root, 'node_modules', '@hairness', 'cli', 'package.json')).catch(() => {
-      throw new HairnessError('dependency_missing', 'Run npm install to restore the pinned @hairness/cli runtime.')
-    })
+    const localPackage = await readJson(join(root, 'package.json'), {})
+    if (localPackage.name !== '@hairness/cli') {
+      await access(join(root, 'node_modules', '@hairness', 'cli', 'package.json')).catch(() => {
+        throw new HairnessError('dependency_missing', 'Run npm install to restore the pinned @hairness/cli runtime.')
+      })
+    }
   }
   await buildProviders(root, { check: true })
   const bindings = await targetBindings(home)
@@ -39,4 +42,3 @@ export async function doctorHome(root, options = {}) {
   }
   return { status: limits.length ? 'partial' : 'ready', home: home.metadata.id, extensions: extensions.map((item) => item.manifest.metadata.id), providers: home.spec.providers, targets, limits }
 }
-

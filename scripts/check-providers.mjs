@@ -1,22 +1,22 @@
 import assert from 'node:assert/strict'
-import { access, readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { buildProviders } from '../src/providers/compiler.mjs'
+import { createHome } from '../src/home/create.mjs'
 
-const root = new URL('../', import.meta.url).pathname.replace(/\/$/, '')
-await buildProviders(root, { check: true })
-const manifest = JSON.parse(await readFile(join(root, 'hairness.build.json'), 'utf8'))
-assert.deepEqual(manifest.providers, ['codex', 'claude'])
-assert.equal(new Set(manifest.commands.map((command) => command.name)).size, manifest.commands.length, 'provider command collision')
-for (const command of manifest.commands) {
-  const codex = join(root, '.agents/skills', command.name, 'SKILL.md')
-  const claude = join(root, '.claude/skills', command.name, 'SKILL.md')
-  await access(codex)
-  await access(claude)
-  const content = await readFile(codex, 'utf8')
-  assert.ok(Buffer.byteLength(content) <= (command.name === 'hairness' ? 2048 : 1024), `${command.name} exceeds its instruction budget`)
+const root = await mkdtemp(join(tmpdir(), 'hairness-provider-check-'))
+process.env.HAIRNESS_STATE_HOME = join(root, 'state')
+try {
+  const home = join(root, 'home')
+  const result = await createHome(home, { preset: 'standard', language: 'en', providers: ['codex', 'claude'], overlayGit: false, install: false })
+  assert.equal(result.status, 'created')
+  const commands = ['hairness', 'hairness-onboarding', 'hairness-scratch', 'hairness-discuss', 'hairness-map', 'hairness-ideate', 'hairness-propose', 'hairness-recap', 'hairness-plan', 'hairness-ship']
+  for (const command of commands) {
+    assert.match(await readFile(join(home, '.agents/skills', command, 'SKILL.md'), 'utf8'), new RegExp(`\\$${command}`))
+    assert.match(await readFile(join(home, '.claude/skills', command, 'SKILL.md'), 'utf8'), new RegExp(`/${command}`))
+  }
+  console.log('provider projection gate passed (10 commands, Codex/Claude)')
+} finally {
+  delete process.env.HAIRNESS_STATE_HOME
+  await rm(root, { recursive: true, force: true })
 }
-const producer = await readFile(join(root, '.codex/agents/hairness-producer.toml'), 'utf8')
-assert.match(producer, /Do not load the main-session cockpit/)
-assert.match(producer, /Never mutate a target codebase/)
-console.log(`provider projection gate passed (${manifest.commands.length} commands, Codex/Claude)`)

@@ -1,2 +1,0 @@
-import { forgeActor, onboard, ok } from '../_shared.mjs'
-export default { id: 'session-opening-fr', actor: forgeActor, async test({ command, checks }) { await onboard(command); const opening = await command(['session', 'opening', '--host', 'codex'], 500); ok(checks, 'language-fr', opening.profile.language === 'fr' && opening.instruction.includes('commentary, questions and final answers')); ok(checks, 'opening-budget', opening.byteSize < 4096) } }

@@ -1,96 +1,19 @@
 {
-  "$schema": "./schemas/distribution.schema.json",
-  "schemaVersion": 2,
-  "protocolVersion": "0.2",
-  "implementationVersion": "0.2.0-alpha.0",
-  "role": "forge",
-  "catalogRoots": ["./catalog", "./extensions"],
-  "name": "hairness",
-  "displayName": "Hairness",
-  "providerPrefix": "hairness",
-  "core": "./src/core/index.mjs",
-  "defaults": {
-    "interaction": { "language": "en", "mode": "auto", "budget": "balanced" },
-    "session": { "transcript": false },
-    "maintenance": { "gitWarnings": true },
-    "delivery": {
-      "profile": "github-flow",
-      "repository": "thevzion/hairness",
-      "baseBranch": "main",
-      "branchTypes": ["feat", "fix", "docs", "refactor", "perf", "test", "build", "ci", "chore", "release"],
-      "branchPattern": "^(?:(feat|fix|docs|refactor|perf|test|build|ci|chore)/[a-z0-9]+(?:-[a-z0-9]+)*|release/[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)$",
-      "merge": { "method": "squash", "deleteBranch": true, "linearHistory": true, "resolveConversations": true },
-      "requiredChecks": ["test (22)", "test (24)", "delivery policy"],
-      "evidenceMaxAgeMinutes": 30,
-      "release": {
-        "package": "@hairness/cli",
-        "registry": "https://registry.npmjs.org/",
-        "versionSource": "package.json",
-        "prereleaseTag": "next",
-        "gitTagFormat": "v{version}",
-        "githubRelease": "prerelease",
-        "bootstrapBaseline": "22201ddea642f7bc852e7ac43d6765cd98c6fe3b"
-      }
-    }
-  },
-  "extensions": [
-    {
-      "id": "hairness/cockpit",
-      "path": "./extensions/hairness/cockpit"
-    },
-    {
-      "id": "hairness/distribution",
-      "path": "./extensions/hairness/distribution"
-    },
-    {
-      "id": "hairness/work-controls",
-      "path": "./extensions/hairness/work-controls"
-    },
-    {
-      "id": "hairness/understanding-controls",
-      "path": "./extensions/hairness/understanding-controls"
-    },
-    {
-      "id": "hairness/ideation-controls",
-      "path": "./extensions/hairness/ideation-controls"
-    },
-    {
-      "id": "hairness/presentation-controls",
-      "path": "./extensions/hairness/presentation-controls"
-    },
-    {
-      "id": "hairness/constraints",
-      "path": "./extensions/hairness/constraints"
-    },
-    {
-      "id": "hairness/session-intelligence",
-      "path": "./extensions/hairness/session-intelligence"
-    },
-    {
-      "id": "hairness/maintainer",
-      "path": "./extensions/hairness/maintainer"
-    },
-    {
-      "id": "hairness/initiative-controls",
-      "path": "./extensions/hairness/initiative-controls"
-    },
-    {
-      "id": "hairness/delivery-controls",
-      "path": "./extensions/hairness/delivery-controls"
-    },
-    {
-      "id": "hairness/codebase",
-      "path": "./extensions/hairness/codebase"
-    },
-    {
-      "id": "hairness/sources",
-      "path": "./extensions/hairness/sources"
-    }
-  ],
-  "sources": [
-    { "id": "git", "requirement": "required" },
-    { "id": "github", "requirement": "required" },
-    { "id": "npm", "requirement": "required" }
-  ],
-  "codebases": []
+  "apiVersion": "hairness.dev/home/v1alpha1",
+  "kind": "Home",
+  "metadata": { "id": "hairness-dev" },
+  "spec": {
+    "language": "en",
+    "providers": ["codex", "claude"],
+    "extensions": [
+      "hairness/cockpit",
+      "hairness/work",
+      "hairness/sources",
+      "hairness/codebase",
+      "hairness/delivery",
+      "hairness/maintainer"
+    ],
+    "targets": [],
+    "overlay": { "git": false, "snapshot": "manual" }
+  }
 }

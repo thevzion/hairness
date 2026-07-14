@@ -1,51 +1,14 @@
 import assert from 'node:assert/strict'
-import { validateContract, validateSchemaSet } from '../src/core/contracts.mjs'
-import { reducePlan, validateContextPlan } from '../src/core/fan-in.mjs'
+import { readFile } from 'node:fs/promises'
+import { validateDocument } from '../src/contracts/index.mjs'
+import { inspectExtension, validateComposition } from '../src/composition/extensions.mjs'
 
-await validateSchemaSet()
-
-const intent = {
-  schemaVersion: 2,
-  protocolVersion: '0.2',
-  id: 'conformance-intent',
-  summary: 'Prove protocol fan-in.',
-  outcome: 'A bounded ContextPacket.',
-  targets: [],
-  limits: [],
-}
-const route = {
-  schemaVersion: 2,
-  protocolVersion: '0.2',
-  id: 'conformance-route',
-  operation: { capability: 'conformance/proof', id: 'reduce' },
-  kind: 'deterministic',
-  requirement: 'required',
-  resultSchema: 'RunResult',
-  fanIn: 'conformance-fan-in',
-}
-const plan = {
-  schemaVersion: 2,
-  protocolVersion: '0.2',
-  id: 'conformance-plan',
-  intent,
-  routes: [route],
-  fanIn: { id: 'conformance-fan-in', mode: 'mechanical' },
-}
-const result = {
-  schemaVersion: 2,
-  protocolVersion: '0.2',
-  runId: route.id,
-  status: 'succeeded',
-  summary: 'Conformance route completed.',
-  outcome: {},
-  proof: ['schema:validated'],
-  limits: [],
-  routes: [],
-}
-
-await validateContextPlan(plan)
-await validateContract('RunResult', result)
-const packet = await reducePlan(plan, [result])
-assert.equal(packet.status, 'succeeded')
-assert.ok(packet.byteSize <= 8192)
-console.log(`protocol 0.2 conformance passed (${packet.byteSize} byte ContextPacket)`)
+const fixture = JSON.parse(await readFile(new URL('../tests/fixtures/v0.3/golden-home.json', import.meta.url), 'utf8'))
+await validateDocument(fixture, 'Home')
+const extensions = []
+for (const id of fixture.spec.extensions) extensions.push(await inspectExtension(new URL(`../assets/extensions/${id}/`, import.meta.url).pathname))
+const composition = validateComposition(extensions)
+assert.equal(composition.capabilities.size, 5)
+assert.equal(composition.recipes.size, 10)
+assert.equal(JSON.stringify(fixture).includes('protocolVersion'), false)
+console.log('v0.3 conformance passed (Home + 5 extensions + 10 recipes)')

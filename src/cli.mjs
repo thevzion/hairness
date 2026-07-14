@@ -1,39 +1,213 @@
-import { access, readFile, readdir, rm } from 'node:fs/promises'
-import { join } from 'node:path'
-import packageJson from '../package.json' with { type: 'json' }
+import { readFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { listArtifacts, saveArtifact, showArtifact, validateArtifact } from './artifacts/index.mjs'
+import { inspectExtension } from './composition/extensions.mjs'
 import {
-  HairnessError,
-  annotateArtifact,
-  approveCheckpoint,
-  appendRunEvent,
-  artifactHistory,
-  artifactGraph,
-  asHairnessError,
-  assertEffectAllowed,
-  buildWorkerCapsule,
-  ensureOverlay,
-  findWorkspaceRoot,
-  listLocks,
-  listArtifacts,
-  readArtifact,
-  readJson,
-  readPlan,
-  readRun,
-  readRunResult,
-  promoteArtifact,
-  quarantineLocks,
-  reduceStoredPlan,
-  releaseLocks,
-  resolveLock,
-  stageArtifact,
-  submitRunResult,
-  transitionRun,
-  workspacePaths,
-  validateContract,
-  writeJsonAtomic,
-} from './core/index.mjs'
+  applyExtensionPlan,
+  initializeExtension,
+  listExtensions,
+  prepareExtensionAdd,
+  prepareExtensionAdopt,
+  prepareExtensionRemove,
+  prepareExtensionUpdate,
+} from './composition/lifecycle.mjs'
+import {
+  acceptDeliveryBrief,
+  preparePullRequest,
+  releaseCheckout,
+  runDeliveryGates,
+  selectCheckout,
+} from './delivery/index.mjs'
+import { asHairnessError, HairnessError } from './lib/errors.mjs'
+import { findHome } from './home/index.mjs'
+import { createHome } from './home/create.mjs'
+import { doctorHome } from './home/doctor.mjs'
+import { runCreateWizard } from './home/wizard.mjs'
+import { sessionOpening } from './opening.mjs'
+import { answerOnboarding, applyOnboarding, onboardingStatus, planOnboarding } from './onboarding/index.mjs'
+import { applyAdapterEffect, prepareAdapterEffect, runAdapter } from './operations/adapters.mjs'
+import { archiveOverlay, overlayStatus, snapshotOverlay } from './overlay/index.mjs'
+import { buildProviders } from './providers/v3-compiler.mjs'
+import {
+  createScratch,
+  importScratch,
+  listScratches,
+  noteScratch,
+  setScratchStatus,
+  showScratch,
+  useScratch,
+} from './scratch/index.mjs'
+import { applyTargetPlan, doctorTargets, listTargets, prepareTargetAdd, prepareTargetRemove } from './targets/index.mjs'
 
-const PROTOCOL_VERSION = '0.2'
+const packageDocument = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'))
+
+export async function runCli(argv = process.argv.slice(2), io = { stdin: process.stdin, stdout: process.stdout, stderr: process.stderr }) {
+  const { positionals, flags } = parseArguments(argv)
+  try {
+    if (flags.version || positionals[0] === 'version') return write(io.stdout, packageDocument.version)
+    const result = await route(positionals, flags, io)
+    write(io.stdout, flags.json ? JSON.stringify({ ok: true, data: result, limits: result?.limits ?? [], routes: result?.routes ?? [] }) : renderHuman(result))
+    return 0
+  } catch (caught) {
+    const error = asHairnessError(caught)
+    const output = { ok: false, error: { code: error.code, message: error.message, details: error.details }, limits: error.limits, routes: error.routes }
+    write(io.stderr, flags.json ? JSON.stringify(output) : `${error.code}: ${error.message}`)
+    return error.exitCode
+  }
+}
+
+async function route(positionals, flags, io) {
+  const [namespace, action, ...rest] = positionals
+  if (!namespace || namespace === 'help') return help()
+  if (namespace === 'create') {
+    if (!action) throw usage('hairness create <home> [--preset minimal|standard] [--from <path>]')
+    const options = createOptions(flags)
+    return flags.yes ? createHome(action, options) : runCreateWizard(action, options)
+  }
+  const root = await findHome(flags.home ?? process.cwd())
+  if (namespace === 'build') return buildProviders(root, { check: Boolean(flags.check) })
+  if (namespace === 'doctor') return doctorHome(root)
+  if (namespace === 'opening') return sessionOpening(root)
+  if (namespace === 'onboarding') return onboardingRoute(root, action, rest, flags)
+  if (namespace === 'extension') return extensionRoute(root, action, rest, flags)
+  if (namespace === 'target') return targetRoute(root, action, rest, flags)
+  if (namespace === 'scratch') return scratchRoute(root, action, rest, flags)
+  if (namespace === 'artifact') return artifactRoute(root, action, rest, flags, io)
+  if (namespace === 'overlay') return overlayRoute(root, action, flags)
+  if (namespace === 'operation') return operationRoute(root, action, rest, flags, io)
+  if (namespace === 'delivery') return deliveryRoute(root, action, rest, flags, io)
+  throw new HairnessError('unknown_command', `Unknown command: ${namespace}.`)
+}
+
+async function onboardingRoute(root, action, rest, flags) {
+  if (action === 'status') return onboardingStatus(root)
+  if (action === 'answer') {
+    if (!rest[0]) throw usage('hairness onboarding answer <question-id> --value <answer>')
+    return answerOnboarding(root, rest[0], String(flags.value ?? rest.slice(1).join(' ')))
+  }
+  if (action === 'plan') return planOnboarding(root)
+  if (action === 'apply') {
+    const checkpoint = rest[0] ?? flags.checkpoint
+    if (!checkpoint) throw usage('hairness onboarding apply <checkpoint-id>')
+    return applyOnboarding(root, checkpoint)
+  }
+  throw usage('hairness onboarding status|answer|plan|apply')
+}
+
+async function extensionRoute(root, action, rest, flags) {
+  if (action === 'list') return listExtensions(root)
+  if (action === 'init') {
+    if (!rest[0]) throw usage('hairness extension init <owner/name> [--path <directory>]')
+    return initializeExtension(flags.path ?? join(process.cwd(), 'extensions', ...rest[0].split('/')), rest[0])
+  }
+  if (action === 'doctor') {
+    if (!rest[0]) return doctorHome(root)
+    return inspectExtension(join(root, 'extensions', ...rest[0].split('/')))
+  }
+  if (flags.checkpoint) return applyExtensionPlan(root, flags.checkpoint)
+  if (action === 'adopt') {
+    if (!rest[0]) throw usage('hairness extension adopt <path>')
+    return prepareExtensionAdopt(root, rest[0])
+  }
+  if (action === 'add') {
+    if (!rest[0]) throw usage('hairness extension add <source> [--ref <ref>] [--path <subtree>]')
+    return prepareExtensionAdd(root, rest[0], { ref: flags.ref, path: flags.path, cwd: process.cwd() })
+  }
+  if (action === 'update') {
+    if (flags.all) {
+      const values = []
+      for (const extension of await listExtensions(root)) values.push(await prepareExtensionUpdate(root, extension.id))
+      return values
+    }
+    if (!rest[0]) throw usage('hairness extension update <id|--all>')
+    return prepareExtensionUpdate(root, rest[0])
+  }
+  if (action === 'remove') {
+    if (!rest[0]) throw usage('hairness extension remove <id>')
+    return prepareExtensionRemove(root, rest[0])
+  }
+  throw usage('hairness extension list|init|adopt|add|update|remove|doctor')
+}
+
+async function targetRoute(root, action, rest, flags) {
+  if (action === 'list') return listTargets(root)
+  if (action === 'doctor') return doctorTargets(root)
+  if (flags.checkpoint) return applyTargetPlan(root, flags.checkpoint)
+  if (action === 'add') {
+    if (!rest[0]) throw usage('hairness target add <repository> [--id <id>]')
+    return prepareTargetAdd(root, rest[0], flags.id)
+  }
+  if (action === 'remove') {
+    if (!rest[0]) throw usage('hairness target remove <id>')
+    return prepareTargetRemove(root, rest[0])
+  }
+  throw usage('hairness target list|add|remove|doctor')
+}
+
+async function scratchRoute(root, action, rest, flags) {
+  if (action === 'list') return listScratches(root)
+  if (action === 'show') return showScratch(root, required(rest[0], 'Scratch id'))
+  if (action === 'create') return createScratch(root, { id: flags.id, title: rest.join(' ') || flags.title, context: flags.context, use: !flags['no-use'] })
+  if (action === 'use') return useScratch(root, required(rest[0], 'Scratch id'))
+  if (action === 'note') return noteScratch(root, { id: flags.id, kind: flags.kind, text: flags.text ?? rest.join(' ') })
+  if (action === 'park' || action === 'close') return setScratchStatus(root, required(rest[0], 'Scratch id'), action === 'park' ? 'parked' : 'closed')
+  if (action === 'import') return importScratch(root, required(rest[0], 'source path'), { id: flags.id, title: flags.title, use: !flags['no-use'] })
+  if (action === 'snapshot') return snapshotOverlay(root, { message: flags.message })
+  throw usage('hairness scratch list|show|create|use|note|park|close|import|snapshot')
+}
+
+async function artifactRoute(root, action, rest, flags, io) {
+  if (action === 'list') return listArtifacts(root)
+  if (action === 'show') return showArtifact(root, ...artifactIdentity(rest))
+  if (action === 'validate') return validateArtifact(root, ...artifactIdentity(rest))
+  if (action === 'save') {
+    const [owner, type, id] = artifactIdentity(rest)
+    const mediaType = flags.media ?? 'text/markdown'
+    const payload = await payloadInput(flags, io, mediaType)
+    return saveArtifact(root, { owner, type, id, mediaType, payload, provenance: flags.provenance ? JSON.parse(flags.provenance) : {} })
+  }
+  throw usage('hairness artifact list|show|save|validate')
+}
+
+async function overlayRoute(root, action, flags) {
+  if (action === 'status') return overlayStatus(root)
+  if (action === 'snapshot') return snapshotOverlay(root, { message: flags.message })
+  if (action === 'archive') return archiveOverlay(root)
+  throw usage('hairness overlay status|snapshot|archive')
+}
+
+async function operationRoute(root, action, rest, flags, io) {
+  if (action === 'run') return runAdapter(root, required(rest[0], 'adapter reference'), await jsonInput(flags, io))
+  if (action === 'prepare') return prepareAdapterEffect(root, required(rest[0], 'adapter reference'), await jsonInput(flags, io))
+  if (action === 'apply') return applyAdapterEffect(root, required(rest[0], 'checkpoint id'))
+  throw usage('hairness operation run|prepare|apply')
+}
+
+async function deliveryRoute(root, action, rest, flags, io) {
+  const input = ['brief', 'checkout', 'prepare-pr'].includes(action) ? await jsonInput(flags, io) : null
+  if (action === 'brief') return acceptDeliveryBrief(root, input)
+  if (action === 'checkout') return selectCheckout(root, input)
+  if (action === 'gate') return runDeliveryGates(root, required(rest[0], 'gate stage'), flags.inputs ? JSON.parse(flags.inputs) : {})
+  if (action === 'prepare-pr') return preparePullRequest(root, input)
+  if (action === 'release-checkout') return releaseCheckout(root, required(rest[0], 'Target id'), required(rest[1], 'Scratch id'))
+  throw usage('hairness delivery brief|checkout|gate|prepare-pr|release-checkout')
+}
+
+function createOptions(flags) {
+  return {
+    preset: flags.preset,
+    from: flags.from,
+    language: flags.language,
+    providers: flags.providers ? String(flags.providers).split(',') : undefined,
+    target: flags.target === 'skip' ? null : flags.target,
+    targetId: flags['target-id'],
+    overlayGit: flags['overlay-git'] === undefined ? undefined : booleanFlag(flags['overlay-git']),
+    snapshot: flags.snapshot,
+    packageSpec: flags['package-spec'] ?? process.env.HAIRNESS_PACKAGE_SPEC,
+    yes: flags.yes === undefined ? undefined : booleanFlag(flags.yes),
+  }
+}
 
 function parseArguments(argv) {
   const flags = {}
@@ -44,262 +218,79 @@ function parseArguments(argv) {
       positionals.push(value)
       continue
     }
-    const key = value.slice(2)
-    const next = argv[index + 1]
-    if (!next || next.startsWith('--')) flags[key] = true
-    else {
-      flags[key] = next
-      index += 1
-    }
+    const [raw, inline] = value.slice(2).split('=', 2)
+    if (inline !== undefined) flags[raw] = inline
+    else if (argv[index + 1] && !argv[index + 1].startsWith('--')) flags[raw] = argv[++index]
+    else flags[raw] = true
   }
   return { flags, positionals }
 }
 
-async function inputJson(flags) {
-  if (flags.file) return JSON.parse(await readFile(flags.file, 'utf8'))
+async function jsonInput(flags, io) {
+  const source = flags['inputs-json'] ?? flags.file
+  if (source && source !== true) {
+    if (source === '-') return JSON.parse(await readStream(io.stdin))
+    if (String(source).trim().startsWith('{')) return JSON.parse(source)
+    return JSON.parse(await readFile(source, 'utf8'))
+  }
+  const body = await readStream(io.stdin)
+  return body.trim() ? JSON.parse(body) : {}
+}
+
+async function payloadInput(flags, io, mediaType) {
+  let raw
+  if (flags.file && flags.file !== true) raw = await readFile(flags.file, 'utf8')
+  else if (flags.value !== undefined) raw = String(flags.value)
+  else raw = await readStream(io.stdin)
+  return mediaType === 'application/json' ? JSON.parse(raw) : raw
+}
+
+async function readStream(stream) {
+  if (stream.isTTY) return ''
   const chunks = []
-  for await (const chunk of process.stdin) chunks.push(chunk)
-  if (!chunks.length) throw new HairnessError('input_required', 'Provide JSON through --file or stdin.', { exitCode: 2 })
-  return JSON.parse(Buffer.concat(chunks).toString('utf8'))
+  for await (const chunk of stream) chunks.push(chunk)
+  return Buffer.concat(chunks).toString('utf8')
 }
 
-async function jsonFlag(flags, name) {
-  const value = flags[name]
-  if (!value || value === true) throw new HairnessError('input_required', `Provide --${name} <path|->.`, { exitCode: 2 })
-  if (value === '-') return inputJson({})
-  if (value.startsWith('{')) return JSON.parse(value)
-  return JSON.parse(await readFile(value, 'utf8'))
+function artifactIdentity(rest) {
+  if (rest.length < 3) throw usage('Artifact identity requires <owner> <type> <id>.')
+  return rest.slice(0, 3)
 }
 
-function operationReference(value) {
-  const input = String(value ?? '')
-  const separator = Math.max(input.lastIndexOf('#'), input.lastIndexOf(':'))
-  if (separator <= 0) throw new HairnessError('operation_reference_invalid', 'Use --operation <capability:operation>.', { exitCode: 2 })
-  const capability = input.slice(0, separator)
-  const id = input.slice(separator + 1)
-  if (!capability || !id) throw new HairnessError('operation_reference_invalid', 'Use --operation <capability:operation>.', { exitCode: 2 })
-  return { capability, id }
+function required(value, label) {
+  if (!value) throw usage(`${label} is required.`)
+  return value
 }
 
-function envelope(ok, value) {
-  return ok
-    ? { schemaVersion: 2, protocolVersion: PROTOCOL_VERSION, ok: true, data: value, limits: [], routes: [] }
-    : {
-        schemaVersion: 2,
-        protocolVersion: PROTOCOL_VERSION,
-        ok: false,
-        error: { code: value.code, summary: value.message, details: value.details },
-        limits: value.limits,
-        routes: value.routes,
-      }
+function booleanFlag(value) {
+  return value === true || value === 'true' || value === 'yes' || value === '1'
+}
+
+function usage(message) {
+  return new HairnessError('usage', message, { exitCode: 2 })
+}
+
+function help() {
+  return {
+    summary: 'Hairness is a lightweight provider-agnostic harness for agentic assets.',
+    commands: [
+      'create <home>', 'build [--check]', 'doctor', 'opening --json',
+      'onboarding status|answer|plan|apply', 'extension list|init|adopt|add|update|remove|doctor',
+      'target list|add|remove|doctor', 'scratch list|show|create|use|note|park|close|import|snapshot',
+      'artifact list|show|save|validate', 'overlay status|snapshot|archive', 'operation run|prepare|apply',
+    ],
+  }
 }
 
 function renderHuman(value) {
-  if (typeof value === 'string') return value
-  if (value?.summary) {
-    const lines = [value.summary]
-    if (value.status) lines.push(`status: ${value.status}`)
-    if (value.routes?.length) lines.push(`routes: ${value.routes.join(', ')}`)
-    if (value.limits?.length) lines.push(`limits: ${value.limits.join('; ')}`)
-    return lines.join('\n')
+  if (value?.status === 'created' && value.launch) {
+    return [`Created Hairness Home at ${value.home}.`, '', ...value.launch.flatMap((item) => [item.command, `Then invoke ${item.onboarding}.`])].join('\n')
   }
+  if (typeof value === 'string') return value
   return JSON.stringify(value, null, 2)
 }
 
-async function coreCommand(root, positionals, flags) {
-  const [namespace, target, action, ...rest] = positionals
-  if (!namespace) throw new HairnessError('usage', 'Usage: hairness <namespace> <target> [action]', { exitCode: 2 })
-
-  if (namespace === 'invoke') {
-    const { answerInvocation, blockInvocation, cancelInvocation, completeInvocation, listInvocationRecords, resumeInvocation, showInvocation, startInvocation } = await import('./distribution/invocation.mjs')
-    const mode = target
-    if (mode === 'start') {
-      const draft = await jsonFlag(flags, 'draft-json')
-      if (flags.operation) draft.operation = operationReference(flags.operation)
-      return startInvocation(root, draft, { mode: flags.direct ? 'direct' : 'intent', auto: Boolean(flags.auto) })
-    }
-    if (mode === 'list') return listInvocationRecords(root, flags.state ?? 'all')
-    if (!action) throw new HairnessError('usage', 'Usage: hairness invoke show|answer|resume|complete|block|cancel <id>', { exitCode: 2 })
-    if (mode === 'show') return showInvocation(root, action)
-    if (mode === 'answer') return answerInvocation(root, action, await jsonFlag(flags, 'answers-json'))
-    if (mode === 'resume') return resumeInvocation(root, action, { auto: Boolean(flags.auto) })
-    if (mode === 'complete') return completeInvocation(root, action, await jsonFlag(flags, 'result-json'))
-    if (mode === 'block') return blockInvocation(root, action, String(flags.reason ?? 'Invocation blocked by explicit reconciliation.'))
-    if (mode === 'cancel') return cancelInvocation(root, action)
-    throw new HairnessError('unknown_command', `Unknown invoke action: ${mode}`, { exitCode: 2 })
-  }
-
-  if (namespace === 'plan') {
-    if (!target) throw new HairnessError('usage', 'Usage: hairness plan <id> show|next|reduce', { exitCode: 2 })
-    const mode = action ?? 'show'
-    if (mode === 'show') return readPlan(root, target)
-    if (mode === 'reduce') return reduceStoredPlan(root, target)
-    if (mode === 'next') {
-      const plan = await readPlan(root, target)
-      for (const route of plan.routes) {
-        const result = await readRunResult(root, route.id)
-        if (!result) return route
-      }
-      return { summary: 'All routes have results.', status: 'ready-to-reduce', routes: [`hairness plan ${target} reduce`], limits: [] }
-    }
-  }
-
-  if (namespace === 'run') {
-    if (!target) throw new HairnessError('usage', 'Usage: hairness run <id> show|resume|approve|cancel|clean', { exitCode: 2 })
-    const mode = action ?? 'show'
-    if (mode === 'show') return { run: await readRun(root, target), result: await readRunResult(root, target) }
-    if (mode === 'resume') return transitionRun(root, target, 'ready', { reason: 'resume requested' })
-    if (mode === 'approve') {
-      if (!flags.checkpoint) throw new HairnessError('usage', 'Usage: hairness run <id> approve --checkpoint <id>', { exitCode: 2 })
-      const run = await readRun(root, target)
-      if (run.state !== 'needs-authority') throw new HairnessError('run_not_waiting_authority', `Run ${target} is ${run.state}.`, { exitCode: 2 })
-      const { aggregateAuthorityPolicy } = await import('./distribution/registry.mjs')
-      const grant = await approveCheckpoint(root, target, flags.checkpoint, (effects) => aggregateAuthorityPolicy(root, effects, { runId: target }))
-      return { summary: 'Checkpoint approved for the exact Run capsule.', status: 'ready', grant, capsule: await buildWorkerCapsule(root, target), limits: [], routes: [`hairness worker ${target} inspect --start --json`] }
-    }
-    if (mode === 'cancel') return transitionRun(root, target, 'cancelled', { reason: flags.reason ?? 'cancel requested' })
-    if (mode === 'clean') {
-      const run = await readRun(root, target)
-      if (!['succeeded', 'failed', 'invalid', 'cancelled'].includes(run.state)) throw new HairnessError('run_active', `Run ${target} is ${run.state}.`)
-      await rm(join(workspacePaths(root).runs, target), { recursive: true })
-      return { summary: `Cleaned run ${target}.`, status: 'cleaned', routes: [], limits: [] }
-    }
-  }
-
-  if (namespace === 'worker') {
-    if (!target) throw new HairnessError('usage', 'Usage: hairness worker <run-id> inspect|source|effect|submit|fail', { exitCode: 2 })
-    const mode = action ?? 'inspect'
-    if (mode === 'inspect') {
-      const run = await readRun(root, target)
-      if (flags.start && run.state === 'ready') await transitionRun(root, target, 'running', { reason: 'worker started' })
-      await appendRunEvent(root, target, 'inspect', { start: Boolean(flags.start) })
-      return buildWorkerCapsule(root, target)
-    }
-    if (mode === 'source') {
-      const capsule = await buildWorkerCapsule(root, target)
-      await appendRunEvent(root, target, 'source', { routes: capsule.allowedSources })
-      return { summary: 'Allowed source routes.', sources: capsule.allowedSources, limits: [], routes: capsule.allowedSources }
-    }
-    if (mode === 'effect') {
-      if (!flags.effect || !flags.target) throw new HairnessError('usage', 'worker effect requires --effect and --target.', { exitCode: 2 })
-      const { aggregateAuthorityPolicy } = await import('./distribution/registry.mjs')
-      await appendRunEvent(root, target, 'effect-requested', { effect: flags.effect, target: flags.target })
-      const grant = await assertEffectAllowed(root, target, flags.effect, flags.target, (effects) => aggregateAuthorityPolicy(root, effects, { runId: target, target: flags.target }))
-      await appendRunEvent(root, target, 'effect-authorized', { grantId: grant.id, effect: flags.effect, target: flags.target })
-      return { summary: 'Effect is authorized for this run.', status: 'authorized', grantId: grant.id, effect: flags.effect, target: flags.target, limits: [], routes: [] }
-    }
-    if (mode === 'submit') {
-      const result = await inputJson(flags)
-      await validateContract('RunResult', result)
-      if (result.runId !== target) throw new HairnessError('run_result_mismatch', 'Submitted result does not match the worker run.', { exitCode: 2 })
-      const run = await readRun(root, target)
-      if (run.state !== 'running') throw new HairnessError('run_not_running', `Run ${run.id} is ${run.state}, not running.`, { exitCode: 2 })
-      if (run.assignment.profile === 'producer' && run.assignment.result.disposition === 'artifact' && result.status === 'succeeded') {
-        const artifact = result.outcome?.artifact
-        if (!artifact) throw new HairnessError('artifact_required', 'Producer result must contain outcome.artifact.', { exitCode: 2 })
-        if (artifact.owner !== run.assignment.result.artifactOwner || artifact.type !== run.assignment.result.artifactType) throw new HairnessError('artifact_result_mismatch', `Worker result must produce ${run.assignment.result.artifactOwner}:${run.assignment.result.artifactType}.`, { exitCode: 2 })
-        const { validateArtifactPayload } = await import('./distribution/registry.mjs')
-        await validateArtifactPayload(root, artifact)
-        await stageArtifact(root, target, artifact)
-        await promoteArtifact(root, target)
-      }
-      if (run.assignment.result.disposition === 'scratch') {
-        const path = join(workspacePaths(root).scratch, run.assignment.id, run.id, 'result.json')
-        await writeJsonAtomic(path, result)
-      }
-      if (run.assignment.result.disposition === 'effect' && run.assignment.profile !== 'executor') throw new HairnessError('effect_result_requires_executor', 'Only an executor may submit an effect result.', { exitCode: 2 })
-      if (run.assignment.profile === 'executor' && result.status === 'succeeded') {
-        const receipt = result.outcome?.receipt ?? result.outcome
-        await validateContract('ChangeReceipt', receipt)
-        if (receipt.status === 'succeeded') await releaseLocks(run.assignment.targets, run.id)
-        else await quarantineLocks(run.assignment.targets, run.id, `executor receipt: ${receipt.status}`)
-      }
-      return submitRunResult(root, result)
-    }
-    if (mode === 'fail') {
-      const result = {
-        schemaVersion: 2,
-        protocolVersion: PROTOCOL_VERSION,
-        runId: target,
-        status: 'failed',
-        summary: flags.summary ?? 'Worker failed.',
-        outcome: null,
-        proof: [],
-        limits: flags.limit ? [flags.limit] : [],
-        routes: [],
-      }
-      const run = await readRun(root, target)
-      if (run.assignment.profile === 'executor') await quarantineLocks(run.assignment.targets, run.id, 'executor failed without a successful receipt')
-      return submitRunResult(root, result)
-    }
-  }
-
-  if (namespace === 'artifact') {
-    if (!target) throw new HairnessError('usage', 'Usage: hairness artifact list|<id> show|history|annotate|related|graph', { exitCode: 2 })
-    if (target === 'list') return { artifacts: await listArtifacts(root, { owner: flags.owner, type: flags.type, label: flags.label, signal: flags.signal }) }
-    const mode = action ?? 'show'
-    if (mode === 'show') return readArtifact(root, target, flags.revision)
-    if (mode === 'history') return artifactHistory(root, target)
-    if (mode === 'related' || mode === 'graph') return artifactGraph(root, target)
-    if (mode === 'annotate') {
-      if (!flags.text) throw new HairnessError('usage', 'artifact annotate requires --text.', { exitCode: 2 })
-      return annotateArtifact(root, target, { text: flags.text, author: flags.author ?? 'local' })
-    }
-  }
-
-  if (namespace === 'scratch') {
-    const paths = await ensureOverlay(root)
-    const mode = target ?? 'list'
-    if (mode === 'list') return { entries: await readdir(paths.scratch) }
-    if (mode === 'clean') {
-      const name = action
-      if (!name) throw new HairnessError('usage', 'Usage: hairness scratch clean <name>', { exitCode: 2 })
-      if (name.includes('/') || name === '..') throw new HairnessError('invalid_scratch_entry', `Invalid scratch entry: ${name}`, { exitCode: 2 })
-      await rm(join(paths.scratch, name), { recursive: true, force: true })
-      return { summary: `Cleaned scratch/${name}.`, status: 'cleaned', limits: [], routes: [] }
-    }
-  }
-
-  if (namespace === 'lock') {
-    const mode = target ?? 'list'
-    if (mode === 'list') return { locks: await listLocks() }
-    if (mode === 'resolve') {
-      if (!action) throw new HairnessError('usage', 'Usage: hairness lock resolve <target>', { exitCode: 2 })
-      return resolveLock(action)
-    }
-  }
-
-  const { extendedCommand } = await import('./distribution/commands.mjs')
-  return extendedCommand(root, namespace, target, action, rest, flags)
-}
-
-export async function runCli(argv = process.argv.slice(2), streams = { stdout: process.stdout, stderr: process.stderr }) {
-  const { flags, positionals } = parseArguments(argv)
-  if (flags.version === true && positionals.length === 0) {
-    streams.stdout.write(`hairness ${packageJson.version}\nprotocol ${PROTOCOL_VERSION}\n`)
-    return 0
-  }
-  try {
-    if (positionals[0] === 'create') {
-      const bootstrap = new URL('./bootstrap/create.mjs', import.meta.url)
-      await access(bootstrap).catch(() => { throw new HairnessError('bootstrap_unavailable', `This team distribution does not contain the forge bootstrap. Run create through ${packageJson.name} or a company forge.`, { exitCode: 4 }) })
-      const { createCommand, interactiveCreate } = await import('./bootstrap/create.mjs')
-      const args = positionals.slice(1)
-      const modes = new Set(['start', 'status', 'next', 'answer', 'plan', 'apply'])
-      const interactive = !flags.json && process.stdin.isTTY && args[0] && !modes.has(args[0])
-      const result = interactive
-        ? await interactiveCreate(args[0], flags.preset ?? 'standard')
-        : await createCommand(args, flags)
-      streams.stdout.write(flags.json ? `${JSON.stringify(envelope(true, result))}\n` : `${renderHuman(result)}\n`)
-      return 0
-    }
-    const root = await findWorkspaceRoot()
-    const result = await coreCommand(root, positionals, flags)
-    streams.stdout.write(flags.json ? `${JSON.stringify(envelope(true, result))}\n` : `${renderHuman(result)}\n`)
-    return 0
-  } catch (rawError) {
-    const error = asHairnessError(rawError)
-    streams.stderr.write(flags.json ? `${JSON.stringify(envelope(false, error))}\n` : `${error.code}: ${error.message}\n`)
-    return error.exitCode
-  }
+function write(stream, value) {
+  stream.write(`${value}\n`)
+  return 0
 }

@@ -1,2 +1,0 @@
-import { forgeActor, onboard, ok } from '../_shared.mjs'
-export default { id: 'provider-verification', actor: forgeActor, async test({ command, checks }) { await onboard(command); const status = await command(['host', 'status', 'codex']); ok(checks, 'not-file-ready', ['projected', 'verification-required', 'verified'].includes(status.status)); ok(checks, 'not-legacy-ready', status.status !== 'ready') } }

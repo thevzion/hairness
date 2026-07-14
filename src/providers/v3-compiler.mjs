@@ -14,12 +14,12 @@ function providerPath(provider, recipeId) {
   return join(root, recipeId, 'SKILL.md')
 }
 
-function providerInvocation(provider, recipeId) {
+function providerCommandSyntax(provider, recipeId) {
   return provider === 'codex' ? `$${recipeId}` : `/${recipeId}`
 }
 
 function renderRecipe(provider, extension, recipe, content, language) {
-  const invocation = providerInvocation(provider, recipe.id)
+  const invocation = providerCommandSyntax(provider, recipe.id)
   return `---\nname: ${recipe.id}\ndescription: ${recipe.summary}\n---\n\n# ${invocation}\n\nSpeak ${language} from the first reply and keep using the user's language. This is a provider-neutral Hairness recipe owned by \`${extension.manifest.metadata.id}\`.\n\n${content.trim()}\n\nDo not persist chat output unless the user explicitly asks to save it. Access never grants effect authority.\n`
 }
 

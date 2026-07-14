@@ -1,1 +1,0 @@
-Use the local initiative state, not a transcript. Keep one active initiative, expose its outcome and gate, and distinguish local trajectory from an explicitly reviewed `STATUS.md` snapshot. Never edit Git or a versioned file directly.
