@@ -16,5 +16,8 @@
     "branch": { "type": "string", "minLength": 1 },
     "risks": { "type": "string" },
     "confidence": { "enum": ["low", "medium", "high"] }
+    ,"workspace": { "type": "boolean" }
+    ,"codebase": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
+    ,"checkout": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
   }
 }

@@ -33,7 +33,7 @@ const effectsByStage = {
 function normalizeLegacy(value) {
   const receipts = value.receipts ?? []
   const normalizePlan = (plan) => {
-    const defaults = { versionRecommendation: 'none', baseline: null, evidenceMaxAgeMinutes: 30, runs: {}, checkpoints: {}, artifacts: [], changes: [], checkoutContext: null, candidateCheckoutContext: null }
+    const defaults = { repositoryRef: { kind: 'workspace' }, versionRecommendation: 'none', baseline: null, evidenceMaxAgeMinutes: 30, runs: {}, checkpoints: {}, artifacts: [], changes: [], checkoutContext: null, candidateCheckoutContext: null }
     const normalized = { ...defaults, ...plan }
     const legacyTagStarted = normalized.runs['git-tag'] || normalized.checkpoints['git-tag'] || receipts.some((receipt) => receipt.planId === normalized.id && receipt.stage === 'git-tag')
     if (normalized.kind === 'release' && normalized.stages.includes('git-tag') && !legacyTagStarted) {
@@ -43,6 +43,7 @@ function normalizeLegacy(value) {
   }
   if (Array.isArray(value.drafts) && Object.hasOwn(value, 'activePlanId')) return {
     ...value,
+    drafts: (value.drafts ?? []).map((brief) => ({ repositoryRef: { kind: 'workspace' }, ...brief })),
     plans: (value.plans ?? []).map(normalizePlan),
     reconciliationCheckpoints: value.reconciliationCheckpoints ?? [],
     reconciliations: value.reconciliations ?? [],
@@ -59,6 +60,7 @@ function normalizeLegacy(value) {
       briefArtifact: null,
       state: plan.state === 'ready' || plan.state === 'completed' ? plan.state : 'blocked',
       repository: 'legacy/unknown',
+      repositoryRef: { kind: 'workspace' },
       base: 'main',
       branch: null,
       version: null,
@@ -125,14 +127,43 @@ function releaseImpact(type, explicit) {
   return ['feat', 'fix', 'perf', 'refactor', 'docs'].includes(type) ? 'user' : ['test', 'build', 'ci', 'chore'].includes(type) ? 'internal' : 'none'
 }
 
-async function buildBrief(subject, flags, runtime) {
+async function resolveDeliveryRepository(flags, runtime, value, policy) {
+  if (flags.codebase) {
+    const codebase = await runtime.extensions.call('hairness/codebase', 'inspect', { id: flags.codebase, checkout: flags.checkout ?? 'default' })
+    if (!codebase?.mounted || !codebase.remoteMatch) throw new Error(`Codebase is not ready for delivery: ${flags.codebase}`)
+    const repository = codebase.contract?.repository
+    if (!repository?.namespace || !repository?.name) throw new Error(`Codebase has no provider repository identity: ${flags.codebase}`)
+    return { repository: `${repository.namespace}/${repository.name}`, repositoryRef: { kind: 'codebase', id: flags.codebase, checkout: flags.checkout ?? 'default' } }
+  }
+  if (flags.workspace) return { repository: policy.value.repository, repositoryRef: { kind: 'workspace' } }
+  const active = value?.plans?.find((item) => item.id === value.activePlanId)
+  if (active?.repositoryRef) return { repository: active.repository, repositoryRef: active.repositoryRef }
+  const cwd = resolve(process.cwd())
+  const dashboard = await runtime.extensions.call('hairness/worktree-controls', 'inspect', {}).catch(() => null)
+  const current = dashboard?.worktrees?.find((item) => {
+    const relativePath = relative(resolve(item.path), cwd)
+    return !relativePath || (!relativePath.startsWith('..') && !relativePath.startsWith('/'))
+  })
+  if (current?.repositoryRef?.kind === 'codebase') {
+    const codebase = await runtime.extensions.call('hairness/codebase', 'inspect', { id: current.repositoryRef.id, checkout: current.repositoryRef.checkout ?? 'default' })
+    const repository = codebase.contract?.repository
+    if (repository?.namespace && repository?.name) return { repository: `${repository.namespace}/${repository.name}`, repositoryRef: current.repositoryRef }
+  }
+  if (current?.repositoryRef?.kind === 'workspace') return { repository: policy.value.repository, repositoryRef: { kind: 'workspace' } }
+  const listed = await runtime.extensions.call('hairness/codebase', 'list', { mountedOnly: true }).catch(() => ({ codebases: [] }))
+  if ((listed.codebases ?? []).some((item) => item.checkout === 'default')) throw new Error('Repository selection is ambiguous; choose --workspace or --codebase <id>.')
+  return { repository: policy.value.repository, repositoryRef: { kind: 'workspace' } }
+}
+
+async function buildBrief(subject, flags, runtime, value) {
   const policy = await deliveryPolicy(runtime)
+  const selectedRepository = await resolveDeliveryRepository(flags, runtime, value, policy)
   const type = flags.type ?? 'feat'
   if (!policy.value.branchTypes.includes(type)) throw new Error(`Unsupported delivery type: ${type}`)
   const branch = flags.branch ?? `${type}/${slug(subject)}`
   if (!new RegExp(policy.value.branchPattern).test(branch)) throw new Error(`Branch does not satisfy delivery policy: ${branch}`)
   const brief = {
-    id: `brief-${hash({ subject, type, branch, policy: policy.digest }).slice(0, 16)}`,
+    id: `brief-${hash({ subject, type, branch, repository: selectedRepository.repository, repositoryRef: selectedRepository.repositoryRef, policy: policy.digest }).slice(0, 16)}`,
     subject,
     type,
     outcome: flags.outcome ?? subject,
@@ -140,7 +171,8 @@ async function buildBrief(subject, flags, runtime) {
     scope: split(flags.scope).length ? split(flags.scope) : [subject],
     nonGoals: split(flags['non-goals'] ?? flags.nonGoals, '|'),
     releaseImpact: releaseImpact(type, flags['release-impact'] ?? flags.releaseImpact),
-    repository: policy.value.repository,
+    repository: selectedRepository.repository,
+    repositoryRef: selectedRepository.repositoryRef,
     base: flags.base ?? policy.value.baseBranch,
     branch,
     checks: policy.value.requiredChecks,
@@ -202,12 +234,12 @@ async function artifact(runtime, { id, type, revision, summary, payload, labels,
 
 async function changePlan(brief, briefArtifact, runtime, value) {
   const initiative = await runtime.extensions.call('hairness/initiative-controls', 'active').catch(() => null)
-  const id = `change-${hash({ kind: 'change', repository: brief.repository, base: brief.base, branch: brief.branch, brief: brief.id }).slice(0, 16)}`
+  const id = `change-${hash({ kind: 'change', repository: brief.repository, repositoryRef: brief.repositoryRef, base: brief.base, branch: brief.branch, brief: brief.id }).slice(0, 16)}`
   const existing = value.plans.find((item) => item.id === id)
   if (existing) { value.activePlanId = existing.id; return existing }
   const at = now()
   const policy = await deliveryPolicy(runtime)
-  const plan = { id, kind: 'change', initiativeId: initiative?.id ?? null, briefArtifact, state: 'planned', repository: brief.repository, base: brief.base, branch: brief.branch, version: null, versionRecommendation: semverRecommendation([`${brief.type}: ${brief.subject}`]), baseline: null, policyDigest: brief.policyDigest, evidenceMaxAgeMinutes: policy.value.evidenceMaxAgeMinutes, checkoutContext: null, candidateCheckoutContext: null, stages: changeStages, runs: {}, checkpoints: {}, artifacts: [briefArtifact], changes: [brief.subject], createdAt: at, updatedAt: at }
+  const plan = { id, kind: 'change', initiativeId: initiative?.id ?? null, briefArtifact, state: 'planned', repository: brief.repository, repositoryRef: brief.repositoryRef, base: brief.base, branch: brief.branch, version: null, versionRecommendation: semverRecommendation([`${brief.type}: ${brief.subject}`]), baseline: null, policyDigest: brief.policyDigest, evidenceMaxAgeMinutes: policy.value.evidenceMaxAgeMinutes, checkoutContext: null, candidateCheckoutContext: null, stages: changeStages, runs: {}, checkpoints: {}, artifacts: [briefArtifact], changes: [brief.subject], createdAt: at, updatedAt: at }
   value.plans.push(plan)
   value.activePlanId = plan.id
   await save(runtime, value, { type: 'delivery.change-planned', id })
@@ -236,7 +268,7 @@ async function releasePlan(root, flags, runtime, value) {
   const initiative = await runtime.extensions.call('hairness/initiative-controls', 'active').catch(() => null)
   const at = now()
   const changes = releaseChanges(flags)
-  const plan = { id, kind: 'release', initiativeId: initiative?.id ?? null, briefArtifact: null, state: 'planned', repository: policy.value.repository, base: policy.value.baseBranch, branch, version, versionRecommendation: semverRecommendation(changes), baseline: flags.baseline ?? policy.value.release.bootstrapBaseline, policyDigest: policy.digest, evidenceMaxAgeMinutes: policy.value.evidenceMaxAgeMinutes, checkoutContext: null, candidateCheckoutContext: null, stages: releaseStages, runs: {}, checkpoints: {}, artifacts: [], changes, createdAt: at, updatedAt: at }
+  const plan = { id, kind: 'release', initiativeId: initiative?.id ?? null, briefArtifact: null, state: 'planned', repository: policy.value.repository, repositoryRef: { kind: 'workspace' }, base: policy.value.baseBranch, branch, version, versionRecommendation: semverRecommendation(changes), baseline: flags.baseline ?? policy.value.release.bootstrapBaseline, policyDigest: policy.digest, evidenceMaxAgeMinutes: policy.value.evidenceMaxAgeMinutes, checkoutContext: null, candidateCheckoutContext: null, stages: releaseStages, runs: {}, checkpoints: {}, artifacts: [], changes, createdAt: at, updatedAt: at }
   value.plans.push(plan); value.activePlanId = id
   await save(runtime, value, { type: 'delivery.release-planned', id })
   return plan
@@ -250,7 +282,7 @@ function compactCheckoutContext(value) {
 async function resolveCheckout(plan, runtime, { candidate = false, requireWriter = true, sessionId = null } = {}) {
   const stored = candidate ? plan.candidateCheckoutContext : plan.checkoutContext
   if (!stored) return { status: 'blocked', summary: `${candidate ? 'Candidate' : 'Branch'} checkout is not prepared.`, limits: ['Complete the corresponding Worktree boundary first.'] }
-  const resolved = await runtime.extensions.call('hairness/worktree-controls', 'resolve', { planId: plan.id, worktreeId: stored.handleRef.id, requireWriter, ...(sessionId ? { sessionId } : {}) })
+  const resolved = await runtime.extensions.call('hairness/worktree-controls', 'resolve', { repository: plan.repositoryRef, planId: plan.id, worktreeId: stored.handleRef.id, requireWriter, ...(sessionId ? { sessionId } : {}) })
   const liveDigest = resolved.digest ?? resolved.context?.handleRef?.digest ?? resolved.handle?.digest
   if (resolved.status !== 'ready' && resolved.status !== 'managed') return { status: 'blocked', summary: resolved.summary ?? 'Managed checkout is unavailable.', limits: resolved.limits?.length ? resolved.limits : ['Reconcile the worktree before continuing.'] }
   if (!resolved.handle || !resolved.context || liveDigest !== stored.handleRef.digest) return { status: 'blocked', summary: 'Managed checkout evidence changed after the last accepted receipt.', limits: ['Resolve or reconcile the new WorktreeHandle before continuing.'] }
@@ -265,7 +297,7 @@ async function resolveCheckout(plan, runtime, { candidate = false, requireWriter
 async function refreshCheckoutReference(plan, runtime, { candidate = false, expectedHead = null } = {}) {
   const stored = candidate ? plan.candidateCheckoutContext : plan.checkoutContext
   if (!stored) return null
-  const resolved = await runtime.extensions.call('hairness/worktree-controls', 'resolve', { planId: plan.id, worktreeId: stored.handleRef.id, requireWriter: true })
+  const resolved = await runtime.extensions.call('hairness/worktree-controls', 'resolve', { repository: plan.repositoryRef, planId: plan.id, worktreeId: stored.handleRef.id, requireWriter: true })
   const compact = compactCheckoutContext(resolved.context)
   if (!compact || !resolved.handle || resolved.handle.planId !== plan.id || compact.policyDigest !== plan.policyDigest) throw new Error('Managed checkout changed ownership or policy while recording its effect receipt.')
   if (expectedHead && resolved.context.head !== expectedHead) throw new Error('Managed checkout HEAD does not match the correlated effect receipt.')
@@ -275,9 +307,9 @@ async function refreshCheckoutReference(plan, runtime, { candidate = false, expe
 }
 
 function worktreeRequest(plan, stage, flags) {
-  if (stage === 'prepare') return { repository: { kind: 'workspace' }, planId: plan.id, branch: plan.branch, base: plan.base, mode: 'branch', policyDigest: plan.policyDigest }
-  if (stage === 'sync-base') return { repository: { kind: 'workspace' }, planId: plan.id, worktreeId: plan.checkoutContext?.handleRef.id, base: plan.base, mode: 'branch', expectedHead: flags.head, published: Boolean(flags.published), ...(flags['remote-head'] ? { remoteHead: flags['remote-head'] } : {}), proof: flags['base-head'] ? [`base-head:${flags['base-head']}`] : [], policyDigest: plan.policyDigest }
-  if (stage === 'candidate-checkout') return { repository: { kind: 'workspace' }, planId: plan.id, commit: flags.head, base: plan.base, mode: 'detached', policyDigest: plan.policyDigest }
+  if (stage === 'prepare') return { repository: plan.repositoryRef, planId: plan.id, branch: plan.branch, base: plan.base, mode: 'branch', policyDigest: plan.policyDigest }
+  if (stage === 'sync-base') return { repository: plan.repositoryRef, planId: plan.id, worktreeId: plan.checkoutContext?.handleRef.id, base: plan.base, mode: 'branch', expectedHead: flags.head, published: Boolean(flags.published), ...(flags['remote-head'] ? { remoteHead: flags['remote-head'] } : {}), proof: flags['base-head'] ? [`base-head:${flags['base-head']}`] : [], policyDigest: plan.policyDigest }
+  if (stage === 'candidate-checkout') return { repository: plan.repositoryRef, planId: plan.id, commit: flags.head, base: plan.base, mode: 'detached', policyDigest: plan.policyDigest }
   return null
 }
 
@@ -376,6 +408,19 @@ async function recordReceipt(plan, stage, input, runtime, value) {
   plan.updatedAt = receipt.observedAt
   plan.state = receipt.status === 'succeeded' ? (pendingStage(value, plan) ? 'in-progress' : 'completed') : 'blocked'
   await save(runtime, value, { type: 'delivery.received', id: plan.id, stage, receipt: id, status: receipt.status })
+  if (receipt.status === 'succeeded' && stage === 'verify-main' && plan.checkoutContext?.handleRef?.id) {
+    const mergeReceipt = successfulReceipt(value, plan, 'merge')
+    const publishedHead = latestBranchHead(value, plan)
+    if (!mergeReceipt || !publishedHead) throw new Error('verify-main cannot mark cleanup readiness without a fresh merge receipt and published branch head.')
+    await runtime.extensions.call('hairness/worktree-controls', 'mark-cleanup-ready', {
+      planId: plan.id,
+      handleIds: [plan.checkoutContext.handleRef.id],
+      head: publishedHead,
+      observedAt: receipt.observedAt,
+      maxAgeMinutes: plan.evidenceMaxAgeMinutes,
+      proof: [...new Set([...mergeReceipt.proof, ...receipt.proof, 'github:pr-merged', `published-head:${publishedHead}`, `verify-main:${receipt.head}`])],
+    })
+  }
   return receipt
 }
 
@@ -613,7 +658,7 @@ export async function handleCommand({ root, target, action, rest = [], flags, ru
   if (mode === 'want') {
     const subject = flags.subject ?? [action, ...rest].filter(Boolean).join(' ')
     if (!subject) throw new Error('Usage: hairness delivery want <subject> [--type feat|fix|...]')
-    const brief = await buildBrief(subject, flags, runtime)
+    const brief = await buildBrief(subject, flags, runtime, value)
     const existing = value.drafts.find((item) => item.id === brief.id)
     if (!existing) { value.drafts.push(brief); await save(runtime, value, { type: 'delivery.brief-drafted', id: brief.id }) }
     return packet('want ship', `Delivery brief draft for ${subject}.`, [existing ?? brief], ['Draft only; acceptance is required before a plan exists.'], [`hairness delivery accept ${brief.id}`])

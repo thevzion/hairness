@@ -19,7 +19,7 @@
     "brief": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "subject", "type", "outcome", "acceptance", "scope", "nonGoals", "releaseImpact", "repository", "base", "branch", "checks", "risks", "confidence", "policyDigest", "createdAt"],
+      "required": ["id", "subject", "type", "outcome", "acceptance", "scope", "nonGoals", "releaseImpact", "repository", "repositoryRef", "base", "branch", "checks", "risks", "confidence", "policyDigest", "createdAt"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "subject": { "type": "string", "minLength": 1 },
@@ -30,6 +30,7 @@
         "nonGoals": { "type": "array", "items": { "type": "string" } },
         "releaseImpact": { "enum": ["user", "internal", "none"] },
         "repository": { "type": "string", "minLength": 1 },
+        "repositoryRef": { "$ref": "#/$defs/repositoryRef" },
         "base": { "type": "string", "minLength": 1 },
         "branch": { "type": "string", "minLength": 1 },
         "checks": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
@@ -42,7 +43,7 @@
     "plan": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "kind", "initiativeId", "briefArtifact", "state", "repository", "base", "branch", "version", "versionRecommendation", "baseline", "policyDigest", "evidenceMaxAgeMinutes", "checkoutContext", "candidateCheckoutContext", "stages", "runs", "checkpoints", "artifacts", "changes", "createdAt", "updatedAt"],
+      "required": ["id", "kind", "initiativeId", "briefArtifact", "state", "repository", "repositoryRef", "base", "branch", "version", "versionRecommendation", "baseline", "policyDigest", "evidenceMaxAgeMinutes", "checkoutContext", "candidateCheckoutContext", "stages", "runs", "checkpoints", "artifacts", "changes", "createdAt", "updatedAt"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "kind": { "enum": ["change", "release"] },
@@ -50,6 +51,7 @@
         "briefArtifact": { "type": ["string", "null"] },
         "state": { "enum": ["planned", "in-progress", "blocked", "ready", "completed"] },
         "repository": { "type": "string", "minLength": 1 },
+        "repositoryRef": { "$ref": "#/$defs/repositoryRef" },
         "base": { "type": "string", "minLength": 1 },
         "branch": { "type": ["string", "null"] },
         "version": { "type": ["string", "null"] },
@@ -67,6 +69,12 @@
         "createdAt": { "type": "string" },
         "updatedAt": { "type": "string" }
       }
+    },
+    "repositoryRef": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "workspace" } } },
+        { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "const": "codebase" }, "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }, "checkout": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" } } }
+      ]
     },
     "checkoutContext": {
       "type": "object",
