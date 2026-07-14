@@ -1,0 +1,28 @@
+{
+  "apiVersion": "hairness.dev/home/v1alpha1",
+  "kind": "Home",
+  "metadata": {
+    "id": "golden-home"
+  },
+  "spec": {
+    "language": "fr",
+    "providers": ["codex", "claude"],
+    "extensions": [
+      "hairness/cockpit",
+      "hairness/work",
+      "hairness/sources",
+      "hairness/codebase",
+      "hairness/delivery"
+    ],
+    "targets": [
+      {
+        "id": "product",
+        "kind": "git"
+      }
+    ],
+    "overlay": {
+      "git": true,
+      "snapshot": "boundary"
+    }
+  }
+}

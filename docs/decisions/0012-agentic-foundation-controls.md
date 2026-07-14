@@ -1,12 +1,14 @@
 ---
 id: 0012-agentic-foundation-controls
-status: accepted
+status: superseded
 owners: [hairness/distribution, hairness/work-controls, hairness/understanding-controls, hairness/ideation-controls]
 signals: [capability, operation, controls, source-driver]
 paths: [schemas/capability.schema.json, extensions/hairness, catalog]
 ---
 
 # Agentic foundation and composable controls
+
+Superseded by [ADR 0013](0013-v0-3-clean-architectural-reset.md).
 
 Hairness defines Capability → Operation → Route → Result as its public executable grammar. Commands reference operations rather than loose capability labels.
 

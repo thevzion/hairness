@@ -1,14 +1,14 @@
 # Hairness Status
 
-Current target: `0.2.0-alpha.0`
+Current target: `0.3.0-alpha.0`
 
 ## Now
 
-- `trusted-publishing`
-  - Outcome: Make future npm releases use GitHub OIDC with one qualified artifact and no long-lived publish token.
+- `architectural-reset`
+  - Outcome: Replace the v0.2 orchestration model with the lightweight v0.3 Home, Extension, Scratch, Artifact and checkpoint model.
   - State: active
-  - Gate: Merge the manual release workflow, protect the `npm` environment, configure the exact npm trusted publisher and verify it live.
-  - Evidence: `.github/workflows/release.yml`, environment approval rules and `npm trust list @hairness/cli`.
+  - Gate: The packed-tarball journey proves `create → build → onboarding → Scratch → map → save → ship` on Node.js 22 and 24.
+  - Evidence: ADR 0013, golden journeys, contract fixtures and the reset qualification matrix.
 
 ## Completed
 
@@ -19,23 +19,11 @@ Current target: `0.2.0-alpha.0`
 
 ## Next
 
-- `alpha-hardening`
-  - Outcome: Stabilize the public contracts from external dogfooding feedback.
+- `reset-dogfood`
+  - Outcome: Exercise the Standard Home against independent repositories and harden only failures observed in the golden journey.
   - State: planned
-  - Gate: Repeated failures become migrations, gates or owner tests.
-  - Evidence: Compatibility notes and hardening receipts.
-
-- `execution-adapters`
-  - Outcome: Prove one external loop adapter without turning Hairness into a loop runtime.
-  - State: planned
-  - Gate: External route preserves authority, typed results and fan-in.
-  - Evidence: Adapter conformance and bounded execution receipt.
-
-- `session-orchestration`
-  - Outcome: Coordinate independent agent sessions without turning Hairness into a provider runtime.
-  - State: planned
-  - Gate: Workspace/global registry, ownership, leases, locks, attention and resumption are proven before scheduling or issue automation.
-  - Evidence: Cross-session collision, recovery and PR-only adapter receipts.
+  - Gate: The reset PR is green and its adaptive checkout replaces the useful evidence from PR #17.
+  - Evidence: Fresh lab Home, provider projections and delivery receipts.
 
 ## Blocked
 
@@ -43,9 +31,9 @@ Current target: `0.2.0-alpha.0`
 
 ## Release gates
 
-- README, SPEC, schemas, CLI, projections and tests describe the same grammar.
-- Minimal, standard and forge payloads contain selected source only.
-- Generic package contains no local state, private composition, secret, transcript or private path.
+- README, SPEC, schemas, CLI, projections and tests describe the same v0.3 grammar.
+- Minimal and Standard select only their declared extensions; maintainer remains explicit.
+- The npm package contains no Overlay, runtime state, private path, secret, transcript or generated provider output.
 - Node.js 22 and 24 checks pass.
 - Fresh Codex delivery dogfood is blocking for release effects. Codex/Claude projections must remain deterministically identical; live Claude authentication is not required.
 
