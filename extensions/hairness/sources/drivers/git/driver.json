@@ -9,6 +9,9 @@
   "operations": [
     { "id": "identity", "access": "read", "summary": "Read repository identity and origin remote." },
     { "id": "status", "access": "read", "summary": "Read branch, upstream, divergence and dirty paths." },
-    { "id": "overlap", "access": "read", "summary": "Compare dirty paths with bounded targets." }
+    { "id": "overlap", "access": "read", "summary": "Compare dirty paths with bounded targets." },
+    { "id": "worktrees", "access": "read", "summary": "Read the NUL-delimited Git worktree inventory and common directory." },
+    { "id": "refs", "access": "read", "summary": "Resolve exact HEAD, base and merge-base references." },
+    { "id": "merge-proof", "access": "read", "summary": "Prove ancestry and integration between exact Git commits." }
   ]
 }

@@ -6,7 +6,7 @@ Provides current, read-only evidence through selected deterministic source drive
 
 ## Selection and setup
 
-Standard selects Git. Forge retains the generic Git, GitHub, npm, Jira, GitLab and AWS driver catalogue. GitHub and npm expose only current identity, repository, pull-request, CI, protection, ownership, version, dist-tag and integrity evidence.
+Standard selects Git. Forge retains the generic Git, GitHub, npm, Jira, GitLab and AWS driver catalogue. Git exposes status plus NUL-safe worktree inventory, exact refs, the shared Git common directory and merge ancestry proofs. GitHub and npm expose only current identity, repository, pull-request, CI, protection, ownership, version, dist-tag and integrity evidence.
 
 ## Capabilities and operations
 
