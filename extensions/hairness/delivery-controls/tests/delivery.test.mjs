@@ -28,12 +28,40 @@ async function fixture(policy = basePolicy) {
   const plans = []
   const runs = new Map()
   const checkpoints = []
+  const worktrees = new Map()
   let activePolicy = structuredClone(policy)
+  const setCheckout = (plan, stage, head = null) => {
+    const candidate = stage === 'candidate-checkout'
+    const id = candidate ? `candidate-${plan.id}` : `branch-${plan.id}`
+    const previous = worktrees.get(id)
+    const nextHead = head ?? previous?.context.head ?? `head-${plan.id}`
+    const handleDigest = `sha256:${id}-${nextHead}`
+    const handle = { id, digest: handleDigest, repository: plan.repository, planId: plan.id, path: join(root, '.worktrees', id), branch: candidate ? null : plan.branch, base: plan.base, head: nextHead, detached: candidate, kind: candidate ? 'candidate' : 'branch', state: 'managed', policyDigest: plan.policyDigest }
+    const lease = { id: `lease-${id}`, handleId: id, planId: plan.id, sessionId: 'test-session', mode: 'writer', state: 'active' }
+    const context = { schemaVersion: 2, protocolVersion: '0.2', handleRef: { id, digest: handleDigest }, path: handle.path, head: handle.head, branch: handle.branch, leaseRef: { id: lease.id, digest: `sha256:${lease.id}` }, policyDigest: plan.policyDigest }
+    const resolved = { status: 'ready', handle, lease, context, digest: handleDigest, limits: [] }
+    worktrees.set(id, resolved)
+    return resolved
+  }
   const rt = {
     contracts: { validateSchema: (schema, value, label) => validateJsonSchema(new URL(`../${schema.slice(2)}`, import.meta.url), value, label) },
     distribution: { read: async () => ({ defaults: { delivery: activePolicy } }) },
     overlay: { read: async (key, fallback) => values.get(key) ?? structuredClone(fallback), write: async (key, value) => (values.set(key, structuredClone(value)), value), append: async () => null },
-    extensions: { call: async () => ({ id: 'initiative-one' }) },
+    extensions: { call: async (id, service, input) => {
+      if (id === 'hairness/initiative-controls') return { id: 'initiative-one' }
+      if (id !== 'hairness/worktree-controls') throw new Error(`Unexpected extension: ${id}`)
+      if (service === 'propose') {
+        const effects = input.action === 'sync'
+          ? ['git:rebase', ...(input.request.published ? ['git:push'] : [])]
+          : input.action === 'open' ? ['filesystem:write', 'git:worktree', 'git:branch'] : ['filesystem:write', 'git:worktree']
+        return { id: `proposal-${input.action}-${input.request.planId}`, action: input.action, request: input.request, targets: [join(root, '.worktrees', input.request.planId)], effects, policyDigest: input.request.policyDigest }
+      }
+      if (service === 'resolve') {
+        const value = input.worktreeId ? worktrees.get(input.worktreeId) : [...worktrees.values()].find((item) => item.handle.planId === input.planId)
+        return value ?? { status: 'blocked', summary: 'Missing managed checkout.', limits: ['Open it first.'] }
+      }
+      throw new Error(`Unexpected worktree service: ${service}`)
+    } },
     artifacts: {
       read: async (id, revision) => {
         const value = revision ? artifacts.get(`${id}@${revision}`) : latestArtifacts.get(id)
@@ -61,7 +89,7 @@ async function fixture(policy = basePolicy) {
       },
     },
   }
-  return { root, rt, values, artifacts, plans, runs, checkpoints, setPolicy: (value) => { activePolicy = structuredClone(value) }, cleanup: () => rm(root, { recursive: true, force: true }) }
+  return { root, rt, values, artifacts, plans, runs, checkpoints, worktrees, setCheckout, setPolicy: (value) => { activePolicy = structuredClone(value) }, cleanup: () => rm(root, { recursive: true, force: true }) }
 }
 
 async function draftAndAccept(env, subject = 'Add safe delivery', type = 'feat') {
@@ -72,7 +100,11 @@ async function draftAndAccept(env, subject = 'Add safe delivery', type = 'feat')
 async function completeEffect(env, plan, stage, flags = {}) {
   const { receiptHead, ...checkpointFlags } = flags
   const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage, ...checkpointFlags }, runtime: env.rt })
-  env.runs.get(prepared.runId).result = { status: 'succeeded', summary: `${stage} completed`, proof: [`receipt:${stage}`], outcome: { receipt: { status: 'succeeded', summary: `${stage} completed`, effects: prepared.checkpoint.effects, targets: prepared.checkpoint.targets, proof: [`receipt:${stage}`], head: receiptHead ?? checkpointFlags.head ?? null } } }
+  const head = receiptHead ?? checkpointFlags.head ?? null
+  const checkout = ['prepare', 'sync-base', 'candidate-checkout'].includes(stage)
+    ? env.setCheckout(plan, stage, head)
+    : (['implement', 'publish-pr', 'release-pr'].includes(stage) ? env.setCheckout(plan, 'branch', head) : null)
+  env.runs.get(prepared.runId).result = { status: 'succeeded', summary: `${stage} completed`, proof: [`receipt:${stage}`], outcome: { receipt: { status: 'succeeded', summary: `${stage} completed`, effects: prepared.checkpoint.effects, targets: prepared.checkpoint.targets, proof: [`receipt:${stage}`], head, policyDigest: plan.policyDigest, context: checkout?.context ?? null, ...(['prepare', 'sync-base', 'candidate-checkout'].includes(stage) ? { runId: prepared.runId, checkpointId: prepared.checkpoint.id, action: stage === 'prepare' ? 'open' : stage === 'sync-base' ? 'sync' : stage } : {}) }, ...(checkout && ['prepare', 'sync-base', 'candidate-checkout'].includes(stage) ? { checkoutContext: checkout.context } : {}) } }
   const receipt = await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage, run: prepared.runId }, runtime: env.rt })
   return { prepared, receipt }
 }
@@ -82,6 +114,14 @@ async function completePartialEffect(env, plan, stage, status = 'partial', flags
   env.runs.get(prepared.runId).result = { status: 'succeeded', summary: `${stage} ${status}`, proof: [`receipt:${stage}:${status}`], outcome: { receipt: { status, summary: `${stage} ${status}`, effects: prepared.checkpoint.effects, targets: prepared.checkpoint.targets, proof: [`receipt:${stage}:${status}`], head: flags.head ?? null } } }
   const receipt = await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage, run: prepared.runId }, runtime: env.rt })
   return { prepared, receipt }
+}
+
+function branchHead(env, plan) {
+  return env.worktrees.get(`branch-${plan.id}`)?.context.head ?? null
+}
+
+async function completeSync(env, plan, nextHead = branchHead(env, plan), flags = {}) {
+  return completeEffect(env, plan, 'sync-base', { head: branchHead(env, plan), receiptHead: nextHead, ...flags })
 }
 
 test('accepted briefs are idempotent and allow parallel change plans', async (context) => {
@@ -96,6 +136,42 @@ test('accepted briefs are idempotent and allow parallel change plans', async (co
   assert.ok(state.plans.every((plan) => plan.initiativeId === 'initiative-one'))
 })
 
+test('parallel change plans receive distinct managed writer checkouts', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const { plan: first } = await draftAndAccept(env, 'Add parallel alpha')
+  const { plan: second } = await draftAndAccept(env, 'Add parallel beta')
+  await completeEffect(env, first, 'prepare')
+  await completeEffect(env, second, 'prepare')
+  const state = await handleCommand({ root: env.root, target: 'status', flags: {}, runtime: env.rt })
+  const storedFirst = state.plans.find((item) => item.id === first.id)
+  const storedSecond = state.plans.find((item) => item.id === second.id)
+  assert.notEqual(storedFirst.checkoutContext.handleRef.id, storedSecond.checkoutContext.handleRef.id)
+  const firstImplement = await handleCommand({ root: env.root, target: 'checkpoint', action: first.id, flags: { stage: 'implement' }, runtime: env.rt })
+  const secondImplement = await handleCommand({ root: env.root, target: 'checkpoint', action: second.id, flags: { stage: 'implement' }, runtime: env.rt })
+  assert.notDeepEqual(firstImplement.checkpoint.targets, secondImplement.checkpoint.targets)
+  assert.equal(firstImplement.capsule.assignment.inputs.find((item) => item.resolvedCheckout).resolvedCheckout.path, env.worktrees.get(`branch-${first.id}`).context.path)
+  assert.equal(secondImplement.capsule.assignment.inputs.find((item) => item.resolvedCheckout).resolvedCheckout.path, env.worktrees.get(`branch-${second.id}`).context.path)
+})
+
+test('stale handle digests and writer leases block every versioned mutation', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const { plan } = await draftAndAccept(env, 'Protect managed checkout')
+  await completeEffect(env, plan, 'prepare')
+  const checkout = env.worktrees.get(`branch-${plan.id}`)
+  const originalDigest = checkout.digest
+  checkout.digest = 'sha256:live-head-changed'
+  checkout.context.handleRef.digest = checkout.digest
+  const staleHead = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'implement' }, runtime: env.rt })
+  assert.equal(staleHead.status, 'blocked')
+  assert.match(staleHead.summary, /evidence changed/)
+  checkout.digest = originalDigest
+  checkout.context.handleRef.digest = originalDigest
+  checkout.lease.state = 'stale'
+  const staleLease = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'implement' }, runtime: env.rt })
+  assert.equal(staleLease.status, 'blocked')
+  assert.match(staleLease.summary, /writer lease/)
+})
+
 test('ship-it and auto stay effect-free until one exact checkpoint', async (context) => {
   const env = await fixture(); context.after(env.cleanup)
   const { plan } = await draftAndAccept(env)
@@ -104,7 +180,8 @@ test('ship-it and auto stay effect-free until one exact checkpoint', async (cont
   assert.equal(env.runs.size, 0)
   const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'prepare' }, runtime: env.rt })
   assert.equal(prepared.status, 'needs-authority')
-  assert.deepEqual(prepared.checkpoint.effects, ['git:branch'])
+  assert.deepEqual(prepared.checkpoint.effects, ['filesystem:write', 'git:worktree', 'git:branch'])
+  assert.deepEqual(env.runs.get(prepared.runId).assignment.operation, { capability: 'hairness/worktree', id: 'open' })
   assert.equal(env.checkpoints.length, 1)
   assert.equal(env.runs.get(prepared.runId).state, 'needs-authority')
 })
@@ -114,6 +191,7 @@ test('pull-request proposal binds inspected files, head and diff to the executor
   const { plan } = await draftAndAccept(env)
   await completeEffect(env, plan, 'prepare')
   await completeEffect(env, plan, 'implement')
+  await completeSync(env, plan, 'abc1234')
   await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'checks:test-22,checks:test-24', head: 'abc1234' }, runtime: env.rt })
   const specialized = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: { boundary: 'publish-pr' }, runtime: env.rt })
   assert.equal(specialized.results[0].stage, 'publish-pr')
@@ -135,6 +213,7 @@ test('pull-request proposal rejects a title incoherent with its branch', async (
   const { plan } = await draftAndAccept(env)
   await completeEffect(env, plan, 'prepare')
   await completeEffect(env, plan, 'implement')
+  await completeSync(env, plan, 'abc1234')
   await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'checks:ready', head: 'abc1234' }, runtime: env.rt })
   await assert.rejects(handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'publish-pr', head: 'abc1234', title: 'fix: wrong type', 'diff-digest': 'sha256:abcd', files: 'src/a.mjs' }, runtime: env.rt }), /does not match branch type/)
 })
@@ -144,6 +223,7 @@ test('change merge keeps pre-commit qualification and requires matching PR and C
   const { plan } = await draftAndAccept(env, 'Fix exact merge head', 'fix')
   await completeEffect(env, plan, 'prepare')
   await completeEffect(env, plan, 'implement')
+  await completeSync(env, plan, 'base-head')
   await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'checks:ready', head: 'base-head' }, runtime: env.rt })
   const { receipt: published } = await completeEffect(env, plan, 'publish-pr', { head: 'base-head', receiptHead: 'pull-request-head', 'diff-digest': 'sha256:abcd', files: 'src/a.mjs,tests/a.test.mjs' })
   assert.equal(published.head, 'pull-request-head')
@@ -157,6 +237,36 @@ test('change merge keeps pre-commit qualification and requires matching PR and C
   const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'merge', head: 'pull-request-head' }, runtime: env.rt })
   assert.equal(prepared.status, 'needs-authority')
   assert.deepEqual(prepared.checkpoint.effects, ['github:merge'])
+  await completeEffect(env, plan, 'merge', { head: 'pull-request-head' })
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'verify-main', proof: 'github:main-contains-change', head: 'public-main-head' }, runtime: env.rt })
+  const complete = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: {}, runtime: env.rt })
+  assert.equal(complete.results[0].cleanup, 'cleanup-ready')
+  assert.match(complete.routes[0], new RegExp(complete.results[0].plan.checkoutContext.handleRef.id))
+  assert.match(complete.limits[0], /No worktree was closed/)
+})
+
+test('a stale base reopens sync and invalidates downstream head evidence', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const { plan } = await draftAndAccept(env, 'Rebase a published change', 'fix')
+  await completeEffect(env, plan, 'prepare')
+  await completeEffect(env, plan, 'implement')
+  await completeSync(env, plan, 'qualified-head')
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'checks:ready', head: 'qualified-head' }, runtime: env.rt })
+  await completeEffect(env, plan, 'publish-pr', { head: 'qualified-head', receiptHead: 'published-head', 'diff-digest': 'sha256:published', files: 'src/a.mjs' })
+  await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'ci', proof: 'checks:ready', head: 'published-head' }, runtime: env.rt })
+
+  const missingRemote = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: { boundary: 'merge', 'base-stale': true, 'base-head': 'origin-main-new', published: true }, runtime: env.rt })
+  assert.equal(missingRemote.results[0].status, 'needs-proof')
+  assert.match(missingRemote.summary, /remote branch HEAD/)
+  const reopened = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: { boundary: 'merge', 'base-stale': true, 'base-head': 'origin-main-new', published: true, 'remote-head': 'published-head' }, runtime: env.rt })
+  assert.equal(reopened.results[0].stage, 'sync-base')
+  assert.match(reopened.limits[0], /previous HEAD/)
+  const synced = await completeEffect(env, plan, 'sync-base', { head: 'published-head', receiptHead: 'rebased-head', 'base-stale': true, 'base-head': 'origin-main-new', published: true, 'remote-head': 'published-head' })
+  assert.deepEqual(synced.prepared.checkpoint.effects, ['git:rebase', 'git:push'])
+  const next = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: {}, runtime: env.rt })
+  assert.equal(next.results[0].stage, 'qualify')
+  const state = await handleCommand({ root: env.root, target: 'status', flags: {}, runtime: env.rt })
+  assert.equal(state.receipts.filter((item) => item.planId === plan.id && item.stage === 'publish-pr').length, 1)
 })
 
 test('release planning aggregates only conventional release-impacting changes', async (context) => {
@@ -173,28 +283,39 @@ test('release planning aggregates only conventional release-impacting changes', 
   assert.deepEqual(collected.changes, ['#10 feat(cli): add delivery'])
   assert.equal(collected.versionRecommendation, 'minor')
 
+  await completeEffect(env, plan, 'prepare')
   const specialized = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: { boundary: 'publish-pr' }, runtime: env.rt })
   assert.equal(specialized.results[0].stage, 'release-pr')
   const premature = await handleCommand({ root: env.root, target: 'release-candidate', action: plan.id, flags: { commit: 'release-main-head' }, runtime: env.rt })
   assert.equal(premature.status, 'blocked')
   assert.match(premature.limits[0], /release-pr/)
 
-  await completeEffect(env, plan, 'release-pr', { head: 'release-pr-head', 'diff-digest': 'sha256:release', files: 'CHANGELOG.md,docs/releases/1.2.0-alpha.0.md' })
+  await completeEffect(env, plan, 'release-pr', { head: branchHead(env, plan), receiptHead: 'release-pr-head', 'diff-digest': 'sha256:release', files: 'CHANGELOG.md,docs/releases/1.2.0-alpha.0.md' })
   await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'ci', proof: 'checks:test-22,checks:test-24', head: 'release-pr-head' }, runtime: env.rt })
+  await completeSync(env, plan, 'release-pr-head')
   const wrongMerge = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'merge', head: 'different-pr-head' }, runtime: env.rt })
   assert.equal(wrongMerge.status, 'blocked')
   await completeEffect(env, plan, 'merge', { head: 'release-pr-head' })
   await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'verify-main', proof: 'github:main-contains-release', head: 'release-main-head' }, runtime: env.rt })
+  await completeEffect(env, plan, 'candidate-checkout', { head: 'release-main-head' })
   await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'qualify', proof: 'tarball:qualified', head: 'release-main-head' }, runtime: env.rt })
+
+  const candidateCheckout = env.worktrees.get(`candidate-${plan.id}`)
+  candidateCheckout.handle.detached = false
+  const attached = await handleCommand({ root: env.root, target: 'release-candidate', action: plan.id, flags: { commit: 'release-main-head', tarball: '/tmp/example-cli.tgz', sha256: 'sha256:1234', integrity: 'sha512-example', 'dry-run': 'passed' }, runtime: env.rt })
+  assert.equal(attached.status, 'blocked')
+  assert.match(attached.summary, /detached candidate/)
+  candidateCheckout.handle.detached = true
 
   const wrongCommit = await handleCommand({ root: env.root, target: 'release-candidate', action: plan.id, flags: { commit: 'different-main-head', tarball: '/tmp/example-cli.tgz', sha256: 'sha256:1234', integrity: 'sha512-example', 'dry-run': 'passed' }, runtime: env.rt })
   assert.equal(wrongCommit.status, 'blocked')
   assert.match(wrongCommit.limits[0], /exact commit/)
   const candidate = await handleCommand({ root: env.root, target: 'release-candidate', action: plan.id, flags: { commit: 'release-main-head', tarball: '/tmp/example-cli.tgz', sha256: 'sha256:1234', integrity: 'sha512-example', 'dry-run': 'passed' }, runtime: env.rt })
   assert.equal(candidate.payload.package.name, '@example/cli')
+  assert.equal(candidate.payload.checkoutContext.handleRef.id, `candidate-${plan.id}`)
   const preview = await handleCommand({ root: env.root, target: 'next', action: plan.id, flags: { auto: true }, runtime: env.rt })
   assert.equal(preview.results[0].stage, 'npm-publish')
-  assert.equal(env.runs.size, 2)
+  assert.equal(env.runs.size, 5)
   const mismatchedPublish = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'npm-publish', head: 'different-main-head' }, runtime: env.rt })
   assert.equal(mismatchedPublish.status, 'blocked')
   assert.match(mismatchedPublish.limits[0], /exact public commit/)
@@ -202,7 +323,7 @@ test('release planning aggregates only conventional release-impacting changes', 
   await completeEffect(env, plan, 'npm-publish', { head: 'release-main-head' })
   const tagCreate = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'git-tag-create', head: 'release-main-head' }, runtime: env.rt })
   assert.deepEqual(tagCreate.checkpoint.effects, ['git:tag'])
-  assert.deepEqual(tagCreate.checkpoint.targets, [env.root])
+  assert.deepEqual(tagCreate.checkpoint.targets, [env.worktrees.get(`candidate-${plan.id}`).context.path])
   env.runs.get(tagCreate.runId).result = { status: 'succeeded', summary: 'tag created', proof: ['tag:local'], outcome: { receipt: { status: 'succeeded', summary: 'tag created', effects: ['git:tag'], targets: [env.root], proof: ['tag:local'], head: 'release-main-head' } } }
   await handleCommand({ root: env.root, target: 'receipt', action: plan.id, flags: { stage: 'git-tag-create', run: tagCreate.runId }, runtime: env.rt })
   const tagPush = await handleCommand({ root: env.root, target: 'checkpoint', action: plan.id, flags: { stage: 'git-tag-push', head: 'release-main-head' }, runtime: env.rt })

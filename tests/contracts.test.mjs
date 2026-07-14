@@ -23,6 +23,29 @@ test('change receipts may bind proof to an exact repository head', async () => {
   assert.equal((await validateContract('ChangeReceipt', receipt)).head, 'abc1234')
 })
 
+test('checkout receipts bind a worktree effect to its exact authority boundary', async () => {
+  const receipt = {
+    schemaVersion: 2,
+    protocolVersion: '0.2',
+    id: 'checkout-receipt-open-1',
+    proposalId: 'checkout-proposal-open-1',
+    action: 'open',
+    runId: 'run-open-worktree',
+    checkpointId: 'checkpoint-open-worktree',
+    status: 'succeeded',
+    summary: 'Managed worktree opened.',
+    targets: ['git-worktree://local/repository/worktree-1'],
+    effects: ['git:worktree'],
+    proof: ['git:head:abc1234'],
+    head: 'abc1234',
+    policyDigest: 'sha256:policy',
+    observedAt: '2026-07-14T10:00:00.000Z',
+    limits: [],
+    context: { handleRef: { id: 'worktree-1', digest: 'sha256:handle' } },
+  }
+  assert.equal((await validateContract('CheckoutReceipt', receipt)).action, 'open')
+})
+
 test('host capability reports the honest provider intent path', async () => {
   const value = await validateContract('HostCapabilities', { schemaVersion: 2, protocolVersion: '0.2', host: 'codex', level: 'guarded', intentPath: 'agent-first-call', capabilities: { sessionStart: true }, limits: ['no native command hook'] })
   assert.equal(value.intentPath, 'agent-first-call')

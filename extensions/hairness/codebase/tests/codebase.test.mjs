@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { access, lstat, mkdir, mkdtemp, realpath, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { handleCommand as codebaseCommand } from '../index.mjs'
+import { handleCommand as codebaseCommand, services } from '../index.mjs'
 import { validateContract } from '../../../../src/core/contracts.mjs'
 
 test('required codebase absence blocks while recommended absence stays partial', async () => {
@@ -67,4 +67,37 @@ test('local codebase contracts mount and unmount without touching the checkout',
   await codebaseCommand({ root, target: 'remove', action: undefined, rest: [], flags: { local: 'private-repo', checkpoint: removal.checkpointId }, runtime })
   await assert.rejects(access(join(root, '.overlay/codebases/private-repo/default')))
   await access(checkout)
+})
+
+test('managed mounts require and preserve the exact calling Run grant', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'hairness-managed-codebase-'))
+  const checkout = join(root, 'external-checkout')
+  await mkdir(checkout)
+  const remote = 'git@example.test:team/external.git'
+  const contract = {
+    schemaVersion: 2,
+    protocolVersion: '0.2',
+    id: 'external',
+    displayName: 'External',
+    requirement: 'optional',
+    repository: { provider: 'git', host: 'example.test', namespace: 'team', name: 'external', webUrl: 'https://example.test/team/external', acceptedRemotes: [remote] },
+    testCommands: [],
+  }
+  const assertions = []
+  const runtime = {
+    authority: { assert: async (...args) => { assertions.push(args); return { id: 'grant-managed' } } },
+    distribution: { read: async () => ({ codebases: [contract] }) },
+    extensions: { call: async (_owner, _service, request) => ({ data: request.operation === 'identity' ? { path: checkout, remote } : { path: checkout, branch: 'feat/test', head: 'abc123', dirty: 0 } }) },
+  }
+  const target = 'codebase://external/checkouts/wt-123'
+  const input = { runId: 'run-managed', effect: 'filesystem:write', target, codebaseId: 'external', checkout: 'wt-123', path: checkout }
+  const mounted = await services['mount-managed']({ root, input, runtime })
+  assert.equal(mounted.grantId, 'grant-managed')
+  assert.equal((await lstat(join(root, '.overlay/codebases/external/wt-123'))).isSymbolicLink(), true)
+  assert.deepEqual(assertions, [['run-managed', 'filesystem:write', target]])
+  const unmounted = await services['unmount-managed']({ root, input, runtime })
+  assert.equal(unmounted.status, 'unmounted')
+  await assert.rejects(access(join(root, '.overlay/codebases/external/wt-123')))
+  await access(checkout)
+  assert.deepEqual(assertions, [['run-managed', 'filesystem:write', target], ['run-managed', 'filesystem:write', target]])
 })

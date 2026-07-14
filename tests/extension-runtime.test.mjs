@@ -4,6 +4,7 @@ import { access, lstat, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/prom
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { extensionCommand } from '../src/distribution/registry.mjs'
+import { createRun, grantCheckpoint } from '../src/core/index.mjs'
 
 async function writeExtension(root, base, id, options = {}) {
   const path = join(root, base, ...id.split('/'))
@@ -53,6 +54,55 @@ test('runtime rejects Assignment effects not declared by its Operation', async (
     } })
   }\n`)
   await assert.rejects(extensionCommand(root, 'beta', 'show', undefined, [], {}), (error) => error.code === 'operation_effect_undeclared')
+})
+
+test('runtime authority assert revalidates the exact Run grant', async () => {
+  const root = await fixture()
+  const target = join(root, 'managed-checkout')
+  await mkdir(target)
+  await createRun(root, {
+    id: 'managed-mount-run',
+    planId: 'managed-mount-plan',
+    assignment: {
+      schemaVersion: 2,
+      protocolVersion: '0.2',
+      id: 'managed-mount-assignment',
+      operation: { capability: 'fixture/alpha-fixture', id: 'run' },
+      profile: 'executor',
+      goal: 'Mutate one managed checkout.',
+      outcome: 'The exact grant is enforced.',
+      workload: 'fast',
+      inputs: [],
+      targets: [target],
+      exclusions: [],
+      allowedSources: [],
+      requestedEffects: ['filesystem:write'],
+      result: { schema: 'ChangeReceipt', disposition: 'effect' },
+    },
+  })
+  await grantCheckpoint(root, {
+    schemaVersion: 2,
+    protocolVersion: '0.2',
+    id: 'managed-mount-checkpoint',
+    runId: 'managed-mount-run',
+    mode: 'mutation',
+    intent: 'Mutate the managed checkout.',
+    targets: [target],
+    effects: ['filesystem:write'],
+    exclusions: [],
+    risk: 'Fixture mutation.',
+    proof: ['fixture'],
+    approved: true,
+  })
+  await writeFile(join(root, 'extensions/fixture/beta/index.mjs'), `export async function handleCommand({ runtime }) {
+    const grant = await runtime.authority.assert('managed-mount-run', 'filesystem:write', ${JSON.stringify(target)})
+    return { grantId: grant.id }
+  }\n`)
+  assert.deepEqual(await extensionCommand(root, 'beta', 'show', undefined, [], {}), { grantId: 'grant-managed-mount-checkpoint' })
+  await writeFile(join(root, 'extensions/fixture/beta/index.mjs'), `export async function handleCommand({ runtime }) {
+    return runtime.authority.assert('managed-mount-run', 'filesystem:write', ${JSON.stringify(join(root, 'other'))})
+  }\n`)
+  await assert.rejects(extensionCommand(root, 'beta', 'show', undefined, [], {}), (error) => error.code === 'authority_exceeded')
 })
 
 test('dependency cycles block extension doctor', async () => {
