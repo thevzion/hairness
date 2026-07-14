@@ -2,16 +2,29 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { mkdir, mkdtemp, readFile, realpath, rm, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { authorityPolicy, handleCommand, services } from '../index.mjs'
+import { validateJsonSchema } from '../../../../src/core/contracts.mjs'
 
 const exec = promisify(execFile)
 const policyDigest = 'sha256:delivery-policy'
 
 async function git(path, args, options = {}) {
   return exec('git', ['-C', path, ...args], { encoding: 'utf8', ...options })
+}
+
+async function repositoryFixture(prefix) {
+  const root = await mkdtemp(join(tmpdir(), prefix))
+  await git(root, ['init', '-b', 'main'])
+  await git(root, ['config', 'user.email', 'test@example.test'])
+  await git(root, ['config', 'user.name', 'Worktree Test'])
+  await writeFile(join(root, 'README.md'), '# fixture\n')
+  await git(root, ['add', 'README.md'])
+  await git(root, ['commit', '-m', 'init'])
+  await git(root, ['branch', 'origin/main', 'main'])
+  return root
 }
 
 function parseWorktrees(raw) {
@@ -85,14 +98,16 @@ async function fixture(options = {}) {
   await writeFile(join(root, 'bin', 'hairness.mjs'), '')
   await git(root, ['add', '.gitignore', 'README.md', 'bin/hairness.mjs'])
   await git(root, ['commit', '-m', 'init'])
+  await git(root, ['branch', 'origin/main', 'main'])
   const stored = new Map()
   const assertions = []
   const runs = new Map()
+  const plans = new Map()
   const runtime = {
-    contracts: { validateSchema: async (_schema, value) => value },
+    contracts: { validateSchema: (schema, value, label) => validateJsonSchema(new URL(`../${schema.slice(2)}`, import.meta.url), value, label) },
     distribution: {
-      read: async () => ({ defaults: { worktrees: { placement: 'sibling', directorySuffix: '-worktrees', layout: '{type}/{slug}', enforcement: 'required', hooks: 'required', cleanup: 'checkpoint' } } }),
-      preferences: async () => ({ worktrees: options.overrideRoot ? { root: options.overrideRoot } : {} }),
+      read: async () => ({ defaults: { worktrees: { placement: 'anchor-sibling', directorySuffix: '-worktrees', layout: '{repository}/{type}/{slug}', enforcement: 'required', hooks: 'required', cleanup: 'checkpoint' } }, codebases: options.codebases?.map((item) => item.contract) ?? [] }),
+      preferences: async () => ({ worktrees: { ...(options.overrideRoot ? { root: options.overrideRoot } : {}), ...(options.repositoryRoots ? { repositoryRoots: options.repositoryRoots } : {}) } }),
     },
     overlay: {
       read: async (key, fallback) => stored.has(key) ? structuredClone(stored.get(key)) : structuredClone(fallback),
@@ -103,25 +118,45 @@ async function fixture(options = {}) {
       call: async (owner, service, input) => {
         if (owner === 'hairness/session-intelligence' && service === 'current') return { id: 'session-one', limits: [] }
         if (owner === 'hairness/sources' && service === 'read') return { data: await sourceEvidence(input.operation, input.input) }
+        if (owner === 'hairness/codebase' && service === 'list') return { codebases: options.codebases ?? [] }
+        if (owner === 'hairness/codebase' && service === 'inspect') {
+          const codebase = options.codebases?.find((item) => item.id === input.id && item.checkout === (input.checkout ?? 'default'))
+          if (!codebase) throw new Error(`Unknown codebase: ${input.id}`)
+          return codebase
+        }
         throw new Error(`Unexpected service: ${owner}.${service}`)
       },
     },
-    authority: { assert: async (runId, effect, target) => assertions.push({ runId, effect, target }) },
-    runs: { read: async (id) => runs.get(id) ?? null },
+    authority: { assert: async (runId, effect, target) => assertions.push({ runId, effect, target }), releaseLocks: async () => null, quarantineLocks: async () => null },
+    plans: { read: async (id) => plans.get(id) ?? null, write: async (value) => (plans.set(value.id, structuredClone(value)), value) },
+    runs: {
+      read: async (id) => runs.get(id) ?? Promise.reject(new Error(`Run not found: ${id}`)),
+      create: async (value) => { const run = { ...structuredClone(value), state: 'planned' }; runs.set(value.id, run); return run },
+      transition: async (id, state) => { const run = runs.get(id); run.state = state; return run },
+      proposeCheckpoint: async (value) => ({ ...structuredClone(value), policyDigest: 'sha256:authority-policy' }),
+      capsule: async (id) => ({ runId: id, assignment: structuredClone(runs.get(id).assignment) }),
+      result: async (id, value) => { const run = runs.get(id); if (value === undefined) return run.result ?? null; run.result = structuredClone(value); run.state = value.status; return value },
+    },
   }
-  return { root, runtime, stored, assertions, runs, cleanup: async () => rm(dirname(root).includes('hairness-worktree-controls-') ? root : root, { recursive: true, force: true }) }
+  return { root, runtime, stored, assertions, runs, cleanup: async () => {
+    const entries = await git(root, ['worktree', 'list', '--porcelain', '-z']).then(({ stdout }) => parseWorktrees(stdout)).catch(() => [])
+    for (const entry of entries) if (resolve(entry.path) !== resolve(root)) await rm(entry.path, { recursive: true, force: true })
+    await git(root, ['worktree', 'prune']).catch(() => null)
+    await rm(join(dirname(root), `${root.split('/').at(-1)}-worktrees`), { recursive: true, force: true })
+    await rm(root, { recursive: true, force: true })
+  } }
 }
 
 function request(root, overrides = {}) {
-  return { repository: { kind: 'workspace', root }, planId: 'change-one', sessionId: 'session-one', policyDigest, branch: 'feat/parallel-work', base: 'main', mode: 'branch', ...overrides }
+  return { repository: { kind: 'workspace' }, planId: 'change-one', sessionId: 'session-one', policyDigest, branch: 'feat/parallel-work', base: 'main', mode: 'branch', ...overrides }
 }
 
-test('open is idempotently proposed at sibling placement and creates one writer lease', async (context) => {
+test('open is idempotently proposed in the anchor-owned workspace pool and creates one writer lease', async (context) => {
   const env = await fixture(); context.after(env.cleanup)
   const first = await services.propose({ root: env.root, input: { action: 'open', request: request(env.root) }, runtime: env.runtime })
   const same = await services.propose({ root: env.root, input: { action: 'open', request: request(env.root) }, runtime: env.runtime })
   assert.equal(first.id, same.id)
-  assert.match(first.targets.find((item) => !item.includes('://')), /hairness-worktree-controls-.*-worktrees\/feat\/parallel-work$/)
+  assert.match(first.targets.find((item) => !item.includes('://')), /hairness-worktree-controls-.*-worktrees\/workspace\/feat\/parallel-work$/)
   assert.deepEqual(first.effects, ['filesystem:write', 'git:worktree', 'git:branch'])
   assert.deepEqual(first.limits, [])
 
@@ -159,9 +194,9 @@ test('machine-local root override controls placement without entering shared sta
   const overrideRoot = await mkdtemp(join(tmpdir(), 'hairness-custom-worktrees-'))
   const env = await fixture({ overrideRoot }); context.after(async () => { await env.cleanup(); await rm(overrideRoot, { recursive: true, force: true }) })
   const proposal = await services.propose({ root: env.root, input: { action: 'open', request: request(env.root, { branch: 'fix/custom-root' }) }, runtime: env.runtime })
-  assert.equal(proposal.targets.find((item) => !item.includes('://')), join(overrideRoot, 'fix', 'custom-root'))
+  assert.equal(proposal.targets.find((item) => !item.includes('://')), join(overrideRoot, 'workspace', 'fix', 'custom-root'))
   assert.equal(JSON.stringify(env.stored.get('state.json')).includes(overrideRoot), true)
-  assert.equal(proposal.request.repository.root, await realpath(env.root))
+  assert.deepEqual(proposal.request.repository, { kind: 'workspace' })
 })
 
 test('bootstrap adoption requests only target-mutation and supports explicit handoff and takeover', async (context) => {
@@ -170,11 +205,11 @@ test('bootstrap adoption requests only target-mutation and supports explicit han
   await git(env.root, ['worktree', 'add', '--lock', '--reason', 'hairness:run-bootstrap:bootstrap-plan', '-b', 'feat/bootstrap', target, 'main'])
   const adoptRequest = request(env.root, { planId: 'bootstrap-plan', branch: 'feat/bootstrap', path: target, bootstrap: true })
   const proposal = await services.propose({ root: env.root, input: { action: 'adopt', request: adoptRequest }, runtime: env.runtime })
-  assert.deepEqual(proposal.effects, ['target-mutation'])
+  assert.deepEqual(proposal.effects, ['filesystem:write', 'target-mutation'])
   assert.deepEqual(proposal.limits, [], JSON.stringify(await sourceEvidence('worktrees', { path: env.root })))
   const adopted = await services.execute({ root: env.root, input: { proposal: proposal.id, runId: 'run-bootstrap', checkpointId: 'checkpoint-bootstrap' }, runtime: env.runtime })
   assert.equal(adopted.status, 'succeeded')
-  assert.equal(env.assertions[0].effect, 'target-mutation')
+  assert.equal(env.assertions.some((item) => item.effect === 'target-mutation'), true)
 
   const handoffRequest = { ...adoptRequest, worktreeId: adopted.context.handleRef.id, targetSessionId: 'session-two' }
   const handoff = await services.propose({ root: env.root, input: { action: 'handoff', request: handoffRequest }, runtime: env.runtime })
@@ -204,6 +239,7 @@ test('close never force-removes a dirty checkout and succeeds after fresh clean 
   await writeFile(join(created.context.path, 'dirty.txt'), 'dirty\n')
 
   const closeRequest = request(env.root, { worktreeId: created.context.handleRef.id, expectedHead: created.context.head })
+  await services['mark-cleanup-ready']({ root: env.root, input: { planId: 'change-one', handleIds: [created.context.handleRef.id], head: created.context.head, proof: ['github:pr-merged', `published-head:${created.context.head}`, 'verify-main:fixture'], maxAgeMinutes: 30 }, runtime: env.runtime })
   const closing = await services.propose({ root: env.root, input: { action: 'close', request: closeRequest }, runtime: env.runtime })
   const refused = await services.execute({ root: env.root, input: { proposal: closing.id, runId: 'run-close-dirty', checkpointId: 'checkpoint-close-dirty' }, runtime: env.runtime })
   assert.equal(refused.status, 'failed')
@@ -277,4 +313,131 @@ test('doctor classifies unknown registered checkouts without adopting them', asy
   assert.ok(unknown, JSON.stringify(dashboard.worktrees))
   assert.equal(unknown.classification, 'unmanaged')
   assert.equal(dashboard.handles.length, 0)
+})
+
+test('a linked worktree resolves the controller anchor through the shared overlay', async (context) => {
+  const env = await fixture()
+  const linked = join(dirname(env.root), `${env.root.split('/').at(-1)}-linked`)
+  context.after(async () => { await git(env.root, ['worktree', 'remove', linked]).catch(() => null); await env.cleanup() })
+  await git(env.root, ['worktree', 'add', '-b', 'feat/linked-root', linked, 'main'])
+  await symlink(join(env.root, '.overlay'), join(linked, '.overlay'), 'dir')
+  const proposal = await services.propose({ root: linked, input: { action: 'open', request: request(linked, { planId: 'linked-plan', branch: 'fix/from-linked-root' }) }, runtime: env.runtime })
+  assert.equal(proposal.proof.includes(`git:repository-root:${await realpath(env.root)}`), true)
+  assert.equal(proposal.targets.some((item) => item.endsWith(`${env.root.split('/').at(-1)}-worktrees/workspace/fix/from-linked-root`)), true)
+})
+
+test('workspace and codebases with identical slugs receive distinct controller-owned pool paths', async (context) => {
+  const api = await repositoryFixture('hairness-codebase-api-')
+  const web = await repositoryFixture('hairness-codebase-web-')
+  const contract = (id, path) => ({ id, checkout: 'default', path, mounted: true, remoteMatch: true, contract: { repository: { namespace: 'example', name: id, acceptedRemotes: [] } } })
+  const env = await fixture({ codebases: [contract('customer-api', api), contract('customer-web', web)] })
+  context.after(async () => { await env.cleanup(); await rm(api, { recursive: true, force: true }); await rm(web, { recursive: true, force: true }) })
+  const workspace = await services.propose({ root: env.root, input: { action: 'open', request: request(env.root, { planId: 'workspace-same', branch: 'feat/same' }) }, runtime: env.runtime })
+  const apiProposal = await services.propose({ root: env.root, input: { action: 'open', request: request(env.root, { repository: { kind: 'codebase', id: 'customer-api', checkout: 'default' }, planId: 'api-same', branch: 'feat/same' }) }, runtime: env.runtime })
+  const webProposal = await services.propose({ root: env.root, input: { action: 'open', request: request(env.root, { repository: { kind: 'codebase', id: 'customer-web', checkout: 'default' }, planId: 'web-same', branch: 'feat/same' }) }, runtime: env.runtime })
+  assert.match(workspace.targets.find((item) => !item.includes('://')), /-worktrees\/workspace\/feat\/same$/)
+  assert.match(apiProposal.targets.find((item) => !item.includes('://')), /-worktrees\/codebases\/customer-api\/feat\/same$/)
+  assert.match(webProposal.targets.find((item) => !item.includes('://')), /-worktrees\/codebases\/customer-web\/feat\/same$/)
+})
+
+test('repository-specific roots override the global pool without duplicating the repository segment', async (context) => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'hairness-workspace-pool-'))
+  const globalRoot = await mkdtemp(join(tmpdir(), 'hairness-global-pool-'))
+  const env = await fixture({ overrideRoot: globalRoot, repositoryRoots: { workspace: workspaceRoot } })
+  context.after(async () => { await env.cleanup(); await rm(workspaceRoot, { recursive: true, force: true }); await rm(globalRoot, { recursive: true, force: true }) })
+  const proposal = await services.propose({ root: env.root, input: { action: 'open', request: request(env.root, { branch: 'fix/specific-root' }) }, runtime: env.runtime })
+  assert.equal(proposal.targets.find((item) => !item.includes('://')), join(workspaceRoot, 'fix', 'specific-root'))
+})
+
+test('doctor migrates a legacy active handle in place to one stable controller', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const target = join(dirname(env.root), `${env.root.split('/').at(-1)}-legacy`)
+  await git(env.root, ['worktree', 'add', '--lock', '--reason', 'hairness:legacy-run:legacy-plan', '-b', 'feat/legacy', target, 'main'])
+  await symlink(join(env.root, '.overlay'), join(target, '.overlay'), 'dir')
+  const timestamp = new Date().toISOString()
+  env.stored.set('state.json', { schemaVersion: 2, protocolVersion: '0.2', controller: null, controllerDraft: null, handles: [{ schemaVersion: 2, protocolVersion: '0.2', id: 'legacy-handle', repository: { kind: 'workspace', root: target }, planId: 'legacy-plan', kind: 'branch', path: target, branch: 'feat/legacy', base: 'main', head: await git(target, ['rev-parse', 'HEAD']).then(({ stdout }) => stdout.trim()), detached: false, state: 'active', policyDigest, createdAt: timestamp, updatedAt: timestamp }], leases: [{ schemaVersion: 2, protocolVersion: '0.2', id: 'legacy-lease', handleId: 'legacy-handle', planId: 'legacy-plan', sessionId: 'session-one', mode: 'writer', state: 'active', previousLeaseId: null, reason: null, acquiredAt: timestamp, updatedAt: timestamp }], proposals: [], receipts: [], reconciliations: [], updatedAt: timestamp })
+  const doctor = await handleCommand({ root: target, target: 'doctor', flags: { id: 'legacy-handle', session: 'session-one' }, runtime: env.runtime })
+  assert.equal(doctor.migration.status, 'needs-authority')
+  const migrated = await services.execute({ root: target, input: { proposal: doctor.migration.proposal.id, runId: 'run-repair', checkpointId: doctor.migration.proposal.id }, runtime: env.runtime })
+  assert.equal(migrated.status, 'succeeded', JSON.stringify(migrated))
+  const stored = env.stored.get('state.json')
+  assert.ok(stored.controller?.id)
+  assert.deepEqual(stored.handles[0].repository, { kind: 'workspace' })
+  assert.equal(stored.handles[0].placement, 'external')
+  const canonicalTarget = await realpath(target)
+  const live = parseWorktrees(await git(env.root, ['worktree', 'list', '--porcelain', '-z']).then(({ stdout }) => stdout)).find((item) => resolve(item.path) === resolve(canonicalTarget))
+  assert.equal(live.lockReason, `hairness:${stored.controller.id}:legacy-handle:legacy-plan`)
+  const second = await handleCommand({ root: target, target: 'doctor', flags: { id: 'legacy-handle' }, runtime: env.runtime })
+  assert.equal(second.migration, undefined)
+})
+
+test('a relocated controller blocks writes until an exact repair checkpoint', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const opened = await services.propose({ root: env.root, input: { action: 'open', request: request(env.root) }, runtime: env.runtime })
+  const created = await services.execute({ root: env.root, input: { proposal: opened.id, runId: 'run-open', checkpointId: opened.id }, runtime: env.runtime })
+  const value = env.stored.get('state.json')
+  value.controller.anchorRoot = `${value.controller.anchorRoot}-moved`
+  env.stored.set('state.json', value)
+  const resolved = await services.resolve({ root: env.root, input: { ...request(env.root), worktreeId: created.context.handleRef.id, requireWriter: true }, runtime: env.runtime })
+  assert.equal(resolved.status, 'blocked')
+  assert.equal(resolved.limits.includes('controller-relocation-required'), true)
+  const doctor = await handleCommand({ root: env.root, target: 'doctor', flags: { id: created.context.handleRef.id }, runtime: env.runtime })
+  assert.equal(doctor.migration.status, 'needs-authority')
+  const repaired = await services.execute({ root: env.root, input: { proposal: doctor.migration.proposal.id, runId: 'run-controller-repair', checkpointId: doctor.migration.proposal.id }, runtime: env.runtime })
+  assert.equal(repaired.status, 'succeeded', JSON.stringify(repaired))
+})
+
+test('foreign controller takeover is break-glass and preserves controller lineage', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const target = join(dirname(env.root), `${env.root.split('/').at(-1)}-foreign`)
+  await git(env.root, ['worktree', 'add', '--lock', '--reason', 'hairness:foreign-controller:foreign-handle:foreign-plan', '-b', 'fix/foreign', target, 'main'])
+  const proposal = await services.propose({ root: env.root, input: { action: 'takeover', request: request(env.root, { planId: 'foreign-plan', branch: 'fix/foreign', path: target, reason: 'The foreign controller is unavailable.', proof: ['controller-unavailable:foreign-controller'] }) }, runtime: env.runtime })
+  assert.deepEqual(proposal.limits, [])
+  assert.equal(proposal.effects.includes('git:worktree'), true)
+  const result = await services.execute({ root: env.root, input: { proposal: proposal.id, runId: 'run-foreign-takeover', checkpointId: proposal.id }, runtime: env.runtime })
+  assert.equal(result.status, 'succeeded')
+  const stored = env.stored.get('state.json').handles.find((item) => item.id === 'foreign-handle')
+  assert.equal(stored.previousControllerId, 'foreign-controller')
+  const dashboard = await services.inspect({ root: env.root, input: {}, runtime: env.runtime })
+  assert.equal(dashboard.worktrees.find((item) => item.handleId === 'foreign-handle').classification, 'managed-external')
+})
+
+test('close --all-ready returns child receipts and stops with an explicit partial result', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const open = async (planId, branch) => {
+    const proposal = await services.propose({ root: env.root, input: { action: 'open', request: request(env.root, { planId, branch }) }, runtime: env.runtime })
+    const result = await services.execute({ root: env.root, input: { proposal: proposal.id, runId: `run-${planId}`, checkpointId: proposal.id }, runtime: env.runtime })
+    await services['mark-cleanup-ready']({ root: env.root, input: { planId, handleIds: [result.context.handleRef.id], head: result.context.head, proof: ['github:pr-merged', `published-head:${result.context.head}`, 'verify-main:fixture'], maxAgeMinutes: 30 }, runtime: env.runtime })
+    return result
+  }
+  const first = await open('batch-one', 'fix/batch-one')
+  const second = await open('batch-two', 'fix/batch-two')
+  await writeFile(join(second.context.path, 'dirty.txt'), 'dirty\n')
+  const preview = await handleCommand({ root: env.root, target: 'close', flags: { 'all-ready': true }, runtime: env.runtime })
+  assert.equal(preview.status, 'needs-authority')
+  assert.equal(preview.proposal.items.length, 2)
+  env.runs.get(preview.runId).state = 'ready'
+  const result = await handleCommand({ root: env.root, target: 'close', flags: { 'all-ready': true, checkpoint: preview.proposal.id, run: preview.runId }, runtime: env.runtime })
+  assert.equal(result.status, 'partial')
+  assert.equal(result.children.length, 2)
+  await assert.rejects(realpath(first.context.path))
+  await realpath(second.context.path)
+})
+
+test('close --all-ready quarantines an unknown child effect before any retry', async (context) => {
+  const env = await fixture(); context.after(env.cleanup)
+  const opened = await services.propose({ root: env.root, input: { action: 'open', request: request(env.root, { planId: 'batch-unknown', branch: 'fix/batch-unknown' }) }, runtime: env.runtime })
+  const created = await services.execute({ root: env.root, input: { proposal: opened.id, runId: 'run-batch-unknown-open', checkpointId: opened.id }, runtime: env.runtime })
+  await services['mark-cleanup-ready']({ root: env.root, input: { planId: 'batch-unknown', handleIds: [created.context.handleRef.id], head: created.context.head, proof: ['github:pr-merged', `published-head:${created.context.head}`, 'verify-main:fixture'], maxAgeMinutes: 30 }, runtime: env.runtime })
+  const preview = await handleCommand({ root: env.root, target: 'close', flags: { 'all-ready': true }, runtime: env.runtime })
+  const originalCall = env.runtime.extensions.call
+  env.runtime.extensions.call = async (owner, service, input) => {
+    if (owner === 'hairness/sources' && service === 'read' && input.operation === 'merge-proof') throw new Error('source transport became unknown')
+    return originalCall(owner, service, input)
+  }
+  env.runs.get(preview.runId).state = 'ready'
+  const result = await handleCommand({ root: env.root, target: 'close', flags: { 'all-ready': true, checkpoint: preview.proposal.id, run: preview.runId }, runtime: env.runtime })
+  assert.equal(result.status, 'unknown')
+  assert.equal(result.limits.includes('batch-cleanup-reconciliation-required'), true)
+  await realpath(created.context.path)
 })

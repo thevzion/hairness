@@ -18,7 +18,7 @@ const basePolicy = {
   release: { package: '@example/cli', registry: 'https://registry.npmjs.org/', versionSource: 'package.json', prereleaseTag: 'next', gitTagFormat: 'v{version}', githubRelease: 'prerelease', bootstrapBaseline: null },
 }
 
-async function fixture(policy = basePolicy) {
+async function fixture(policy = basePolicy, options = {}) {
   const root = await mkdtemp(join(tmpdir(), 'hairness-delivery-'))
   await writeFile(join(root, 'package.json'), `${JSON.stringify({ name: policy.release.package, version: '1.2.0-alpha.0' })}\n`)
   const values = new Map()
@@ -29,6 +29,7 @@ async function fixture(policy = basePolicy) {
   const runs = new Map()
   const checkpoints = []
   const worktrees = new Map()
+  const cleanupReady = []
   let activePolicy = structuredClone(policy)
   const setCheckout = (plan, stage, head = null) => {
     const candidate = stage === 'candidate-checkout'
@@ -49,6 +50,12 @@ async function fixture(policy = basePolicy) {
     overlay: { read: async (key, fallback) => values.get(key) ?? structuredClone(fallback), write: async (key, value) => (values.set(key, structuredClone(value)), value), append: async () => null },
     extensions: { call: async (id, service, input) => {
       if (id === 'hairness/initiative-controls') return { id: 'initiative-one' }
+      if (id === 'hairness/codebase' && service === 'list') return { codebases: options.codebases ?? [] }
+      if (id === 'hairness/codebase' && service === 'inspect') {
+        const codebase = options.codebases?.find((item) => item.id === input.id && item.checkout === (input.checkout ?? 'default'))
+        if (!codebase) throw new Error(`Unknown codebase: ${input.id}`)
+        return codebase
+      }
       if (id !== 'hairness/worktree-controls') throw new Error(`Unexpected extension: ${id}`)
       if (service === 'propose') {
         const effects = input.action === 'sync'
@@ -59,6 +66,13 @@ async function fixture(policy = basePolicy) {
       if (service === 'resolve') {
         const value = input.worktreeId ? worktrees.get(input.worktreeId) : [...worktrees.values()].find((item) => item.handle.planId === input.planId)
         return value ?? { status: 'blocked', summary: 'Missing managed checkout.', limits: ['Open it first.'] }
+      }
+      if (service === 'inspect') return { worktrees: [...worktrees.values()].map((item) => ({ ...item.handle, repositoryRef: item.handle.repositoryRef ?? { kind: 'workspace' } })) }
+      if (service === 'mark-cleanup-ready') {
+        cleanupReady.push(structuredClone(input))
+        const item = worktrees.get(input.handleIds[0])
+        if (item) item.handle.state = 'cleanup-ready'
+        return { status: 'cleanup-ready', handles: input.handleIds, limits: [] }
       }
       throw new Error(`Unexpected worktree service: ${service}`)
     } },
@@ -89,7 +103,7 @@ async function fixture(policy = basePolicy) {
       },
     },
   }
-  return { root, rt, values, artifacts, plans, runs, checkpoints, worktrees, setCheckout, setPolicy: (value) => { activePolicy = structuredClone(value) }, cleanup: () => rm(root, { recursive: true, force: true }) }
+  return { root, rt, values, artifacts, plans, runs, checkpoints, worktrees, cleanupReady, setCheckout, setPolicy: (value) => { activePolicy = structuredClone(value) }, cleanup: () => rm(root, { recursive: true, force: true }) }
 }
 
 async function draftAndAccept(env, subject = 'Add safe delivery', type = 'feat') {
@@ -134,6 +148,28 @@ test('accepted briefs are idempotent and allow parallel change plans', async (co
   assert.notEqual(first.plan.id, second.plan.id)
   assert.equal(state.plans.length, 2)
   assert.ok(state.plans.every((plan) => plan.initiativeId === 'initiative-one'))
+})
+
+test('delivery preserves one logical codebase RepositoryRef through brief, plan and prepare', async (context) => {
+  const codebase = { id: 'customer-api', checkout: 'default', mounted: true, remoteMatch: true, path: '/tmp/customer-api', contract: { repository: { namespace: 'acme', name: 'customer-api' } } }
+  const env = await fixture(basePolicy, { codebases: [codebase] }); context.after(env.cleanup)
+  const draft = await handleCommand({ root: env.root, target: 'want', action: 'Fix customer API', flags: { type: 'fix', codebase: 'customer-api' }, runtime: env.rt })
+  const brief = draft.results[0]
+  assert.equal(brief.repository, 'acme/customer-api')
+  assert.deepEqual(brief.repositoryRef, { kind: 'codebase', id: 'customer-api', checkout: 'default' })
+  const accepted = await handleCommand({ root: env.root, target: 'accept', action: brief.id, flags: {}, runtime: env.rt })
+  assert.deepEqual(accepted.plan.repositoryRef, brief.repositoryRef)
+  const prepared = await handleCommand({ root: env.root, target: 'checkpoint', action: accepted.plan.id, flags: { stage: 'prepare' }, runtime: env.rt })
+  const proposal = env.runs.get(prepared.runId).assignment.inputs.find((item) => item.checkoutProposal).checkoutProposal
+  assert.deepEqual(proposal.request.repository, brief.repositoryRef)
+})
+
+test('delivery asks for an explicit repository when mounted codebases make selection ambiguous', async (context) => {
+  const codebase = { id: 'customer-api', checkout: 'default', mounted: true, remoteMatch: true, path: '/tmp/customer-api', contract: { repository: { namespace: 'acme', name: 'customer-api' } } }
+  const env = await fixture(basePolicy, { codebases: [codebase] }); context.after(env.cleanup)
+  await assert.rejects(handleCommand({ root: env.root, target: 'want', action: 'Fix ambiguous target', flags: { type: 'fix' }, runtime: env.rt }), /choose --workspace or --codebase/)
+  const explicit = await handleCommand({ root: env.root, target: 'want', action: 'Fix workspace target', flags: { type: 'fix', workspace: true }, runtime: env.rt })
+  assert.deepEqual(explicit.results[0].repositoryRef, { kind: 'workspace' })
 })
 
 test('parallel change plans receive distinct managed writer checkouts', async (context) => {
@@ -243,6 +279,9 @@ test('change merge keeps pre-commit qualification and requires matching PR and C
   assert.equal(complete.results[0].cleanup, 'cleanup-ready')
   assert.match(complete.routes[0], new RegExp(complete.results[0].plan.checkoutContext.handleRef.id))
   assert.match(complete.limits[0], /No worktree was closed/)
+  assert.equal(env.cleanupReady.length, 1)
+  assert.equal(env.cleanupReady[0].head, 'pull-request-head')
+  assert.equal(env.cleanupReady[0].proof.includes('published-head:pull-request-head'), true)
 })
 
 test('a stale base reopens sync and invalidates downstream head evidence', async (context) => {
