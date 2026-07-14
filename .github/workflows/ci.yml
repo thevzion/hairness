@@ -33,3 +33,14 @@ jobs:
       - run: npm run check:pack
       - if: matrix.node == 24
         run: npm run check:lab
+
+  delivery-policy:
+    name: delivery policy
+    if: always() && github.event_name == 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require the complete qualification matrix
+        env:
+          TEST_RESULT: ${{ needs.test.result }}
+        run: test "$TEST_RESULT" = success
