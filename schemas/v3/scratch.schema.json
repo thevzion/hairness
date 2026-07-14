@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/schemas/scratch/v1alpha1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "hairness.dev/scratch/v1alpha1" },
+    "kind": { "const": "Scratch" },
+    "metadata": { "type": "object", "additionalProperties": false, "required": ["id", "createdAt", "updatedAt"], "properties": { "id": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" } } },
+    "spec": { "type": "object", "additionalProperties": false, "required": ["title", "status", "notes"], "properties": { "title": { "type": "string" }, "status": { "enum": ["active", "parked", "closed"] }, "notes": { "type": "string" }, "context": { "type": "string" }, "next": { "type": ["string", "null"] } } }
+  }
+}

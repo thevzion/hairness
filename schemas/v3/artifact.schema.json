@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/schemas/artifact/v1alpha1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "hairness.dev/artifact/v1alpha1" },
+    "kind": { "const": "Artifact" },
+    "metadata": { "type": "object", "additionalProperties": false, "required": ["id", "owner", "type", "createdAt"], "properties": { "id": { "type": "string" }, "owner": { "type": "string" }, "type": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" } } },
+    "spec": { "type": "object", "additionalProperties": false, "required": ["mediaType", "payload", "provenance"], "properties": { "mediaType": { "enum": ["text/markdown", "application/json"] }, "payload": { "type": "string", "pattern": "^payload\\.(md|json)$" }, "provenance": { "type": "object" } } }
+  }
+}

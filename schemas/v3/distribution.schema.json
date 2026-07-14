@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/schemas/distribution/v1alpha1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "hairness.dev/distribution/v1alpha1" },
+    "kind": { "const": "Distribution" },
+    "metadata": { "type": "object", "additionalProperties": false, "required": ["id", "version", "summary"], "properties": { "id": { "type": "string" }, "version": { "type": "string" }, "summary": { "type": "string" } } },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["extensions"],
+      "properties": {
+        "extensions": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "defaults": { "type": "object" },
+        "policies": { "type": "array", "items": { "type": "string" } },
+        "onboarding": { "type": "array", "items": { "type": "object" } }
+      }
+    }
+  }
+}
