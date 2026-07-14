@@ -15,20 +15,20 @@ function sessionKey(session = {}) {
   return `${provider}-${id}`.replace(/[^a-zA-Z0-9._-]+/g, '-')
 }
 
-async function bindingPath(root, session) {
+async function bindingPath(root, session, ensure = true) {
   const home = await loadHome(root)
-  const runtime = await ensureRuntime(home)
+  const runtime = ensure ? await ensureRuntime(home) : (await import('../runtime/index.mjs')).runtimePaths(home.metadata.id)
   return join(runtime.providers, 'sessions', `${sessionKey(session)}.json`)
 }
 
-export async function activeScratch(root, session) {
-  const binding = await readJson(await bindingPath(root, session), null)
+export async function activeScratch(root, session, options = {}) {
+  const binding = await readJson(await bindingPath(root, session, !options.readOnly), null)
   return binding?.scratch ?? null
 }
 
 export async function createScratch(root, options = {}) {
   const paths = overlayPaths(root)
-  if (!await exists(paths.profile)) throw new HairnessError('overlay_missing', 'Initialize the Overlay before creating a Scratch.')
+  if (!await exists(paths.profile)) await (await import('../overlay/index.mjs')).initializeOverlay(root, { profile: { language: options.language ?? 'en' } })
   const id = assertId(options.id ?? slug(options.title), 'Scratch id')
   const directory = join(paths.scratches, id)
   if (await exists(directory)) throw new HairnessError('scratch_exists', `Scratch ${id} already exists.`)
@@ -63,7 +63,8 @@ export async function showScratch(root, id) {
 
 export async function listScratches(root) {
   const values = []
-  for (const name of (await readdir(overlayPaths(root).scratches, { withFileTypes: true })).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort()) {
+  const entries = await readdir(overlayPaths(root).scratches, { withFileTypes: true }).catch((error) => error.code === 'ENOENT' ? [] : Promise.reject(error))
+  for (const name of entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort()) {
     values.push(await showScratch(root, name))
   }
   return values
@@ -115,4 +116,3 @@ export async function importScratch(root, source, options = {}) {
 function slug(value = 'scratch') {
   return String(value).toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'scratch'
 }
-

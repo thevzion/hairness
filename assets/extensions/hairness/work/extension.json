@@ -8,6 +8,7 @@
     "recipes": [
       { "id": "hairness-scratch", "path": "recipes/scratch.md", "summary": "Create, join, park or close explicit working memory.", "capability": "hairness.work" },
       { "id": "hairness-discuss", "path": "recipes/discuss.md", "summary": "Discuss one bounded frame without side effects.", "capability": "hairness.work" },
+      { "id": "hairness-map", "path": "recipes/map.md", "summary": "Build a focused live map of a Target.", "capability": "hairness.work" },
       { "id": "hairness-ideate", "path": "recipes/ideate.md", "summary": "Open several candidate directions without deciding for the user.", "capability": "hairness.work" },
       { "id": "hairness-propose", "path": "recipes/propose.md", "summary": "Recommend or compare directions with explicit tradeoffs.", "capability": "hairness.work" },
       { "id": "hairness-recap", "path": "recipes/recap.md", "summary": "Render a chat-first recap with useful diagrams.", "capability": "hairness.work" },

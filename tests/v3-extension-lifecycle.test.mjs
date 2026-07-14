@@ -14,6 +14,7 @@ import {
   prepareExtensionAdopt,
   prepareExtensionRemove,
   prepareExtensionUpdate,
+  synchronizeWorkspaceDependencies,
 } from '../src/composition/lifecycle.mjs'
 import { createHome } from '../src/home/create.mjs'
 import { readJson, writeJsonAtomic } from '../src/lib/io.mjs'
@@ -87,6 +88,29 @@ test('required capabilities block removal and init creates the minimal authoring
   const initialized = await initializeExtension(scaffold, 'acme/notes')
   assert.equal(initialized.manifest.metadata.id, 'acme/notes')
   assert.equal(initialized.manifest.spec.recipes.length, 1)
+})
+
+test('workspace extension dependencies use one root lock with lifecycle scripts disabled', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'hairness-v3-workspace-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const extension = join(root, 'extensions/acme/dependency')
+  const dependency = join(extension, 'vendor/local-dependency')
+  await mkdir(dependency, { recursive: true })
+  await writeJsonAtomic(join(root, 'package.json'), { private: true, workspaces: ['extensions/*/*'] })
+  await writeJsonAtomic(join(extension, 'package.json'), {
+    name: '@acme/hairness-dependency', version: '1.0.0', private: true,
+    dependencies: { 'local-dependency': 'file:vendor/local-dependency' },
+  })
+  await writeJsonAtomic(join(dependency, 'package.json'), {
+    name: 'local-dependency', version: '1.0.0',
+    scripts: { install: 'node -e "require(\'node:fs\').writeFileSync(\'INSTALL_RAN\', \'unsafe\')"' },
+  })
+  await synchronizeWorkspaceDependencies(root)
+  const lock = await readJson(join(root, 'package-lock.json'))
+  assert.ok(lock.packages['extensions/acme/dependency'])
+  assert.equal(await readFile(join(dependency, 'INSTALL_RAN'), 'utf8').then(() => true).catch((error) => error.code === 'ENOENT' ? false : Promise.reject(error)), false)
+  await writeJsonAtomic(join(extension, 'package-lock.json'), { lockfileVersion: 3 })
+  await assert.rejects(resolveExtensionSource(extension), (error) => error.code === 'extension_nested_lock')
 })
 
 test('capability and command collisions reject composition before activation', async (t) => {

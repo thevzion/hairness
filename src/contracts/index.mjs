@@ -16,7 +16,6 @@ export const API = Object.freeze({
 const schemaFiles = [
   'home.schema.json',
   'home-lock.schema.json',
-  'session-opening.schema.json',
   'distribution.schema.json',
   'extension.schema.json',
   'scratch.schema.json',

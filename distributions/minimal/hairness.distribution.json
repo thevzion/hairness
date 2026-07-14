@@ -8,6 +8,8 @@
   },
   "spec": {
     "extensions": ["hairness/cockpit", "hairness/work"],
+    "targets": [],
+    "config": {},
     "defaults": { "providers": ["codex"], "overlaySnapshot": "boundary" },
     "policies": [],
     "onboarding": []

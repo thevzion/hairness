@@ -21,7 +21,7 @@ async function files(directory) {
   return values
 }
 
-assert.equal((await compileSchemas()).length, 9)
+assert.equal((await compileSchemas()).length, 8)
 const home = await loadHome(root)
 const lock = await loadHomeLock(root)
 assert.equal(home.metadata.id, lock.metadata.id)
@@ -37,7 +37,7 @@ for (const extension of active) await inspectExtension(extension.root)
 
 const standard = (await loadDistribution('standard')).document
 assert.equal(lock.distribution.digest, digest(standard), 'development Distribution lock is stale')
-assert.deepEqual(standard.spec.extensions, ['hairness/cockpit', 'hairness/work', 'hairness/sources', 'hairness/codebase', 'hairness/delivery'])
+assert.deepEqual(standard.spec.extensions, ['hairness/cockpit', 'hairness/work', 'hairness/sources', 'hairness/delivery'])
 const recipes = active.filter((extension) => standard.spec.extensions.includes(extension.manifest.metadata.id)).flatMap((extension) => extension.manifest.spec.recipes.map((recipe) => recipe.id)).sort()
 assert.deepEqual(recipes, ['hairness', 'hairness-discuss', 'hairness-ideate', 'hairness-map', 'hairness-onboarding', 'hairness-plan', 'hairness-propose', 'hairness-recap', 'hairness-scratch', 'hairness-ship'].sort())
 
@@ -50,7 +50,7 @@ for (const path of all) {
   const body = await readFile(path, 'utf8')
   assert.ok(!/AKIA[0-9A-Z]{16}|-----BEGIN (?:RSA |EC )?PRIVATE KEY/.test(body), `${name} contains secret-like material`)
   if (name.startsWith('src/')) {
-    for (const removed of ['protocolVersion', 'schemaVersion', 'Invocation', 'WorkerCapsule', 'fan-in']) assert.equal(body.includes(removed), false, `${name} contains removed v0.2 model ${removed}`)
+    for (const removed of ['protocolVersion', 'schemaVersion', 'SessionOpening', 'Invocation', 'WorkerCapsule', 'fan-in']) assert.equal(body.includes(removed), false, `${name} contains removed model ${removed}`)
   }
 }
 

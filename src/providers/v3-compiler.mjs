@@ -4,8 +4,9 @@ import { activeExtensions } from '../composition/extensions.mjs'
 import { loadHome } from '../home/index.mjs'
 import { HairnessError } from '../lib/errors.mjs'
 import { digest, exists, now, readJson, writeFileAtomic, writeJsonAtomic } from '../lib/io.mjs'
-import { ensureRuntime } from '../runtime/index.mjs'
+import { ensureRuntime, runtimePaths } from '../runtime/index.mjs'
 import { git } from '../runtime/git.mjs'
+import { loadProfile, renderProfile } from '../profile/index.mjs'
 
 const supportedProviders = new Set(['codex', 'claude'])
 const regionPattern = /<!-- hairness:begin id="agent-contract" -->[\s\S]*?<!-- hairness:end id="agent-contract" -->/g
@@ -21,16 +22,17 @@ function providerCommandSyntax(provider, recipeId) {
 
 function renderRecipe(provider, extension, recipe, content, language) {
   const invocation = providerCommandSyntax(provider, recipe.id)
-  return `---\nname: ${recipe.id}\ndescription: ${recipe.summary}\n---\n\n# ${invocation}\n\nSpeak ${language} from the first reply and keep using the user's language. This is a provider-neutral Hairness recipe owned by \`${extension.manifest.metadata.id}\`.\n\n${content.trim()}\n\nDo not persist chat output unless the user explicitly asks to save it. Access never grants effect authority.\n`
+  const route = deterministicRoute(recipe.id)
+  return `---\nname: ${recipe.id}\ndescription: ${recipe.summary}\n---\n\n# ${invocation}\n\nSpeak ${language} from the first reply and keep using the user's language. This is a provider-neutral Hairness recipe owned by \`${extension.manifest.metadata.id}\`.${route ? `\n\nDeterministic route when current state is needed: \`${route}\`.` : ''}\n\n${content.trim()}\n\nDo not persist chat output unless the user explicitly asks to save it. Access never grants effect authority.\n`
 }
 
-function agentContract(language) {
-  return `<!-- hairness:begin id="agent-contract" -->\n## Hairness Home\n\n- Speak ${language} from the first reply and preserve the user's language.\n- The Home owns agentic assets; Targets remain independent repositories.\n- Sessions are ephemeral until attached to a Scratch. Never store transcripts or reasoning.\n- Chat recipes are direct conversation. Persist only explicit Scratch notes or accepted Artifacts.\n- Effects require an exact prepared checkpoint and revalidation.\n- Use live Target evidence for current truth; Artifacts only orient.\n<!-- hairness:end id="agent-contract" -->`
+function agentContract(profile) {
+  return `<!-- hairness:begin id="agent-contract" -->\n## Hairness Home\n\n### User preferences\n\n${renderProfile(profile)}\n\n### Operating contract\n\n- Speak ${profile.language} from the first reply and preserve the user's language.\n- The Home owns agentic assets; Targets remain independent repositories.\n- Sessions are ephemeral until attached to a Scratch. Never store transcripts or reasoning.\n- Chat recipes are direct conversation. Persist only explicit Scratch notes or accepted Artifacts.\n- Effects require an exact prepared checkpoint and revalidation.\n- Use live Target evidence for current truth; Artifacts only orient.\n- For current Home state, run \`node ./node_modules/@hairness/cli/bin/hairness.mjs doctor --json\` only when needed.\n<!-- hairness:end id="agent-contract" -->`
 }
 
-async function mergeAgentContract(path, language, check) {
+async function mergeAgentContract(path, profile, check) {
   const current = await readFile(path, 'utf8').catch((error) => error.code === 'ENOENT' ? '' : Promise.reject(error))
-  const block = agentContract(language)
+  const block = agentContract(profile)
   const next = regionPattern.test(current)
     ? current.replace(regionPattern, block)
     : `${current.trimEnd()}${current.trim() ? '\n\n' : ''}${block}\n`
@@ -57,7 +59,9 @@ async function updateLocalExcludes(root, paths, check) {
 
 export async function buildProviders(root, options = {}) {
   const home = await loadHome(root)
-  const runtime = await ensureRuntime(home)
+  const profile = await loadProfile(root)
+  const runtime = options.check ? runtimePaths(home.metadata.id) : await ensureRuntime(home)
+  if (options.check && !await exists(runtime.build)) throw new HairnessError('build_stale', 'Runtime build state is missing; rebuild provider assets.', { exitCode: 5 })
   const extensions = await activeExtensions(root, home)
   const previous = await readJson(runtime.build, { outputs: [] })
   const wanted = []
@@ -69,7 +73,7 @@ export async function buildProviders(root, options = {}) {
         const source = join(extension.root, recipe.path)
         const content = await readFile(source, 'utf8')
         const path = providerPath(provider, recipe.id)
-        wanted.push({ path, owner: extension.manifest.metadata.id, provider, content: renderRecipe(provider, extension, recipe, content, home.spec.language) })
+        wanted.push({ path, owner: extension.manifest.metadata.id, provider, content: renderRecipe(provider, extension, recipe, content, profile.language) })
       }
     }
   }
@@ -112,11 +116,20 @@ export async function buildProviders(root, options = {}) {
     }
   }
   const managed = []
-  if (home.spec.providers.includes('codex')) managed.push({ path: 'AGENTS.md', digest: await mergeAgentContract(join(root, 'AGENTS.md'), home.spec.language, options.check) })
-  if (home.spec.providers.includes('claude')) managed.push({ path: 'CLAUDE.md', digest: await mergeAgentContract(join(root, 'CLAUDE.md'), home.spec.language, options.check) })
+  if (home.spec.providers.includes('codex')) managed.push({ path: 'AGENTS.md', digest: await mergeAgentContract(join(root, 'AGENTS.md'), profile, options.check) })
+  if (home.spec.providers.includes('claude')) managed.push({ path: 'CLAUDE.md', digest: await mergeAgentContract(join(root, 'CLAUDE.md'), profile, options.check) })
   await updateLocalExcludes(root, outputs.map((item) => item.path), options.check)
 
   const state = { home: home.metadata.id, builtAt: now(), outputs, managed }
   if (!options.check) await writeJsonAtomic(runtime.build, state)
   return state
+}
+
+function deterministicRoute(id) {
+  return ({
+    hairness: 'node ./node_modules/@hairness/cli/bin/hairness.mjs doctor --json',
+    'hairness-onboarding': 'node ./node_modules/@hairness/cli/bin/hairness.mjs onboarding status --json',
+    'hairness-scratch': 'node ./node_modules/@hairness/cli/bin/hairness.mjs scratch list --json',
+    'hairness-map': 'node ./node_modules/@hairness/cli/bin/hairness.mjs target list --json',
+  })[id] ?? null
 }

@@ -39,16 +39,22 @@ export function homeId(destination) {
 
 export function homeDocument(options) {
   const extensions = [...new Set(options.extensions)]
-  const targets = (options.targets ?? []).map(({ id, kind = 'git' }) => ({ id: assertId(id, 'Target id'), kind }))
+  const targets = (options.targets ?? []).map(({ id, kind = 'git', summary, requirement = 'recommended', remotes = [] }) => ({
+    id: assertId(id, 'Target id'),
+    kind,
+    summary: summary ?? id,
+    requirement,
+    remotes: [...new Set(remotes)],
+  }))
   return {
     apiVersion: API.home,
     kind: 'Home',
     metadata: { id: assertId(options.id, 'Home id') },
     spec: {
-      language: options.language,
       providers: [...new Set(options.providers)],
       extensions,
       targets,
+      config: structuredClone(options.config ?? {}),
       overlay: { git: Boolean(options.overlayGit), snapshot: options.snapshot ?? 'boundary' },
     },
   }

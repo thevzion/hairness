@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { createHome } from '../src/home/create.mjs'
 import { mapTarget } from '../src/maps/index.mjs'
 import { createScratch } from '../src/scratch/index.mjs'
-import { applyTargetPlan, listTargets, prepareTargetAdd } from '../src/targets/index.mjs'
+import { applyTargetPlan, discoverTargets, listTargets, prepareTargetAdd, prepareTargetBind, prepareTargetUnbind } from '../src/targets/index.mjs'
 import {
   acceptDeliveryBrief,
   preparePullRequest,
@@ -16,6 +16,9 @@ import {
   selectCheckout,
 } from '../src/delivery/index.mjs'
 import { git } from '../src/runtime/git.mjs'
+import { readJson, writeJsonAtomic } from '../src/lib/io.mjs'
+import { saveArtifact } from '../src/artifacts/index.mjs'
+import { doctorHome } from '../src/home/doctor.mjs'
 
 async function fixture(t, withTarget = true) {
   const root = await mkdtemp(join(tmpdir(), 'hairness-v3-delivery-'))
@@ -38,7 +41,7 @@ async function fixture(t, withTarget = true) {
   return { root, home, target, base: await git(['rev-parse', 'HEAD'], { cwd: target }) }
 }
 
-test('Target registration stores live path only in Runtime and maps remain chat-first', async (t) => {
+test('Target registration stores live path only in an ignored link and maps remain chat-first', async (t) => {
   const { home, target } = await fixture(t, false)
   const prepared = await prepareTargetAdd(home, target, 'product')
   const receipt = await applyTargetPlan(home, prepared.checkpoint.metadata.id)
@@ -48,9 +51,49 @@ test('Target registration stores live path only in Runtime and maps remain chat-
   assert.equal(registered.evidence.clean, true)
   assert.equal((await readFile(join(home, 'hairness.json'), 'utf8')).includes(target), false)
 
-  const map = await mapTarget(home, 'product', { focus: 'base', scope: 'src', view: 'tree' })
+  const map = await mapTarget(home, 'product', { focus: 'system boundaries', scope: 'src', view: 'tree' })
   assert.deepEqual(map.files, ['src/base.txt'])
+  assert.equal(map.focus, 'system boundaries')
   assert.equal(map.persistence, 'none')
+})
+
+test('Target discovery matches normalized remotes, keeps ambiguous clones and saves no index', async (t) => {
+  const { root, home } = await fixture(t, false)
+  const workspace = join(root, 'workspace')
+  const first = join(workspace, 'first-clone')
+  const second = join(workspace, 'renamed-clone')
+  const unrelated = join(workspace, 'unrelated')
+  await mkdir(workspace, { recursive: true })
+  await git(['init', '--quiet'], { cwd: workspace })
+  await writeFile(join(workspace, 'WORKSPACE.md'), '# Workspace container\n')
+  await git(['add', 'WORKSPACE.md'], { cwd: workspace })
+  await git(['-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'commit', '--quiet', '-m', 'workspace'], { cwd: workspace })
+  for (const path of [first, second, unrelated]) {
+    await mkdir(path, { recursive: true })
+    await git(['init', '--quiet'], { cwd: path })
+    await writeFile(join(path, 'README.md'), `# ${path}\n`)
+    await git(['add', 'README.md'], { cwd: path })
+    await git(['-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'commit', '--quiet', '-m', 'initial'], { cwd: path })
+  }
+  await git(['remote', 'add', 'origin', 'git@gitlab.com:acme/product.git'], { cwd: first })
+  await git(['remote', 'add', 'origin', 'https://gitlab.com/acme/product.git'], { cwd: second })
+  await git(['remote', 'add', 'origin', 'git@gitlab.com:acme/other.git'], { cwd: unrelated })
+  const document = await readJson(join(home, 'hairness.json'))
+  document.spec.targets.push({ id: 'product', kind: 'git', summary: 'Product', requirement: 'required', remotes: ['git@gitlab.com:acme/product.git'] })
+  await writeJsonAtomic(join(home, 'hairness.json'), document)
+
+  const discovery = await discoverTargets(home, workspace)
+  assert.deepEqual(discovery.candidates.filter((item) => item.matches.includes('product')).map((item) => item.root).sort(), [await realpath(first), await realpath(second)].sort())
+  await assert.rejects(prepareTargetBind(home, 'product', unrelated), (error) => error.code === 'target_remote_mismatch')
+  const prepared = await prepareTargetBind(home, 'product', second)
+  await applyTargetPlan(home, prepared.checkpoint.metadata.id)
+  assert.equal((await listTargets(home)).find((item) => item.id === 'product').binding.endsWith('renamed-clone'), true)
+
+  const head = await git(['rev-parse', 'HEAD'], { cwd: second })
+  await saveArtifact(home, { owner: 'hairness/work', type: 'target-map', id: 'product-system', payload: '# Product map\n', provenance: { target: 'product', head, focus: 'system', scope: null, view: 'boundaries' } })
+  const doctor = await doctorHome(home, { allowMissingDependency: true })
+  assert.equal(doctor.maps[0].freshness, 'current')
+  assert.equal(doctor.maps[0].path, '.overlay/artifacts/hairness/work/target-map/product-system')
 })
 
 test('DeliveryBrief acceptance leads to an adaptive worktree and exact PR checkpoint', async (t) => {
@@ -85,6 +128,7 @@ test('adaptive checkout isolates dirty and occupied repositories and refuses uns
   const { home, target, base } = await fixture(t)
   const first = await selectCheckout(home, { scratch: 'first', target: 'product', base })
   assert.equal(first.strategy, 'reuse')
+  await assert.rejects(prepareTargetUnbind(home, 'product'), (error) => error.code === 'target_binding_occupied')
   const occupied = await selectCheckout(home, { scratch: 'second', target: 'product', base })
   assert.equal(occupied.strategy, 'isolate')
   assert.equal(occupied.reason.occupied, true)
@@ -96,6 +140,7 @@ test('adaptive checkout isolates dirty and occupied repositories and refuses uns
   await releaseCheckout(home, 'product', 'first')
 
   await writeFile(join(target, 'uncommitted.txt'), 'dirty source\n')
+  await assert.rejects(prepareTargetUnbind(home, 'product'), (error) => error.code === 'target_binding_dirty')
   const dirty = await selectCheckout(home, { scratch: 'third', target: 'product', base: 'HEAD' })
   assert.equal(dirty.strategy, 'isolate')
   assert.equal(dirty.reason.dirty, true)

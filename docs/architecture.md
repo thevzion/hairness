@@ -20,7 +20,7 @@ flowchart LR
 
 | Layer | Owns | Never owns |
 | --- | --- | --- |
-| npm runtime | CLI, schemas, registry, compiler, checkpoints, receipts and local bindings | provider sessions or team policy |
+| npm runtime | CLI, schemas, registry, compiler, checkpoints, receipts and local Source bindings | provider sessions or team policy |
 | Home | selected extensions, provider-neutral recipes, tracked configuration and lock provenance | target checkout state or generated projections |
 | Overlay | explicit profile, Scratch, accepted Artifacts and Receipts | transcripts, secrets or runtime locks |
 | Target | product source, Git history and project conventions | Hairness configuration or memory |
@@ -29,6 +29,11 @@ The Home may be a sibling of one Target or coordinate many independent Targets.
 Generated Codex and Claude projections are reproducible build output. Exact owned
 paths live in runtime `build.json` and are locally excluded from the Home Git
 repository; unmanaged native provider files remain untouched.
+
+Target identity is core (`hairness.targets`), not an extension. A Home declares
+expected remotes and binds a local checkout through an ignored `targets/<id>`
+symlink. `hairness/work` owns live mapping. `hairness/sources` owns declarations
+and local access bindings for external CLIs or provider tools.
 
 ## Composition
 

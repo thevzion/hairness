@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sources"],
+  "properties": {
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "summary", "requirement", "accessors"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]{0,127}$" },
+          "summary": { "type": "string", "minLength": 1 },
+          "requirement": { "enum": ["required", "recommended"] },
+          "healthAdapter": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]{0,127}:[a-z0-9][a-z0-9._/-]{0,127}$" },
+          "accessors": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["kind", "command"],
+                  "properties": { "kind": { "const": "cli" }, "command": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" } }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["kind", "provider", "id"],
+                  "properties": {
+                    "kind": { "const": "provider" },
+                    "provider": { "enum": ["codex", "claude"] },
+                    "id": { "type": "string", "minLength": 1 }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

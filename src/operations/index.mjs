@@ -4,7 +4,7 @@ import { API, validateDocument } from '../contracts/index.mjs'
 import { loadHome } from '../home/index.mjs'
 import { HairnessError } from '../lib/errors.mjs'
 import { digest, now, readJson, writeJsonAtomic, writeJsonExclusive } from '../lib/io.mjs'
-import { overlayPaths } from '../overlay/index.mjs'
+import { maybeBoundarySnapshot, overlayPaths } from '../overlay/index.mjs'
 import { ensureRuntime } from '../runtime/index.mjs'
 
 const effectOutcomes = new Set(['succeeded', 'partial', 'unknown', 'failed'])
@@ -93,6 +93,7 @@ export async function applyEffect(root, id, current, effect) {
   }
   await validateDocument(receipt, 'Receipt')
   await writeJsonExclusive(join(overlayPaths(root).receipts, `${receipt.metadata.id}.json`), receipt)
+  await maybeBoundarySnapshot(root, `effect: ${expected.operation} ${outcome}`).catch(() => null)
   if (caught) throw new HairnessError('effect_unknown', `Effect outcome is unknown: ${caught.message}`, { exitCode: 6, cause: caught, details: { receipt } })
   if (outcome !== 'succeeded') throw new HairnessError(`effect_${outcome}`, `Effect reported a ${outcome} outcome. Reconcile its Receipt before any retry.`, { exitCode: 6, details: { receipt } })
   return receipt

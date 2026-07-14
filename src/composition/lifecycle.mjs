@@ -1,6 +1,8 @@
+import { execFile } from 'node:child_process'
 import { mkdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { basename, join, relative, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { promisify } from 'node:util'
 import { activeExtensions, inspectExtension, resolveExtensionSource, validateComposition } from './extensions.mjs'
 import { loadHome, loadHomeLock } from '../home/index.mjs'
 import { HairnessError } from '../lib/errors.mjs'
@@ -8,6 +10,8 @@ import { copyTree, digest, exists, readJson, treeDigest, writeJsonAtomic } from 
 import { applyEffect, prepareEffect } from '../operations/index.mjs'
 import { buildProviders } from '../providers/v3-compiler.mjs'
 import { ensureRuntime, runtimePaths } from '../runtime/index.mjs'
+
+const exec = promisify(execFile)
 
 export async function listExtensions(root) {
   const home = await loadHome(root)
@@ -150,6 +154,8 @@ export async function applyExtensionPlan(root, checkpointId) {
 async function applyFilesystemPlan(root, home, lock, plan) {
   const oldHome = structuredClone(home)
   const oldLock = structuredClone(lock)
+  const workspaceChange = await changesWorkspaceDependencies(plan)
+  const oldPackageLock = workspaceChange ? await readFile(join(root, 'package-lock.json'), 'utf8').catch((error) => error.code === 'ENOENT' ? null : Promise.reject(error)) : null
   const backup = join(runtimePaths(home.metadata.id).tmp, 'extensions', `backup-${randomUUID()}`)
   let movedExisting = false
   let movedCandidate = false
@@ -165,7 +171,10 @@ async function applyFilesystemPlan(root, home, lock, plan) {
       movedCandidate = true
     }
     if (['add', 'add-present'].includes(plan.action)) home.spec.extensions.push(plan.id)
-    if (plan.action === 'remove') home.spec.extensions = home.spec.extensions.filter((id) => id !== plan.id)
+    if (plan.action === 'remove') {
+      home.spec.extensions = home.spec.extensions.filter((id) => id !== plan.id)
+      delete home.spec.config[plan.id]
+    }
     if (plan.action === 'remove') lock.extensions = lock.extensions.filter((entry) => entry.id !== plan.id)
     else {
       const entry = {
@@ -184,17 +193,33 @@ async function applyFilesystemPlan(root, home, lock, plan) {
     }
     await writeJsonAtomic(join(root, 'hairness.json'), home)
     await writeJsonAtomic(join(root, 'hairness.lock.json'), lock)
+    if (workspaceChange) await synchronizeWorkspaceDependencies(root)
     await buildProviders(root)
     if (movedExisting) await rm(backup, { recursive: true, force: true })
     return { action: plan.action, id: plan.id, composition: home.spec.extensions }
   } catch (error) {
     await writeJsonAtomic(join(root, 'hairness.json'), oldHome)
     await writeJsonAtomic(join(root, 'hairness.lock.json'), oldLock)
+    if (oldPackageLock !== null) await writeFile(join(root, 'package-lock.json'), oldPackageLock)
     if (movedCandidate) await rm(plan.destination, { recursive: true, force: true })
     if (movedExisting && await exists(backup)) await rename(backup, plan.destination)
     await buildProviders(root).catch(() => {})
     throw error
   }
+}
+
+async function changesWorkspaceDependencies(plan) {
+  if (['remove', 'adopt', 'add-present'].includes(plan.action)) return exists(join(plan.destination, 'package.json'))
+  if (['add', 'update'].includes(plan.action)) return await exists(join(plan.candidate, 'package.json')) || await exists(join(plan.destination, 'package.json'))
+  return false
+}
+
+export async function synchronizeWorkspaceDependencies(root) {
+  await exec('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], {
+    cwd: root,
+    env: { ...process.env, npm_config_update_notifier: 'false' },
+    maxBuffer: 8 * 1024 * 1024,
+  })
 }
 
 function withoutCandidateDigest(plan) {

@@ -6,10 +6,13 @@
     "provides": ["hairness.sources"],
     "requires": ["hairness.cockpit"],
     "recipes": [],
-    "adapters": [],
+    "adapters": [
+      { "id": "detect", "mode": "observe", "path": "adapters/detect.mjs", "capability": "hairness.sources" }
+    ],
     "schemas": [],
     "gates": [],
     "onboarding": [],
-    "tests": []
+    "tests": [],
+    "configSchema": "schemas/config.schema.json"
   }
 }

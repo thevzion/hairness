@@ -5,21 +5,25 @@
     "id": "golden-home"
   },
   "spec": {
-    "language": "fr",
     "providers": ["codex", "claude"],
     "extensions": [
       "hairness/cockpit",
       "hairness/work",
       "hairness/sources",
-      "hairness/codebase",
       "hairness/delivery"
     ],
     "targets": [
       {
         "id": "product",
-        "kind": "git"
+        "kind": "git",
+        "summary": "Product",
+        "requirement": "required",
+        "remotes": ["git@example.test:acme/product.git"]
       }
     ],
+    "config": {
+      "hairness/sources": { "sources": [] }
+    },
     "overlay": {
       "git": true,
       "snapshot": "boundary"

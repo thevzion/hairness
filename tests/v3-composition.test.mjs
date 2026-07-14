@@ -5,11 +5,13 @@ import { dirname, join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { loadDistribution } from '../src/composition/distributions.mjs'
-import { inspectExtension } from '../src/composition/extensions.mjs'
+import { inspectExtension, inspectHomeConfig } from '../src/composition/extensions.mjs'
 import { homeDocument } from '../src/home/index.mjs'
 import { copyTree, writeJsonAtomic } from '../src/lib/io.mjs'
 import { buildProviders } from '../src/providers/v3-compiler.mjs'
 import { git } from '../src/runtime/git.mjs'
+import { initializeOverlay } from '../src/overlay/index.mjs'
+import { runAdapter } from '../src/operations/adapters.mjs'
 
 const official = fileURLToPath(new URL('../assets/extensions/', import.meta.url))
 
@@ -20,13 +22,14 @@ async function homeFixture(t, preset = 'standard') {
   const distribution = (await loadDistribution(preset)).document
   const document = homeDocument({
     id: 'composition-home',
-    language: 'fr',
     providers: ['codex', 'claude'],
     extensions: distribution.spec.extensions,
     targets: [],
+    config: distribution.spec.config ?? {},
     overlayGit: false,
   })
   await writeJsonAtomic(join(home, 'hairness.json'), document)
+  await initializeOverlay(home, { profile: { name: 'Alexis', language: 'fr', note: 'Keep the answer concise.' } })
   for (const id of document.spec.extensions) {
     await copyTree(join(official, ...id.split('/')), join(home, 'extensions', ...id.split('/')))
   }
@@ -43,7 +46,7 @@ test('Minimal and Standard are bootstrap-only compositions', async () => {
   const standard = (await loadDistribution('standard')).document
   assert.deepEqual(minimal.spec.extensions, ['hairness/cockpit', 'hairness/work'])
   assert.deepEqual(standard.spec.extensions, [
-    'hairness/cockpit', 'hairness/work', 'hairness/sources', 'hairness/codebase', 'hairness/delivery',
+    'hairness/cockpit', 'hairness/work', 'hairness/sources', 'hairness/delivery',
   ])
   assert.equal(JSON.stringify(standard).includes('forge'), false)
 })
@@ -66,8 +69,19 @@ test('extension inspection validates files without importing adapter code', asyn
   assert.equal(inspected.manifest.metadata.id, 'acme/two-file')
 })
 
+test('missing extension config limits adapters without blocking onboarding recipes', async (t) => {
+  const { home, document } = await homeFixture(t)
+  document.spec.config['hairness/sources'] = {}
+  await writeJsonAtomic(join(home, 'hairness.json'), document)
+  assert.equal((await inspectHomeConfig(home, document)).status, 'partial')
+  const build = await buildProviders(home)
+  assert.equal(build.outputs.length, 20)
+  await assert.rejects(runAdapter(home, 'hairness/sources:detect', {}), (error) => error.code === 'extension_config_invalid')
+})
+
 test('provider compiler emits exactly ten parity commands and preserves native skills', async (t) => {
   const { root, home, document } = await homeFixture(t)
+  await writeFile(join(home, 'AGENTS.md'), '# User-owned preface\n')
   await mkdir(join(home, '.agents/skills/user-native'), { recursive: true })
   await writeFile(join(home, '.agents/skills/user-native/SKILL.md'), '# User native\n')
   const first = await buildProviders(home)
@@ -76,6 +90,11 @@ test('provider compiler emits exactly ten parity commands and preserves native s
     'hairness-ideate', 'hairness-propose', 'hairness-recap', 'hairness-plan', 'hairness-ship',
   ]
   assert.equal(first.outputs.length, 20)
+  const agents = await readFile(join(home, 'AGENTS.md'), 'utf8')
+  assert.match(agents, /User-owned preface/)
+  assert.match(agents, /Name: Alexis/)
+  assert.match(agents, /Note: Keep the answer concise\./)
+  assert.equal(agents.includes('Targets:'), false)
   for (const command of commands) {
     const codex = await readFile(join(home, '.agents/skills', command, 'SKILL.md'), 'utf8')
     const claude = await readFile(join(home, '.claude/skills', command, 'SKILL.md'), 'utf8')
@@ -100,6 +119,7 @@ test('provider compiler emits exactly ten parity commands and preserves native s
   const clone = join(root, 'clone')
   await copyTree(join(home, 'extensions'), join(clone, 'extensions'))
   await writeJsonAtomic(join(clone, 'hairness.json'), document)
+  await initializeOverlay(clone, { profile: { language: 'fr' } })
   await mkdir(join(clone, '.agents/skills/user-native'), { recursive: true })
   await writeFile(join(clone, '.agents/skills/user-native/SKILL.md'), '# Clone native\n')
   await git(['init', '--quiet'], { cwd: clone })
@@ -115,6 +135,7 @@ test('provider compiler emits exactly ten parity commands and preserves native s
   const worktree = join(root, 'home-worktree')
   await git(['worktree', 'add', '--quiet', '-b', 'linked-home', worktree], { cwd: home })
   process.env.HAIRNESS_STATE_HOME = join(root, 'worktree-state')
+  await initializeOverlay(worktree, { profile: { language: 'fr' } })
   await buildProviders(worktree)
   assert.match(await git(['check-ignore', '-v', '.agents/skills/hairness/SKILL.md'], { cwd: worktree }), /info\/exclude/)
 })

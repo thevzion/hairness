@@ -6,6 +6,7 @@ import { HairnessError } from '../lib/errors.mjs'
 import { assertInside, exists, now, readJson, writeFileAtomic, writeJsonAtomic } from '../lib/io.mjs'
 import { ensureRuntime, userPaths } from '../runtime/index.mjs'
 import { git } from '../runtime/git.mjs'
+import { saveProfile } from '../profile/index.mjs'
 
 const forbiddenNames = new Set(['.env', '.env.local', 'credentials', 'credentials.json', 'id_rsa', 'id_ed25519', '.npmrc'])
 
@@ -29,7 +30,7 @@ export async function initializeOverlay(root, options = {}) {
   const paths = overlayPaths(root)
   await Promise.all([paths.onboarding, paths.scratches, paths.artifacts, paths.receipts].map((path) => mkdir(path, { recursive: true })))
   if (!await exists(paths.readme)) await writeFile(paths.readme, '# Hairness Overlay\n\nExplicit local memory: Scratch, accepted Artifacts and immutable Receipts. No transcripts, reasoning, credentials or runtime state.\n')
-  if (!await exists(paths.profile)) await writeJsonAtomic(paths.profile, { language: home.spec.language, snapshot: home.spec.overlay.snapshot })
+  if (!await exists(paths.profile)) await saveProfile(root, options.profile ?? { language: 'en' })
   if (!await exists(paths.gitignore)) await writeFile(paths.gitignore, '.DS_Store\n*.tmp\n')
   if (options.git ?? home.spec.overlay.git) {
     if (!await exists(join(paths.root, '.git'))) await git(['init', '--quiet'], { cwd: paths.root })
@@ -108,4 +109,3 @@ export async function archiveOverlay(root) {
   await writeJsonAtomic(join(destination, 'archive.json'), { home: home.metadata.id, archivedAt: now(), format: 'opaque-directory', source: '.overlay' })
   return { status: 'archived', path: destination }
 }
-

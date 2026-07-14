@@ -7,7 +7,8 @@ import { HairnessError } from '../lib/errors.mjs'
 import { digest, exists, readJson, writeJsonAtomic } from '../lib/io.mjs'
 import { prepareEffect } from '../operations/index.mjs'
 import { activeScratch } from '../scratch/index.mjs'
-import { ensureRuntime, runtimePaths, targetBindings } from '../runtime/index.mjs'
+import { ensureRuntime, runtimePaths } from '../runtime/index.mjs'
+import { targetBinding } from '../targets/index.mjs'
 import { git, inspectGit } from '../runtime/git.mjs'
 
 export const deliveryStages = Object.freeze(['after-implementation', 'before-publish-pr', 'before-merge', 'after-merge'])
@@ -36,8 +37,7 @@ export async function acceptDeliveryBrief(root, options) {
 export async function selectCheckout(root, options) {
   const home = await loadHome(root)
   const scratch = required(options.scratch ?? await activeScratch(root, options.session), 'scratch')
-  const bindings = await targetBindings(home)
-  const binding = bindings.targets[options.target]
+  const binding = await targetBinding(root, options.target)
   if (!binding) throw new HairnessError('target_unbound', `Target ${options.target} has no local binding.`)
   const runtime = await ensureRuntime(home)
   const lockPath = checkoutLockPath(runtime, options.target, scratch)
@@ -79,8 +79,7 @@ export async function releaseCheckout(root, target, scratch) {
   const evidence = await inspectGit(lock.path)
   if (!evidence.clean) throw new HairnessError('checkout_dirty', 'Cleanup refuses a dirty checkout; preserve or commit the work explicitly.')
   if (lock.worktree) {
-    const bindings = await targetBindings(home)
-    const repository = bindings.targets[target]?.path
+    const repository = (await targetBinding(root, target))?.path
     if (!repository) throw new HairnessError('target_unbound', `Target ${target} is unbound.`)
     const safelyMerged = await git(['merge-base', '--is-ancestor', lock.branch, 'HEAD'], { cwd: repository }).then(() => true).catch(() => false)
     if (!safelyMerged) throw new HairnessError('checkout_branch_unmerged', `Cleanup refuses unmerged branch ${lock.branch}.`, { exitCode: 5 })

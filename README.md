@@ -39,8 +39,9 @@ cd "$HOME/Hairness" && claude --add-dir "/path/to/your-project"
 ```
 
 Then invoke `$hairness-onboarding` in Codex or `/hairness-onboarding` in Claude.
-The agent speaks your selected language from its first reply, explains concepts
-only when they become useful, and resumes after every answer.
+The agent speaks your selected language from its first reply, discovers the
+repositories and external Sources you want to use, explains concepts only when
+they become useful, and resumes after every answer.
 
 That is the complete setup flow.
 
@@ -59,6 +60,12 @@ A **Home** is the agent's stable operating place. A **Target** is an independent
 repository it can inspect or change. A **Scratch** is optional, flexible memory
 for a real subject. An **Artifact** is an accepted outcome with a typed envelope
 and one canonical Markdown or JSON payload.
+
+Targets are declared by identity and expected Git remotes. Their local bindings
+are ordinary ignored symlinks under `targets/`; no absolute path enters tracked
+configuration. Sources describe external access such as a CLI or a provider
+tool. Hairness records only the selected accessor in local Runtime and checks
+its health live—never credentials or fetched data.
 
 Sessions start ephemeral. Without an active Scratch, Hairness writes nothing.
 With one attached, the agent records only semantic boundaries such as accepted
@@ -153,6 +160,9 @@ Hairness inspects the manifest without importing code, resolves Git refs to
 immutable commits, stages and validates the source, then shows the exact
 composition change. The extension activates only after its checkpoint. An
 intact install updates mechanically; local divergence stops for a human merge.
+An extension may also publish a JSON Schema for its namespaced Home config.
+Missing config can limit that extension's adapters without preventing its
+onboarding recipe from helping the user repair it.
 
 ## Source ownership without provider coupling
 
@@ -165,6 +175,7 @@ Hairness/
 ├── hairness.json
 ├── hairness.lock.json
 ├── extensions/
+├── targets/                 # ignored local symlinks
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── .agents/skills/.gitkeep
@@ -178,13 +189,15 @@ those paths to the Home repository's `.git/info/exclude`. It neither ignores nor
 clears whole provider directories, so user-authored native skills remain normal
 Git-visible files.
 
-Local Target paths, provider bindings, checkout locks, build state, caches, and
-checkpoints stay under `~/.hairness/`. They never leak into tracked Home files.
+Source bindings, provider bindings, checkout locks, build state, caches, and
+checkpoints stay under `~/.hairness/`. Target paths exist only as ignored
+`targets/<id>` symlinks. They never leak into tracked Home files.
 
 ## Minimal, Standard, and custom distributions
 
 - **Minimal:** `hairness/cockpit` + `hairness/work`.
-- **Standard:** adds sources, codebase maps, and safe delivery; this is the
+- **Standard:** adds live Sources and safe delivery; Target maps remain part of
+  the core work surface. This is the
   default.
 - **Custom:** starts from an explicit Distribution path, then installs only its
   selected extensions.
@@ -198,15 +211,20 @@ generic workflow engine.
 The provider uses the CLI only when deterministic state or effects matter:
 
 ```text
-hairness build|doctor|opening
+hairness build|doctor
 hairness onboarding status|answer|plan|apply
 hairness extension list|init|adopt|add|update|remove|doctor
-hairness target list|add|remove|doctor
+hairness target list|discover|add|bind|unbind|remove|doctor
 hairness scratch list|show|create|use|note|park|close|import|snapshot
 hairness artifact list|show|save|validate
 hairness overlay status|snapshot|archive
 hairness operation run|prepare|apply
+hairness delivery brief|checkout|gate|prepare-pr|release-checkout
 ```
+
+Human-readable output is the default. Add `--json` only at machine boundaries.
+`hairness doctor` is the single live macro view for Home configuration, profile,
+build, Targets, Sources, saved-map freshness, current Scratch and repair routes.
 
 Observe and derive adapters may run directly. Every effect uses `prepare`, which
 binds exact inputs, Target state, proof, and policy. `apply` revalidates all of

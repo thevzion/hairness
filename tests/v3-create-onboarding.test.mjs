@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url'
 import test from 'node:test'
 import { applyExtensionPlan, prepareExtensionUpdate } from '../src/composition/lifecycle.mjs'
 import { createHome } from '../src/home/create.mjs'
+import { runCreateWizard } from '../src/home/wizard.mjs'
 import { doctorHome } from '../src/home/doctor.mjs'
 import { exists, readJson } from '../src/lib/io.mjs'
 import { applyOnboarding, answerOnboarding, onboardingStatus, planOnboarding } from '../src/onboarding/index.mjs'
@@ -76,6 +77,21 @@ test('create failure leaves no partial destination', async (t) => {
   assert.equal(await exists(join(root, 'state/runtime/install-failure')), false)
 })
 
+test('create wizard renders a short human preview without a TUI dependency', async (t) => {
+  const root = await rootFixture(t)
+  const answers = ['', '', '', '2', '', '']
+  const io = { question: async () => answers.shift() ?? '', close() {} }
+  let rendered = ''
+  const stream = { isTTY: false, write(value) { rendered += value } }
+  const home = join(root, 'wizard-home')
+  const result = await runCreateWizard(home, { io, output: stream, cwd: root, install: false })
+  assert.equal(result.status, 'created')
+  assert.match(rendered, /Hairness Home setup/)
+  assert.match(rendered, /Creation preview/)
+  assert.match(rendered, /Will not: remote, push, tag, publication/)
+  assert.equal(rendered.includes('"destination"'), false)
+})
+
 test('custom path distributions bootstrap their bundled extensions without copying a runtime', async (t) => {
   const root = await rootFixture(t)
   const distribution = join(root, 'distribution')
@@ -137,11 +153,13 @@ test('onboarding resumes after every French answer and applies one exact checkpo
     assert.equal(status.language, 'fr')
     if (!status.next) break
     answered.push(status.next.id)
-    await answerOnboarding(home, status.next.id, `Réponse pour ${status.next.id}`)
+    const answer = status.next.id === 'targets' || status.next.id === 'sources' ? [] : `Réponse pour ${status.next.id}`
+    await answerOnboarding(home, status.next.id, answer)
     const draft = await readJson(overlayPaths(home).onboardingDraft)
-    assert.equal(draft.answers[status.next.id], `Réponse pour ${status.next.id}`)
+    if (Array.isArray(answer)) assert.deepEqual(draft.answers[status.next.id], { selected: [] })
+    else assert.equal(draft.answers[status.next.id], answer)
   }
-  assert.deepEqual(answered, ['situation', 'project-context', 'working-memory', 'work.boundaries'])
+  assert.deepEqual(answered, ['profile.name', 'profile.note', 'situation', 'project-context', 'targets', 'sources', 'work.boundaries'])
   const planned = await planOnboarding(home)
   assert.equal(planned.status, 'checkpoint-required')
   assert.deepEqual(planned.plan.composition.add, [])
