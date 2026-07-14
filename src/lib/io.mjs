@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { cp, lstat, mkdir, readFile, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises'
+import { cp, lstat, mkdir, open, readFile, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, relative, resolve, sep } from 'node:path'
 import { HairnessError } from './errors.mjs'
 
@@ -49,6 +49,20 @@ export async function writeFileAtomic(path, value, mode = 0o600) {
   const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`
   await writeFile(temporary, value, { mode })
   await rename(temporary, path)
+}
+
+export async function writeJsonExclusive(path, value, mode = 0o600) {
+  await mkdir(dirname(path), { recursive: true })
+  let handle
+  try {
+    handle = await open(path, 'wx', mode)
+    await handle.writeFile(`${JSON.stringify(value, null, 2)}\n`)
+  } catch (error) {
+    if (error.code === 'EEXIST') throw new HairnessError('record_exists', `Immutable record already exists: ${path}.`)
+    throw error
+  } finally {
+    await handle?.close()
+  }
 }
 
 export async function replaceDirectory(staging, destination) {
@@ -107,4 +121,3 @@ export async function copyTree(source, destination) {
     filter: (path) => !path.split(sep).some((part) => part === '.git' || part === 'node_modules'),
   })
 }
-

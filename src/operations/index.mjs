@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import { API, validateDocument } from '../contracts/index.mjs'
 import { loadHome } from '../home/index.mjs'
 import { HairnessError } from '../lib/errors.mjs'
-import { digest, now, readJson, writeJsonAtomic } from '../lib/io.mjs'
+import { digest, now, readJson, writeJsonAtomic, writeJsonExclusive } from '../lib/io.mjs'
+import { overlayPaths } from '../overlay/index.mjs'
 import { ensureRuntime } from '../runtime/index.mjs'
 
 function checkpointId() {
@@ -84,8 +85,7 @@ export async function applyEffect(root, id, current, effect) {
     },
   }
   await validateDocument(receipt, 'Receipt')
-  await writeJsonAtomic(join(runtime.root, 'receipts', `${receipt.metadata.id}.json`), receipt)
+  await writeJsonExclusive(join(overlayPaths(root).receipts, `${receipt.metadata.id}.json`), receipt)
   if (caught) throw new HairnessError('effect_unknown', `Effect outcome is unknown: ${caught.message}`, { exitCode: 6, cause: caught, details: { receipt } })
   return receipt
 }
-
