@@ -75,7 +75,7 @@ test('DeliveryBrief acceptance leads to an adaptive worktree and exact PR checkp
   assert.equal(checkpoint.spec.operation, 'delivery.publish-pr')
   assert.equal(checkpoint.spec.target.head, await git(['rev-parse', 'HEAD'], { cwd: checkout.path }))
 
-  await git(['merge', '--quiet', '--no-ff', checkout.branch, '-m', 'merge feature'], { cwd: target })
+  await git(['-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'merge', '--quiet', '--no-ff', checkout.branch, '-m', 'merge feature'], { cwd: target })
   const mergeCommit = await git(['rev-parse', 'HEAD'], { cwd: target })
   assert.equal((await proveMerged(target, { prHead: checkpoint.spec.target.head, mergeCommit })).status, 'proved')
   assert.equal((await releaseCheckout(home, 'product', 'reset')).status, 'released')
