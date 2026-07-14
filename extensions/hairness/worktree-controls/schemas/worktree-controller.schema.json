@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/extensions/worktree-controls/worktree-controller.schema.json",
+  "title": "WorktreeController",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "protocolVersion", "id", "anchorRoot", "overlayRoot", "poolRoot", "state", "createdAt", "updatedAt"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "protocolVersion": { "const": "0.2" },
+    "id": { "type": "string", "pattern": "^controller-[0-9a-f-]+$" },
+    "anchorRoot": { "type": "string", "minLength": 1 },
+    "overlayRoot": { "type": "string", "minLength": 1 },
+    "poolRoot": { "type": "string", "minLength": 1 },
+    "state": { "enum": ["pending", "active", "relocation-required"] },
+    "createdAt": { "type": "string", "minLength": 1 },
+    "updatedAt": { "type": "string", "minLength": 1 }
+  }
+}

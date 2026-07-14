@@ -4,47 +4,66 @@
   "title": "WorktreeHandle",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "protocolVersion", "id", "repository", "planId", "kind", "path", "branch", "base", "head", "detached", "state", "policyDigest", "createdAt", "updatedAt"],
+  "required": ["schemaVersion", "protocolVersion", "id", "controllerRef", "repository", "planId", "kind", "placement", "path", "branch", "base", "head", "detached", "state", "policyDigest", "createdAt", "updatedAt"],
   "properties": {
     "schemaVersion": { "const": 2 },
     "protocolVersion": { "const": "0.2" },
     "id": { "type": "string", "minLength": 1 },
+    "controllerRef": { "$ref": "#/$defs/DigestRef" },
+    "previousControllerId": { "type": "string", "minLength": 1 },
     "repository": { "$ref": "#/$defs/RepositoryRef" },
     "planId": { "type": "string", "minLength": 1 },
     "kind": { "enum": ["branch", "candidate"] },
+    "placement": { "enum": ["canonical", "external"] },
     "path": { "type": "string", "minLength": 1 },
     "branch": { "type": ["string", "null"] },
     "base": { "type": "string", "minLength": 1 },
     "head": { "type": ["string", "null"] },
     "detached": { "type": "boolean" },
     "state": { "enum": ["active", "cleanup-ready", "blocked", "closed"] },
+    "cleanupProof": {
+      "type": ["object", "null"],
+      "properties": {
+        "head": { "type": "string", "minLength": 1 },
+        "proof": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 3, "uniqueItems": true },
+        "observedAt": { "type": "string", "minLength": 1 },
+        "maxAgeMinutes": { "type": "integer", "minimum": 1 }
+      },
+      "required": ["head", "proof", "observedAt", "maxAgeMinutes"],
+      "additionalProperties": false
+    },
     "policyDigest": { "type": "string", "pattern": "^sha256:" },
     "createdAt": { "type": "string", "minLength": 1 },
     "updatedAt": { "type": "string", "minLength": 1 }
   },
   "$defs": {
+    "DigestRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "digest"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "pattern": "^sha256:" }
+      }
+    },
     "RepositoryRef": {
       "oneOf": [
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["kind", "root", "remote"],
+          "required": ["kind"],
           "properties": {
-            "kind": { "const": "workspace" },
-            "root": { "type": "string", "minLength": 1 },
-            "remote": { "type": ["string", "null"] }
+            "kind": { "const": "workspace" }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["kind", "id", "checkout", "root", "remote"],
+          "required": ["kind", "id"],
           "properties": {
             "kind": { "const": "codebase" },
             "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
-            "checkout": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
-            "root": { "type": "string", "minLength": 1 },
-            "remote": { "type": ["string", "null"] }
+            "checkout": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
           }
         }
       ]

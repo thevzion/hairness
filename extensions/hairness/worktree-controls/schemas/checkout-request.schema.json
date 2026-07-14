@@ -26,7 +26,8 @@
     "published": { "type": "boolean" },
     "reason": { "type": "string", "minLength": 1 },
     "proof": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
-    "bootstrap": { "type": "boolean" }
+    "bootstrap": { "type": "boolean" },
+    "controller": { "type": "boolean" }
   },
   "$defs": {
     "RepositoryRef": {
@@ -34,23 +35,19 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["kind", "root", "remote"],
+          "required": ["kind"],
           "properties": {
-            "kind": { "const": "workspace" },
-            "root": { "type": "string", "minLength": 1 },
-            "remote": { "type": ["string", "null"] }
+            "kind": { "const": "workspace" }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["kind", "id", "checkout", "root", "remote"],
+          "required": ["kind", "id"],
           "properties": {
             "kind": { "const": "codebase" },
             "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
-            "checkout": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
-            "root": { "type": "string", "minLength": 1 },
-            "remote": { "type": ["string", "null"] }
+            "checkout": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
           }
         }
       ]

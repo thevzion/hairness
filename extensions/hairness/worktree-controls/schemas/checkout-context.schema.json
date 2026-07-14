@@ -4,10 +4,12 @@
   "title": "CheckoutContext",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "protocolVersion", "handleRef", "path", "head", "branch", "leaseRef", "policyDigest"],
+  "required": ["schemaVersion", "protocolVersion", "controllerRef", "repositoryRef", "handleRef", "path", "head", "branch", "leaseRef", "policyDigest"],
   "properties": {
     "schemaVersion": { "const": 2 },
     "protocolVersion": { "const": "0.2" },
+    "controllerRef": { "$ref": "#/$defs/DigestRef" },
+    "repositoryRef": { "$ref": "#/$defs/RepositoryRef" },
     "handleRef": { "$ref": "#/$defs/DigestRef" },
     "path": { "type": "string", "minLength": 1 },
     "head": { "type": ["string", "null"] },
@@ -24,6 +26,12 @@
         "id": { "type": "string", "minLength": 1 },
         "digest": { "type": "string", "pattern": "^sha256:" }
       }
+    },
+    "RepositoryRef": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "workspace" } } },
+        { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "const": "codebase" }, "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }, "checkout": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" } } }
+      ]
     }
   }
 }

@@ -14,9 +14,9 @@
     "session": { "transcript": false },
     "maintenance": { "gitWarnings": true },
     "worktrees": {
-      "placement": "sibling",
+      "placement": "anchor-sibling",
       "directorySuffix": "-worktrees",
-      "layout": "{type}/{slug}",
+      "layout": "{repository}/{type}/{slug}",
       "enforcement": "required",
       "hooks": "required",
       "cleanup": "checkpoint"

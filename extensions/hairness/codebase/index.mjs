@@ -142,6 +142,21 @@ async function inspect({ root, input, runtime }) {
   return { id, checkout, scope, contract, path, mounted: true, baseline, remoteMatch, remoteStatus: identity?.remote ? remoteMatch ? 'matched' : 'mismatch' : 'pending', git: status ? { ...status, available: true, remote: identity?.remote ?? null } : { available: false } }
 }
 
+async function list({ root, input = {}, runtime }) {
+  const local = await config(root)
+  const available = await contracts(root, runtime)
+  const values = []
+  for (const { contract, scope } of available) {
+    const configured = Object.keys(local.codebases?.mounts?.[contract.id] ?? {})
+    const checkouts = configured.length ? configured : ['default']
+    for (const checkout of checkouts) {
+      const value = await inspect({ root, input: { id: contract.id, checkout }, runtime })
+      if (!input.mountedOnly || value.mounted) values.push({ ...value, scope })
+    }
+  }
+  return { codebases: values }
+}
+
 async function mapCodebase({ root, runtime, kind, id, focus, workload }) {
   const available = (await contracts(root, runtime)).map((value) => value.contract)
   const selected = kind === 'system' ? available : [available.find((candidate) => candidate.id === id)]
@@ -232,7 +247,7 @@ async function unmountManaged({ root, input, runtime }) {
   }
 }
 
-export const services = { inspect, 'mount-managed': mountManaged, 'unmount-managed': unmountManaged }
+export const services = { inspect, list, 'mount-managed': mountManaged, 'unmount-managed': unmountManaged }
 
 async function discoverCodebase(root, contract) {
   const candidates = [join(resolve(root, '..'), contract.id), ...(contract.discovery?.paths ?? []).map(resolve)]

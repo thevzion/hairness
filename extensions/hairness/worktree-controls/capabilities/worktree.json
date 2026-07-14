@@ -98,7 +98,7 @@
       "results": [{ "id": "default", "contract": { "schema": "CheckoutReceipt", "disposition": "effect" } }],
       "defaultResult": "default",
       "sources": ["git"],
-      "effects": ["filesystem:write"],
+      "effects": ["filesystem:write", "git:worktree"],
       "routes": ["deterministic"],
       "acceptsModifiers": []
     },
@@ -110,7 +110,7 @@
       "results": [{ "id": "default", "contract": { "schema": "CheckoutReceipt", "disposition": "effect" } }],
       "defaultResult": "default",
       "sources": ["git"],
-      "effects": ["filesystem:write", "git:worktree"],
+      "effects": ["filesystem:write", "git:worktree", "git:branch"],
       "routes": ["deterministic"],
       "acceptsModifiers": []
     },

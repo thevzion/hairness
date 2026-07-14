@@ -4,20 +4,30 @@
   "title": "CheckoutProposal",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "protocolVersion", "id", "action", "request", "requestDigest", "policyDigest", "targets", "effects", "proof", "limits", "createdAt"],
+  "required": ["schemaVersion", "protocolVersion", "id", "action", "request", "requestDigest", "policyDigest", "controllerRef", "targets", "effects", "proof", "limits", "createdAt"],
   "properties": {
     "schemaVersion": { "const": 2 },
     "protocolVersion": { "const": "0.2" },
     "id": { "type": "string", "minLength": 1 },
-    "action": { "enum": ["open", "candidate-checkout", "adopt", "sync", "handoff", "takeover", "close", "repair", "reconcile", "prune"] },
+    "action": { "enum": ["open", "candidate-checkout", "adopt", "sync", "handoff", "takeover", "close", "close-batch", "repair", "reconcile", "prune"] },
     "request": { "type": "object" },
     "requestDigest": { "type": "string", "pattern": "^sha256:" },
     "policyDigest": { "type": "string", "pattern": "^sha256:" },
+    "controllerRef": { "$ref": "#/$defs/DigestRef" },
     "handleDigest": { "type": ["string", "null"], "pattern": "^sha256:" },
     "targets": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
     "effects": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
     "proof": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
     "limits": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
-    "createdAt": { "type": "string", "minLength": 1 }
+    "createdAt": { "type": "string", "minLength": 1 },
+    "items": { "type": "array", "items": { "type": "object" } }
+  },
+  "$defs": {
+    "DigestRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "digest"],
+      "properties": { "id": { "type": "string", "minLength": 1 }, "digest": { "type": "string", "pattern": "^sha256:" } }
+    }
   }
 }

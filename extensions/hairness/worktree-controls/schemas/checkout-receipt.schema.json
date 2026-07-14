@@ -4,7 +4,7 @@
   "title": "CheckoutReceipt",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "protocolVersion", "id", "proposalId", "action", "runId", "checkpointId", "status", "summary", "targets", "effects", "proof", "head", "policyDigest", "observedAt", "limits", "context"],
+  "required": ["schemaVersion", "protocolVersion", "id", "proposalId", "action", "runId", "checkpointId", "status", "summary", "targets", "effects", "proof", "head", "policyDigest", "controllerRef", "observedAt", "limits", "context"],
   "properties": {
     "schemaVersion": { "const": 2 },
     "protocolVersion": { "const": "0.2" },
@@ -20,6 +20,12 @@
     "proof": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "head": { "type": ["string", "null"] },
     "policyDigest": { "type": "string", "pattern": "^sha256:" },
+    "controllerRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "digest"],
+      "properties": { "id": { "type": "string", "minLength": 1 }, "digest": { "type": "string", "pattern": "^sha256:" } }
+    },
     "observedAt": { "type": "string", "minLength": 1 },
     "limits": { "type": "array", "items": { "type": "string" } },
     "context": { "type": ["object", "null"] }

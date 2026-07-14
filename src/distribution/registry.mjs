@@ -53,9 +53,68 @@ async function trustState() {
   return readJson(userPaths().trust, { schemaVersion: 2, protocolVersion: '0.2', workspaces: {}, extensions: {} })
 }
 
+function worktreeEntries(raw) {
+  const entries = []
+  let current = null
+  for (const field of String(raw).split('\0')) {
+    if (!field) continue
+    const separator = field.indexOf(' ')
+    const key = separator < 0 ? field : field.slice(0, separator)
+    const value = separator < 0 ? true : field.slice(separator + 1)
+    if (key === 'worktree') {
+      if (current) entries.push(current)
+      current = { path: value, locked: false, lockReason: null }
+    } else if (key === 'locked' && current) {
+      current.locked = true
+      current.lockReason = value === true ? null : value
+    }
+  }
+  if (current) entries.push(current)
+  return entries
+}
+
+async function managedWorkspaceTrusted(root, trust) {
+  const canonicalRoot = await realpath(root).catch(() => resolve(root))
+  const overlayRoot = await realpath(join(canonicalRoot, '.overlay')).catch(() => null)
+  if (!overlayRoot) return false
+  const anchorRoot = dirname(overlayRoot)
+  let anchorTrusted = Boolean(trust.workspaces?.[anchorRoot]?.trusted)
+  if (!anchorTrusted) for (const [path, value] of Object.entries(trust.workspaces ?? {})) {
+    if (value?.trusted && await realpath(path).catch(() => resolve(path)) === anchorRoot) anchorTrusted = true
+  }
+  if (canonicalRoot === anchorRoot || !anchorTrusted) return false
+  const state = await readJson(join(overlayRoot, 'extensions-state', 'hairness', 'worktree-controls', 'state.json'), null)
+  let handle = null
+  for (const item of state?.handles ?? []) {
+    const path = await realpath(item.path).catch(() => resolve(item.path))
+    if (item.state !== 'closed' && item.repository?.kind === 'workspace' && path === canonicalRoot) handle = item
+  }
+  const lease = handle && state.leases?.findLast?.((item) => item.handleId === handle.id && item.planId === handle.planId && item.state === 'active')
+  if (!handle || !lease) return false
+  const controller = state.controller
+  const controllerAnchor = controller ? await realpath(controller.anchorRoot).catch(() => resolve(controller.anchorRoot)) : null
+  const controllerOverlay = controller ? await realpath(controller.overlayRoot).catch(() => resolve(controller.overlayRoot)) : null
+  const controllerMatches = controller?.state === 'active' && controllerAnchor === anchorRoot && controllerOverlay === overlayRoot && handle.controllerRef?.id === controller.id
+  const expected = controllerMatches
+    ? `hairness:${controller.id}:${handle.id}:${handle.planId}`
+    : `hairness:${handle.planId}`
+  const legacySuffix = `:${handle.planId}`
+  const { stdout } = await exec('git', ['-C', anchorRoot, 'worktree', 'list', '--porcelain', '-z'], { encoding: 'utf8' }).catch(() => ({ stdout: '' }))
+  let entry = null
+  for (const item of worktreeEntries(stdout)) if (await realpath(item.path).catch(() => resolve(item.path)) === canonicalRoot) entry = item
+  if (!entry?.locked) return false
+  if (controllerMatches) return entry.lockReason === expected
+  return !controller && String(entry.lockReason ?? '').startsWith('hairness:') && String(entry.lockReason).endsWith(legacySuffix)
+}
+
+export async function isWorkspaceTrusted(root) {
+  const trust = await trustState()
+  return Boolean(trust.workspaces?.[root]?.trusted) || managedWorkspaceTrusted(root, trust)
+}
+
 async function assertTrusted(root, descriptor) {
   const trust = await trustState()
-  if (!trust.workspaces?.[root]?.trusted) throw new HairnessError('workspace_untrusted', `Workspace is not trusted: ${root}`, { routes: ['hairness onboarding plan'] })
+  if (!trust.workspaces?.[root]?.trusted && !await managedWorkspaceTrusted(root, trust)) throw new HairnessError('workspace_untrusted', `Workspace is not trusted: ${root}`, { routes: ['hairness onboarding plan'] })
   if (descriptor.source === 'local' && !trust.extensions?.[descriptor.id]?.trusted) throw new HairnessError('extension_untrusted', `Local extension is not trusted: ${descriptor.id}`, { routes: [`hairness extension enable ${descriptor.id}`] })
 }
 
@@ -187,9 +246,9 @@ async function runtimeFor(root, owner, stack = []) {
       create: async (value) => createRun(root, { ...value, assignment: await validateAssignmentOperation(root, value.assignment) }), read: (id) => readRun(root, id), list: () => listRuns(root),
       transition: (id, state, detail) => transitionRun(root, id, state, detail), result: (id, value) => value === undefined ? readRunResult(root, id) : submitRunResult(root, value),
       capsule: (id) => buildWorkerCapsule(root, id),
-      checkpoint: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
-      proposeCheckpoint: (value) => proposeCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
-      approveCheckpoint: (runId, checkpointId) => approveCheckpoint(root, runId, checkpointId, (effects) => aggregateAuthorityPolicy(root, effects)),
+      checkpoint: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects, { runId: value.runId })),
+      proposeCheckpoint: (value) => proposeCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects, { runId: value.runId })),
+      approveCheckpoint: (runId, checkpointId) => approveCheckpoint(root, runId, checkpointId, (effects) => aggregateAuthorityPolicy(root, effects, { runId })),
     },
     plans: { read: (id) => readPlan(root, id), write: async (value) => writePlan(root, await validatePlanOperations(root, value)), reduce: (id) => reduceStoredPlan(root, id) },
     invocations: { list: (options) => listInvocations(root, options), events: (id) => invocationEvents(root, id), result: (id) => readInvocationResult(root, id) },
@@ -198,9 +257,9 @@ async function runtimeFor(root, owner, stack = []) {
       stage: async (runId, value) => { await validateArtifactPayload(root, value); return stageArtifact(root, runId, value) }, promote: (runId) => promoteArtifact(root, runId),
     },
     authority: {
-      grant: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
-      propose: (value) => proposeCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
-      approve: (runId, checkpointId) => approveCheckpoint(root, runId, checkpointId, (effects) => aggregateAuthorityPolicy(root, effects)),
+      grant: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects, { runId: value.runId })),
+      propose: (value) => proposeCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects, { runId: value.runId })),
+      approve: (runId, checkpointId) => approveCheckpoint(root, runId, checkpointId, (effects) => aggregateAuthorityPolicy(root, effects, { runId })),
       assert: (runId, effect, target) => assertEffectAllowed(root, runId, effect, target, (effects) => aggregateAuthorityPolicy(root, effects, { runId })),
       acquireLocks, releaseLocks, quarantineLocks,
     },

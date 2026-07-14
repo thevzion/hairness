@@ -6,11 +6,9 @@
     {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "root"],
+      "required": ["kind"],
       "properties": {
-        "kind": { "const": "workspace" },
-        "root": { "type": "string", "minLength": 1 },
-        "remote": { "type": ["string", "null"] }
+        "kind": { "const": "workspace" }
       }
     },
     {
@@ -20,9 +18,7 @@
       "properties": {
         "kind": { "const": "codebase" },
         "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
-        "checkout": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
-        "root": { "type": "string", "minLength": 1 },
-        "remote": { "type": ["string", "null"] }
+        "checkout": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
       }
     }
   ]

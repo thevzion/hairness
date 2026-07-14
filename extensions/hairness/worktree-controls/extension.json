@@ -12,7 +12,7 @@
   "module": "./index.mjs",
   "capabilities": ["./capabilities/worktree.json"],
   "dependencies": ["hairness/codebase", "hairness/sources", "hairness/session-intelligence"],
-  "services": ["inspect", "propose", "resolve", "execute", "assert-writer"],
+  "services": ["inspect", "propose", "resolve", "execute", "assert-writer", "mark-cleanup-ready"],
   "contributes": ["attention", "authority-policy", "session-opening"],
   "commands": [{ "namespace": "worktree", "actions": ["status", "show", "doctor", "open", "adopt", "sync", "handoff", "takeover", "close", "repair", "reconcile", "prune"] }],
   "commandSurfaces": [

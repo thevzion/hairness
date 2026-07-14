@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { findWorkspaceRoot, readJson, userPaths, workspacePaths } from './core/io.mjs'
 import { writeJsonAtomic } from './core/io.mjs'
 import { aggregateSessionOpening } from './core/session-opening.mjs'
-import { collectContributions } from './distribution/registry.mjs'
+import { collectContributions, isWorkspaceTrusted } from './distribution/registry.mjs'
 import { resolvePreferences } from './distribution/preferences.mjs'
 
 export async function buildSessionOpening(root, host = 'unknown') {
@@ -15,7 +15,7 @@ export async function buildSessionOpening(root, host = 'unknown') {
     readJson(userPaths().trust, { workspaces: {} }),
     resolvePreferences(root),
   ])
-  const trusted = Boolean(trust.workspaces?.[root]?.trusted)
+  const trusted = Boolean(trust.workspaces?.[root]?.trusted) || await isWorkspaceTrusted(root)
   const profile = {
     name: config?.profile?.name ?? null,
     language: preferences.interaction?.language ?? config?.profile?.language ?? manifest.defaults?.interaction?.language ?? 'en',
