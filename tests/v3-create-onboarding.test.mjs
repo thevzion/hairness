@@ -2,7 +2,9 @@ import assert from 'node:assert/strict'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import test from 'node:test'
+import { applyExtensionPlan, prepareExtensionUpdate } from '../src/composition/lifecycle.mjs'
 import { createHome } from '../src/home/create.mjs'
 import { doctorHome } from '../src/home/doctor.mjs'
 import { exists, readJson } from '../src/lib/io.mjs'
@@ -63,6 +65,65 @@ test('create failure leaves no partial destination', async (t) => {
     (error) => error.code === 'document_invalid' || error.code === 'provider_unsupported',
   )
   assert.equal(await exists(destination), false)
+  assert.equal(await exists(join(root, 'state/runtime/broken-home')), false)
+
+  const installFailure = join(root, 'install-failure')
+  await assert.rejects(createHome(installFailure, {
+    preset: 'minimal', language: 'en', providers: ['codex'], overlayGit: false,
+    packageSpec: `file:${join(root, 'missing-package.tgz')}`,
+  }))
+  assert.equal(await exists(installFailure), false)
+  assert.equal(await exists(join(root, 'state/runtime/install-failure')), false)
+})
+
+test('custom path distributions bootstrap their bundled extensions without copying a runtime', async (t) => {
+  const root = await rootFixture(t)
+  const distribution = join(root, 'distribution')
+  const extension = join(distribution, 'extensions/acme/chat')
+  await mkdir(extension, { recursive: true })
+  await writeFile(join(distribution, 'hairness.distribution.json'), `${JSON.stringify({
+    apiVersion: 'hairness.dev/distribution/v1alpha1', kind: 'Distribution',
+    metadata: { id: 'acme/custom', version: '1.0.0', summary: 'Custom bootstrap.' },
+    spec: { extensions: ['acme/chat'], defaults: {}, policies: [], onboarding: [] },
+  }, null, 2)}\n`)
+  await writeFile(join(extension, 'extension.json'), `${JSON.stringify({
+    apiVersion: 'hairness.dev/extension/v1alpha1', kind: 'Extension',
+    metadata: { id: 'acme/chat', version: '1.0.0', summary: 'Custom chat.' },
+    spec: {
+      provides: ['acme.chat'], requires: [],
+      recipes: [{ id: 'hairness-chat', path: 'chat.md', summary: 'Chat.', capability: 'acme.chat' }],
+      adapters: [], schemas: [], gates: [], onboarding: [], tests: [],
+    },
+  }, null, 2)}\n`)
+  await writeFile(join(extension, 'chat.md'), 'Chat directly with the user.\n')
+
+  const home = join(root, 'custom-home')
+  await createHome(home, { from: distribution, language: 'en', providers: ['codex'], overlayGit: false, install: false })
+  const lock = await readJson(join(home, 'hairness.lock.json'))
+  assert.equal(lock.distribution.id, 'acme/custom')
+  assert.equal(lock.extensions[0].path, 'extensions/acme/chat')
+  assert.equal(await exists(join(home, 'src')), false)
+  assert.equal(await exists(join(home, '.agents/skills/hairness-chat/SKILL.md')), true)
+
+  await writeFile(join(extension, 'chat.md'), 'Chat with the user using the improved source.\n')
+  const update = await prepareExtensionUpdate(home, 'acme/chat')
+  assert.deepEqual(update.preview.update, ['acme/chat'])
+  await applyExtensionPlan(home, update.checkpoint.metadata.id)
+  assert.match(await readFile(join(home, '.agents/skills/hairness-chat/SKILL.md'), 'utf8'), /improved source/)
+
+  await git(['init', '--quiet'], { cwd: distribution })
+  await git(['add', '--all'], { cwd: distribution })
+  await git(['-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'commit', '--quiet', '-m', 'distribution'], { cwd: distribution })
+  const distributionHead = await git(['rev-parse', 'HEAD'], { cwd: distribution })
+  const gitHome = join(root, 'custom-git-home')
+  await createHome(gitHome, {
+    from: pathToFileURL(distribution).href,
+    distributionRef: 'HEAD',
+    language: 'en', providers: ['codex'], overlayGit: false, install: false,
+  })
+  const gitLock = await readJson(join(gitHome, 'hairness.lock.json'))
+  assert.equal(gitLock.distribution.resolvedCommit, distributionHead)
+  assert.equal(gitLock.extensions[0].resolvedCommit, distributionHead)
 })
 
 test('onboarding resumes after every French answer and applies one exact checkpoint', async (t) => {

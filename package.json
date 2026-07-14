@@ -47,6 +47,7 @@
     "conformance": "node scripts/conformance.mjs",
     "test:node22": "npx -y node@22 scripts/run-tests.mjs",
     "test:node24": "npx -y node@24 scripts/run-tests.mjs",
+    "check:lab": "node scripts/lab-dogfood.mjs",
     "check:pack": "node scripts/check-pack.mjs",
     "check:providers": "node scripts/check-providers.mjs"
   },

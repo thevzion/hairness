@@ -3,7 +3,7 @@ id: 0013-v0-3-clean-architectural-reset
 status: accepted
 owners: [hairness/cockpit]
 signals: [home, distribution, extension, overlay, scratch, delivery]
-paths: [src, schemas, distributions, extensions/hairness, docs/architecture.md, docs/persistence.md]
+paths: [src, schemas, distributions, assets/extensions/hairness, docs/architecture.md, docs/persistence.md]
 ---
 
 # 0013: Hairness v0.3 clean architectural reset
@@ -57,4 +57,3 @@ This decision supersedes decisions 0001, 0003, 0004, 0005, 0008, 0009, 0010,
 0011 and 0012 where their source-owned kernel, Forge, tracked projection,
 material, update, invocation or artifact-graph models conflict with this reset.
 The non-invasive authority principle from decision 0002 remains valid.
-

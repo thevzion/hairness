@@ -1,20 +1,24 @@
 # Security model
 
-Hairness separates access from authority. Mounts, adapters, providers, and
-extensions grant no mutation rights. An executor receives effects only after a
-stored checkpoint is matched to its Run, Assignment, current policy and locks,
-then returns a validated receipt.
+Hairness separates visibility, trust, and authority.
 
-The WorkerResultGate validates the complete typed result and current run state
-before staging or promoting any producer artifact. A rejected result leaves the
-run resumable and cannot advance the durable artifact revision.
+```mermaid
+flowchart LR
+  source["Extension source"] --> inspect["Manifest + file inspection"]
+  inspect --> checkpoint["Composition checkpoint"]
+  checkpoint --> active["Active extension"]
+  active --> observe["Observe / derive"]
+  active --> prepare["Prepare exact effect"]
+  prepare --> revalidate["Revalidate Target + inputs + proof + policy"]
+  revalidate --> effect["Apply effect"]
+  effect --> receipt["Immutable Receipt"]
+```
 
-Hairness stores no credentials, auth artifacts, customer data, provider
-transcripts, or model reasoning. Workspace-local state lives in `.overlay/`;
-user trust and preferences live in `~/.hairness/`.
+Source inspection imports no adapter. Activation grants no effect authority.
+Target registration stores only a local binding and grants no authority. Effect
+checkpoints are single-use and stale on any relevant change.
 
-Local codebase mounts and extension links are path references, not authority.
-Remote GitHub/npm targets use normalized URI identities without credentials,
-queries or fragments. Hairness validates canonical paths and declared
-identities before recording them. Unmount and unlink operations remove only
-Hairness-owned symlinks and configuration, never their targets.
+Home Git, Overlay Git, and Target Git are independent. Creation configures no
+remote. Generated provider paths are exact. Overlay snapshots reject obvious
+credential paths, symlinks, and oversized files. Unknown effects stop replay and
+leave an immutable Receipt for reconciliation.

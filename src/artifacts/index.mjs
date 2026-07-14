@@ -1,6 +1,9 @@
 import { mkdir, readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
+import Ajv2020 from 'ajv/dist/2020.js'
 import { API, validateDocument } from '../contracts/index.mjs'
+import { activeExtensions } from '../composition/extensions.mjs'
+import { loadHome } from '../home/index.mjs'
 import { HairnessError } from '../lib/errors.mjs'
 import { assertId, exists, now, readJson, writeFileAtomic, writeJsonExclusive } from '../lib/io.mjs'
 import { maybeBoundarySnapshot, overlayPaths } from '../overlay/index.mjs'
@@ -14,7 +17,8 @@ export async function saveArtifact(root, options) {
   if (!payloadName) throw new HairnessError('artifact_media_type_invalid', `Unsupported Artifact media type: ${mediaType}.`)
   const directory = join(overlayPaths(root).artifacts, owner, type, id)
   if (await exists(directory)) throw new HairnessError('artifact_exists', `Artifact ${owner}/${type}/${id} already exists.`)
-  if (mediaType === 'application/json' && options.validatePayload) await options.validatePayload(options.payload)
+  if (mediaType === 'application/json' && !options.validatePayload) throw new HairnessError('artifact_schema_required', `JSON Artifact ${owner}/${type} requires an owner schema.`)
+  if (mediaType === 'application/json') await options.validatePayload(options.payload)
   const envelope = {
     apiVersion: API.artifact,
     kind: 'Artifact',
@@ -41,8 +45,26 @@ export async function showArtifact(root, owner, type, id) {
 
 export async function validateArtifact(root, owner, type, id, validatePayload) {
   const value = await showArtifact(root, owner, type, id)
-  if (value.envelope.spec.mediaType === 'application/json' && validatePayload) await validatePayload(value.payload)
+  if (value.envelope.spec.mediaType === 'application/json') {
+    validatePayload ??= await ownerArtifactValidator(root, owner, type)
+    await validatePayload(value.payload)
+  }
   return value
+}
+
+export async function ownerArtifactValidator(root, owner, type) {
+  const home = await loadHome(root)
+  const extension = (await activeExtensions(root, home)).find((item) => item.manifest.metadata.id === owner)
+  if (!extension) throw new HairnessError('artifact_owner_inactive', `Artifact owner ${owner} is not active.`)
+  const entry = extension.manifest.spec.schemas.find((item) => item.id === type)
+  if (!entry) throw new HairnessError('artifact_schema_required', `${owner} does not declare schema ${type}.`)
+  const schema = JSON.parse(await readFile(join(extension.root, entry.path), 'utf8'))
+  const ajv = new Ajv2020({ allErrors: true, strict: true })
+  const validate = ajv.compile(schema)
+  return async (payload) => {
+    if (!validate(payload)) throw new HairnessError('artifact_payload_invalid', `Invalid ${owner}/${type} payload.`, { details: { errors: validate.errors } })
+    return payload
+  }
 }
 
 export async function listArtifacts(root) {

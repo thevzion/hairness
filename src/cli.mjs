@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { listArtifacts, saveArtifact, showArtifact, validateArtifact } from './artifacts/index.mjs'
+import { listArtifacts, ownerArtifactValidator, saveArtifact, showArtifact, validateArtifact } from './artifacts/index.mjs'
 import { inspectExtension } from './composition/extensions.mjs'
 import {
   applyExtensionPlan,
@@ -165,7 +165,8 @@ async function artifactRoute(root, action, rest, flags, io) {
     const [owner, type, id] = artifactIdentity(rest)
     const mediaType = flags.media ?? 'text/markdown'
     const payload = await payloadInput(flags, io, mediaType)
-    return saveArtifact(root, { owner, type, id, mediaType, payload, provenance: flags.provenance ? JSON.parse(flags.provenance) : {} })
+    const validatePayload = mediaType === 'application/json' ? await ownerArtifactValidator(root, owner, type) : undefined
+    return saveArtifact(root, { owner, type, id, mediaType, payload, validatePayload, provenance: flags.provenance ? JSON.parse(flags.provenance) : {} })
   }
   throw usage('hairness artifact list|show|save|validate')
 }
@@ -198,6 +199,8 @@ function createOptions(flags) {
   return {
     preset: flags.preset,
     from: flags.from,
+    distributionRef: flags['distribution-ref'],
+    distributionPath: flags['distribution-path'],
     language: flags.language,
     providers: flags.providers ? String(flags.providers).split(',') : undefined,
     target: flags.target === 'skip' ? null : flags.target,

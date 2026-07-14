@@ -7,10 +7,10 @@ import { listArtifacts, saveArtifact, showArtifact } from '../src/artifacts/inde
 import { homeDocument } from '../src/home/index.mjs'
 import { writeJsonAtomic } from '../src/lib/io.mjs'
 import { archiveOverlay, initializeOverlay, overlayPaths, snapshotOverlay } from '../src/overlay/index.mjs'
-import { activeScratch, createScratch, listScratches, noteScratch } from '../src/scratch/index.mjs'
+import { activeScratch, createScratch, importScratch, listScratches, noteScratch } from '../src/scratch/index.mjs'
 import { git } from '../src/runtime/git.mjs'
 
-async function fixture(t, overlayGit = false) {
+async function fixture(t, overlayGit = false, snapshot = 'boundary') {
   const root = await mkdtemp(join(tmpdir(), 'hairness-v3-overlay-'))
   const home = join(root, 'home')
   process.env.HAIRNESS_STATE_HOME = join(root, 'state')
@@ -21,6 +21,7 @@ async function fixture(t, overlayGit = false) {
     extensions: ['hairness/cockpit', 'hairness/work'],
     targets: [],
     overlayGit,
+    snapshot,
   }))
   await initializeOverlay(home)
   t.after(async () => {
@@ -64,6 +65,10 @@ test('Artifacts keep one exact canonical payload and no revision graph', async (
   assert.equal(saved.envelope.spec.payload, 'payload.md')
   assert.equal(JSON.stringify(saved.envelope).includes('revision'), false)
   assert.equal((await listArtifacts(home)).length, 1)
+  await assert.rejects(
+    saveArtifact(home, { owner: 'hairness/work', type: 'plan', id: 'untyped-json', mediaType: 'application/json', payload: { steps: [] } }),
+    (error) => error.code === 'artifact_schema_required',
+  )
 })
 
 test('Overlay Git is local, snapshots boundaries and blocks unsafe files', async (t) => {
@@ -78,8 +83,28 @@ test('Overlay Git is local, snapshots boundaries and blocks unsafe files', async
   await assert.rejects(snapshotOverlay(home), (error) => error.code === 'overlay_credential_path')
   await rm(join(paths.root, '.env'))
 
+  await writeFile(join(paths.root, 'accidental.bin'), Buffer.alloc(1024 * 1024 + 1))
+  await assert.rejects(snapshotOverlay(home), (error) => error.code === 'overlay_file_oversized')
+  await rm(join(paths.root, 'accidental.bin'))
+
   await symlink(join(home, 'hairness.json'), join(paths.root, 'escape-link'))
   await assert.rejects(snapshotOverlay(home), (error) => ['path_escape', 'overlay_symlink_forbidden'].includes(error.code))
+})
+
+test('manual Overlay mode snapshots only on request and generic Scratch import reads human files', async (t) => {
+  const { root, home, paths } = await fixture(t, true, 'manual')
+  const initial = Number(await git(['rev-list', '--count', 'HEAD'], { cwd: paths.root }))
+  await createScratch(home, { id: 'manual', title: 'Manual' })
+  await noteScratch(home, { kind: 'decision', text: 'Snapshot only when requested.' })
+  assert.equal(Number(await git(['rev-list', '--count', 'HEAD'], { cwd: paths.root })), initial)
+  await snapshotOverlay(home, { message: 'work: manual snapshot' })
+  assert.ok(Number(await git(['rev-list', '--count', 'HEAD'], { cwd: paths.root })) > initial)
+
+  const source = join(root, 'selected-notes.md')
+  await writeFile(source, '# Selected legacy notes\n')
+  const imported = await importScratch(home, source, { id: 'imported', title: 'Imported' })
+  assert.equal(imported.metadata.id, 'imported')
+  assert.equal(await readFile(join(paths.scratches, 'imported', 'notes.md'), 'utf8'), '# Selected legacy notes\n')
 })
 
 test('opaque archives live outside the Overlay and parse no legacy schema', async (t) => {

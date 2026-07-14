@@ -6,6 +6,7 @@ import { activeExtensions, inspectExtension, validateComposition } from '../src/
 import { loadDistribution } from '../src/composition/distributions.mjs'
 import { compileSchemas, validateDocument } from '../src/contracts/index.mjs'
 import { loadHome, loadHomeLock } from '../src/home/index.mjs'
+import { digest } from '../src/lib/io.mjs'
 
 const root = new URL('../', import.meta.url).pathname
 
@@ -20,16 +21,22 @@ async function files(directory) {
   return values
 }
 
-assert.equal((await compileSchemas()).length, 7)
+assert.equal((await compileSchemas()).length, 9)
 const home = await loadHome(root)
 const lock = await loadHomeLock(root)
 assert.equal(home.metadata.id, lock.metadata.id)
 const active = await activeExtensions(root, home)
 validateComposition(active)
+for (const extension of active) {
+  const entry = lock.extensions.find((item) => item.id === extension.manifest.metadata.id)
+  assert.ok(entry, `lock misses ${extension.manifest.metadata.id}`)
+  assert.equal(entry.installedBaseDigest, extension.digest, `lock digest is stale for ${extension.manifest.metadata.id}`)
+}
 for (const preset of ['minimal', 'standard']) await validateDocument((await loadDistribution(preset)).document, 'Distribution')
 for (const extension of active) await inspectExtension(extension.root)
 
 const standard = (await loadDistribution('standard')).document
+assert.equal(lock.distribution.digest, digest(standard), 'development Distribution lock is stale')
 assert.deepEqual(standard.spec.extensions, ['hairness/cockpit', 'hairness/work', 'hairness/sources', 'hairness/codebase', 'hairness/delivery'])
 const recipes = active.filter((extension) => standard.spec.extensions.includes(extension.manifest.metadata.id)).flatMap((extension) => extension.manifest.spec.recipes.map((recipe) => recipe.id)).sort()
 assert.deepEqual(recipes, ['hairness', 'hairness-discuss', 'hairness-ideate', 'hairness-map', 'hairness-onboarding', 'hairness-plan', 'hairness-propose', 'hairness-recap', 'hairness-scratch', 'hairness-ship'].sort())

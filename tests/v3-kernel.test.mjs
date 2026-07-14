@@ -6,7 +6,7 @@ import test from 'node:test'
 import { API, compileSchemas, validateDocument } from '../src/contracts/index.mjs'
 import { homeDocument } from '../src/home/index.mjs'
 import { writeJsonAtomic } from '../src/lib/io.mjs'
-import { applyEffect, prepareEffect } from '../src/operations/index.mjs'
+import { applyEffect, effectOutcome, prepareEffect } from '../src/operations/index.mjs'
 import { bindTarget, runtimePaths } from '../src/runtime/index.mjs'
 
 async function fixture(t) {
@@ -32,7 +32,7 @@ async function fixture(t) {
 
 test('v0.3 type-specific schema registry compiles without a global protocol version', async () => {
   const keys = await compileSchemas()
-  assert.equal(keys.length, 7)
+  assert.equal(keys.length, 9)
   assert.ok(keys.includes(`${API.home}:Home`))
   assert.ok(keys.every((key) => !key.includes('0.2')))
 })
@@ -69,4 +69,16 @@ test('effect checkpoints bind exact inputs, target evidence and policy', async (
   const receipt = await applyEffect(home, checkpoint.metadata.id, current, async () => ({ url: 'https://example.test/pr/1' }))
   assert.equal(receipt.kind, 'Receipt')
   assert.equal(receipt.spec.outcome, 'succeeded')
+
+  const partial = await prepareEffect(home, {
+    operation: 'delivery.publish-pr', adapter: 'hairness/delivery:publish-pr', ...current,
+  })
+  await assert.rejects(
+    applyEffect(home, partial.metadata.id, current, async () => effectOutcome('partial', { created: true, url: null })),
+    (error) => error.code === 'effect_partial' && error.details.receipt.spec.outcome === 'partial',
+  )
+  await assert.rejects(
+    applyEffect(home, partial.metadata.id, current, async () => ({ retry: true })),
+    (error) => error.code === 'checkpoint_consumed',
+  )
 })

@@ -7,6 +7,8 @@ import { digest, now, readJson, writeJsonAtomic, writeJsonExclusive } from '../l
 import { overlayPaths } from '../overlay/index.mjs'
 import { ensureRuntime } from '../runtime/index.mjs'
 
+const effectOutcomes = new Set(['succeeded', 'partial', 'unknown', 'failed'])
+
 function checkpointId() {
   return `checkpoint-${randomUUID()}`
 }
@@ -65,6 +67,11 @@ export async function applyEffect(root, id, current, effect) {
   let caught
   try {
     result = await effect()
+    if (result?.__hairnessEffectOutcome === true) {
+      if (!effectOutcomes.has(result.outcome)) throw new HairnessError('effect_outcome_invalid', `Unsupported effect outcome: ${result.outcome}.`)
+      outcome = result.outcome
+      result = result.result ?? null
+    }
   } catch (error) {
     outcome = 'unknown'
     caught = error
@@ -87,5 +94,11 @@ export async function applyEffect(root, id, current, effect) {
   await validateDocument(receipt, 'Receipt')
   await writeJsonExclusive(join(overlayPaths(root).receipts, `${receipt.metadata.id}.json`), receipt)
   if (caught) throw new HairnessError('effect_unknown', `Effect outcome is unknown: ${caught.message}`, { exitCode: 6, cause: caught, details: { receipt } })
+  if (outcome !== 'succeeded') throw new HairnessError(`effect_${outcome}`, `Effect reported a ${outcome} outcome. Reconcile its Receipt before any retry.`, { exitCode: 6, details: { receipt } })
   return receipt
+}
+
+export function effectOutcome(outcome, result) {
+  if (!effectOutcomes.has(outcome)) throw new HairnessError('effect_outcome_invalid', `Unsupported effect outcome: ${outcome}.`)
+  return Object.freeze({ __hairnessEffectOutcome: true, outcome, result })
 }

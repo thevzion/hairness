@@ -99,6 +99,16 @@ test('adaptive checkout isolates dirty and occupied repositories and refuses uns
   const dirty = await selectCheckout(home, { scratch: 'third', target: 'product', base: 'HEAD' })
   assert.equal(dirty.strategy, 'isolate')
   assert.equal(dirty.reason.dirty, true)
+  await releaseCheckout(home, 'product', 'third')
+  await rm(join(target, 'uncommitted.txt'))
+
+  await writeFile(join(target, 'src/new-base.txt'), 'new base\n')
+  await git(['add', 'src/new-base.txt'], { cwd: target })
+  await git(['-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'commit', '--quiet', '-m', 'chore: move base'], { cwd: target })
+  const incompatible = await selectCheckout(home, { scratch: 'fourth', target: 'product', base })
+  assert.equal(incompatible.strategy, 'isolate')
+  assert.equal(incompatible.reason.incompatible, true)
+  await releaseCheckout(home, 'product', 'fourth')
 })
 
 test('scope drift blocks publication before a PR effect can be prepared', async (t) => {

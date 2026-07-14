@@ -83,7 +83,11 @@ export async function applyOnboarding(root, checkpointId) {
     await buildProviders(root)
     return { composition: plan.composition, providers: plan.rebuild }
   })
-  return { status: 'complete', receipt, tour: ['hairness', 'hairness-scratch', 'hairness-discuss', 'hairness-map', 'hairness-recap', 'hairness-plan', 'hairness-ship'] }
+  return {
+    status: 'complete',
+    receipt,
+    tour: ['hairness', 'hairness-onboarding', 'hairness-scratch', 'hairness-discuss', 'hairness-map', 'hairness-ideate', 'hairness-propose', 'hairness-recap', 'hairness-plan', 'hairness-ship'],
+  }
 }
 
 async function onboardingQuestions(root, home) {

@@ -40,12 +40,12 @@ export async function initializeExtension(path, id) {
 export async function prepareExtensionAdd(root, source, options = {}) {
   const home = await loadHome(root)
   if (home.spec.extensions.includes(options.id ?? source)) throw new HairnessError('extension_active', `${options.id ?? source} is already active.`)
-  const resolved = await resolveExtensionSource(source, options)
+  const runtime = await ensureRuntime(home)
+  const resolved = await resolveExtensionSource(source, { ...options, tmp: runtime.tmp })
   try {
     if (home.spec.extensions.includes(resolved.manifest.metadata.id)) throw new HairnessError('extension_active', `${resolved.manifest.metadata.id} is already active.`)
     const current = await activeExtensions(root, home)
     validateComposition([...current, resolved])
-    const runtime = await ensureRuntime(home)
     const candidate = join(runtime.tmp, 'extensions', randomUUID())
     await copyTree(resolved.root, candidate)
     const plan = {
@@ -63,6 +63,7 @@ export async function prepareExtensionAdd(root, source, options = {}) {
 
 export async function prepareExtensionUpdate(root, id) {
   const home = await loadHome(root)
+  const runtime = await ensureRuntime(home)
   const lock = await loadHomeLock(root)
   const entry = lock.extensions.find((item) => item.id === id)
   if (!entry) throw new HairnessError('extension_not_active', `${id} is not active.`)
@@ -72,12 +73,11 @@ export async function prepareExtensionUpdate(root, id) {
     throw new HairnessError('extension_diverged', `${id} has local changes. Adopt them or merge the update manually.`, { exitCode: 5, details: { expected: entry.installedBaseDigest, actual: installedDigest } })
   }
   if (entry.sourceKind === 'adopted') return { status: 'current', id, digest: installedDigest, limit: 'adopted extensions have no upstream update source' }
-  const resolved = await resolveExtensionSource(entry.source, { ref: entry.requestedRef, path: entry.path })
+  const resolved = await resolveExtensionSource(entry.source, { ref: entry.requestedRef, path: entry.path, tmp: runtime.tmp })
   try {
     if (resolved.digest === installedDigest) return { status: 'current', id, digest: installedDigest }
     const current = await activeExtensions(root, home)
     validateComposition(current.map((item) => item.manifest.metadata.id === id ? resolved : item))
-    const runtime = await ensureRuntime(home)
     const candidate = join(runtime.tmp, 'extensions', randomUUID())
     await copyTree(resolved.root, candidate)
     const plan = { action: 'update', id, candidate, destination: installed, provenance: resolved.provenance }

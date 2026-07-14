@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { validateDocument } from './contracts/index.mjs'
 import { loadHome } from './home/index.mjs'
 import { readJson } from './lib/io.mjs'
 import { overlayPaths } from './overlay/index.mjs'
@@ -24,7 +24,7 @@ export async function sessionOpening(root) {
   const scratch = await activeScratch(root)
   const targets = await listTargets(root)
   const onboarded = draft?.status === 'complete'
-  return {
+  return validateDocument({
     apiVersion: 'hairness.dev/home/v1alpha1',
     kind: 'SessionOpening',
     home: { id: home.metadata.id, language: home.spec.language, providers: home.spec.providers },
@@ -35,6 +35,5 @@ export async function sessionOpening(root) {
     commands: humanCommands,
     limits: [!onboarded && 'onboarding-incomplete', !scratch && 'session-ephemeral'].filter(Boolean),
     routes: [!onboarded ? 'hairness onboarding status --json' : null, !scratch ? 'hairness scratch create <title>' : null].filter(Boolean),
-  }
+  }, 'SessionOpening')
 }
-

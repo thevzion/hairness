@@ -31,3 +31,39 @@ legacy archives are siblings under `~/.hairness/`.
 Runtime state can be rebuilt or discarded. Overlay state may be valuable and is
 therefore explicit, inspectable and independently versionable.
 
+```text
+.overlay/
+├── README.md
+├── profile.json
+├── onboarding/draft.json
+├── scratches/<id>/
+│   ├── scratch.json
+│   ├── context.md
+│   ├── notes.md
+│   ├── sessions/
+│   └── outputs/
+├── artifacts/<owner>/<type>/<id>/
+│   ├── artifact.json
+│   └── payload.md|payload.json
+├── receipts/
+└── .gitignore
+```
+
+The machine-owned counterpart is deliberately separate:
+
+```text
+~/.hairness/
+├── preferences/
+├── trust/
+├── archives/
+└── runtime/<home-id>/
+    ├── build.json
+    ├── providers/
+    ├── targets/
+    ├── checkouts/
+    ├── checkpoints/
+    ├── locks/
+    ├── cache/
+    ├── tmp/
+    └── logs/
+```

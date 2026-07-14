@@ -89,6 +89,22 @@ test('required capabilities block removal and init creates the minimal authoring
   assert.equal(initialized.manifest.spec.recipes.length, 1)
 })
 
+test('capability and command collisions reject composition before activation', async (t) => {
+  const { root, home } = await fixture(t)
+  const first = join(root, 'first')
+  const second = join(root, 'second')
+  await twoFileExtension(first, 'acme/first')
+  await twoFileExtension(second, 'acme/second')
+  const add = await prepareExtensionAdd(home, first)
+  await applyExtensionPlan(home, add.checkpoint.metadata.id)
+
+  await assert.rejects(prepareExtensionAdd(home, second), (error) => error.code === 'capability_collision')
+  const manifest = await readJson(join(second, 'extension.json'))
+  manifest.spec.provides = ['acme.second']
+  await writeJsonAtomic(join(second, 'extension.json'), manifest)
+  await assert.rejects(prepareExtensionAdd(home, second), (error) => error.code === 'command_collision')
+})
+
 test('Git extension sources resolve refs to immutable commits and subtree digests', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'hairness-v3-git-extension-'))
   t.after(() => rm(root, { recursive: true, force: true }))

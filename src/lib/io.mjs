@@ -118,6 +118,6 @@ export async function copyTree(source, destination) {
   await cp(source, destination, {
     recursive: true,
     errorOnExist: true,
-    filter: (path) => !path.split(sep).some((part) => part === '.git' || part === 'node_modules'),
+    filter: (path) => !relative(source, path).split(sep).some((part) => part === '.git' || part === 'node_modules'),
   })
 }

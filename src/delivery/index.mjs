@@ -82,6 +82,8 @@ export async function releaseCheckout(root, target, scratch) {
     const bindings = await targetBindings(home)
     const repository = bindings.targets[target]?.path
     if (!repository) throw new HairnessError('target_unbound', `Target ${target} is unbound.`)
+    const safelyMerged = await git(['merge-base', '--is-ancestor', lock.branch, 'HEAD'], { cwd: repository }).then(() => true).catch(() => false)
+    if (!safelyMerged) throw new HairnessError('checkout_branch_unmerged', `Cleanup refuses unmerged branch ${lock.branch}.`, { exitCode: 5 })
     await git(['worktree', 'remove', lock.path], { cwd: repository })
     await git(['branch', '-d', lock.branch], { cwd: repository }).catch((error) => {
       throw new HairnessError('checkout_branch_unmerged', `Worktree was removed but branch ${lock.branch} was not safely deletable.`, { cause: error, exitCode: 5 })

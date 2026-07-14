@@ -1,247 +1,178 @@
-# Hairness protocol specification
+# Hairness v0.3 specification
 
 Status: experimental alpha
-Protocol: `0.2`  
-Implementation: `0.2.0-alpha.0`
+Package: `@hairness/cli@0.3.0-alpha.0`
 
-## 1. Conventions
+**MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** are normative.
 
-**MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** are normative. The protocol version identifies interoperable contracts. The implementation version identifies one distribution of those contracts.
+## 1. Product boundary
 
-## 2. Thesis
+Hairness is a lightweight, provider-agnostic harness for agentic assets. The npm
+runtime MUST own deterministic composition, validation, local bindings,
+checkpoints, receipts, and provider compilation. Providers MUST retain their
+models, UI, threads, tools, workers, and scheduling.
 
-Hairness treats agentic assets as software. It provides a provider-native, source-owned control plane for the main session so the human and agent can share current reality, reason together, and apply bounded leverage.
+A Home MUST own agentic assets and MUST NOT own a Target repository. A Target
+MUST remain an independent repository identity with its local path stored only
+in Runtime. Integration, installation, registration, or file presence MUST NOT
+grant effect authority.
 
-The kernel MUST own only grammar and generic guarantees. Extensions MUST own behavior. A distribution MUST own selection.
+## 2. Document APIs
 
-Hairness is not a model runtime, daemon, transcript store, project manager, autonomous execution loop, or required footprint inside mounted codebases.
+Public documents MUST declare `apiVersion` and `kind`. There is no global schema
+or protocol version.
 
-## 3. Canonical model
+| Document | API |
+| --- | --- |
+| Home, HomeLock and SessionOpening | `hairness.dev/home/v1alpha1` |
+| Distribution | `hairness.dev/distribution/v1alpha1` |
+| Extension | `hairness.dev/extension/v1alpha1` |
+| Scratch | `hairness.dev/scratch/v1alpha1` |
+| Artifact | `hairness.dev/artifact/v1alpha1` |
+| Checkpoint | `hairness.dev/checkpoint/v1alpha1` |
+| Receipt | `hairness.dev/receipt/v1alpha1` |
 
-An **AgenticAsset** is a conceptual, versioned unit that changes what an agent can understand or do. Protocol `0.2` does not define a universal asset registry.
+Packages and extensions MUST use SemVer.
 
-A **CapabilitySpec** MUST declare a stable ID, owner, version, summary, and globally unique operations. An **Operation** MUST declare:
+## 3. Home and Distribution
 
-- an ID and class `observe`, `derive`, or `effect`;
-- one or more typed ResultOptions and exactly one declared default;
-- declared sources and effects;
-- supported route kinds;
-- accepted modifiers.
+A generated Home MUST contain a pinned npm dependency, `hairness.json`,
+`hairness.lock.json`, installed extension source, small managed regions in
+`AGENTS.md` and `CLAUDE.md`, provider skill sentinel files, and an Overlay.
 
-An `observe` or `derive` operation MUST declare no effects and MUST NOT return disposition `effect`. An `effect` operation MUST declare at least one effect and MUST return disposition `effect`.
+`hairness.json` MUST select providers, extension IDs, Target identities, language,
+and Overlay policy. `hairness.lock.json` MUST record Distribution provenance and
+each extension source kind, requested ref, immutable Git commit when applicable,
+source digest, and installed base digest. Neither file may contain local Target
+paths or generated provider output paths.
 
-An **OperationRef** MUST contain capability and operation IDs. Provider commands, routes, assignments, and capsules MUST resolve to one active OperationRef.
+A Distribution MUST be bootstrap-only. It MAY contain extensions, defaults,
+policies, onboarding contributions, documentation, and tests. It MUST NOT
+contain a kernel, CLI, runtime, Overlay, Targets, provider output, or material
+graph. After creation it has no synchronization role.
 
-## 4. Routes
+## 4. Extension contract
 
-A RouteSpec MUST use kind `deterministic`, `inline`, `worker`, or `external`. A worker route MUST declare profile `producer` or `executor`; other routes MUST NOT declare a worker profile.
-
-An observe/derive worker MUST use `producer`. An effect worker MUST use `executor`. The route kind MUST be supported by its operation.
-
-Every fan-out MUST declare one fan-in. Every required route MUST return a valid typed result before the plan can succeed. Optional failure MUST return as an explicit limit. Mechanical reduction MAY merge compatible typed results; semantic reconciliation MUST be an operation.
-
-An InvocationDraft MAY be proposed by a provider model or constructed directly. Hairness MUST validate it into one InvocationRequest referencing an active Operation. Resolution MUST prefer explicit inputs, then the provider draft, effective local state, distribution defaults, and trusted extension resolvers. Only an unresolved required ambiguity MAY become an InvocationGap.
-
-An InvocationPreview MUST remain below 4 KiB and expose resolved inputs, controls, route, expected result, effects, gaps, limits, and next action. `--auto` MAY bypass only preview confirmation. It MUST NOT bypass trust, ambiguity, budget escalation, authority, target or effect expansion, result validation, publication, or partial effects.
-
-Invocation events MUST be append-only and state MUST be reconstructible from
-them. Every invocation MUST record InvocationOrigin and the available mission,
-segment, and frame WorkRef. Missing provider-session binding MUST be an explicit
-limit and MUST NOT block an otherwise valid request.
-
-An accepted InvocationResult MUST be immutable and stored separately from its
-events and receipt. Events and receipts MUST contain only semantic references,
-digests, proof, limits, and routes. They MUST NOT contain transcripts, raw
-provider responses, or internal reasoning. Rejected results MAY be corrected;
-interrupted Invocations MUST remain explicitly completable, blockable, or
-cancellable without inferred outcomes.
-
-Provider projections MUST direct a main-session model to submit an InvocationDraft before asking a user question. The model MUST ask only an InvocationGap returned by Hairness. A host adapter MUST report `strict`, `guarded`, or `unsupported` and MUST NOT claim a native fast hook when it uses the agent-first-call fallback.
-
-A forge MAY preserve initiatives and delivery plans as extension-owned local state. Publishing a roadmap snapshot, mutating Git, opening or merging a pull request, tagging, releasing, publishing a package, or posting externally MUST remain an explicit effect outside the planning handler and MUST return a typed receipt.
-
-## 5. Main session
-
-The main session is the provider session communicating with the human. It MUST receive minimum sufficient context, current proof references, limits, and routes. It MUST NOT receive worker transcripts, hidden reasoning, or the full cockpit inside workers.
-
-SessionOpening MUST be constructed locally in less than 500 ms, stay below 4 KiB, and contain no extension contribution above 512 bytes. ContextPacket MUST stay below 8 KiB. The effective language MUST govern commentary, questions, and final responses unless the current prompt explicitly overrides it.
-
-The CLI MUST be deterministic and MUST NOT embed an LLM. Semantic choices MAY remain with the native main-session model.
-
-## 6. Plans, runs, and workers
-
-An Intent MUST state an outcome. A ContextPlan MUST contain routes and fan-in. An Assignment MUST contain its OperationRef, goal, outcome, workload, exact inputs, targets, exclusions, sources, requested effects, and ResultContract. Requested effects MUST be a subset of the effects declared by the referenced Operation.
-
-A WorkerCapsule MUST expose only the assignment identity, OperationRef, profile, goal, outcome, precise inputs, targets, exclusions, allowlists, workload, ResultContract, and submit/fail/source/effect routes. Workers MUST NOT spawn nested workers in protocol `0.2`.
-
-Run states are:
+An Extension manifest MUST contain:
 
 ```text
-planned ready running needs-input needs-budget needs-authority needs-split
-succeeded failed invalid cancelled unknown
+apiVersion
+kind: Extension
+metadata: id, version, summary
+spec: provides, requires, recipes, adapters, schemas, gates, onboarding, tests
 ```
 
-The kernel MUST validate transitions and persist task, append-only RunEvents,
-and canonical result. Every post-epoch Run MUST reference one root Invocation
-and route ID. A ContextPlan's Runs MUST share its root Invocation; mechanical or
-semantic fan-in MUST complete that root with the reduced typed result. A direct
-Run MUST receive a synthetic root. An invalid result MUST be rejected before
-promotion and MAY be corrected within the same logical run.
+`provides` and `requires` MUST reference capability IDs. One active composition
+MUST NOT contain two providers for the same capability, two recipes with the
+same command ID, or a missing requirement.
 
-Worker inspect, source, effect, submit, and fail actions MUST be RunEvents, not
-new Invocations. A worker MUST NOT spawn a nested worker. Work that cannot fit
-its capsule MUST return `needs-split` to the parent.
+A Recipe MUST be provider-neutral Markdown. It MUST converse directly and MUST
+NOT call the CLI merely to produce chat. An Adapter MUST declare `observe`,
+`derive`, or `effect`. Observe and derive adapters MUST NOT request effects. An
+effect adapter MUST export separate prepare and apply boundaries.
 
-## 7. Results and artifacts
+Onboarding contributions MUST be declarative. Extension code MUST NOT execute
+during source inspection. Physical presence MUST NOT activate an extension;
+only the Home selection does.
 
-Result disposition MUST be `response`, `run-only`, `scratch`, `artifact`, or `effect`. Provider text is a projection; the typed result is canonical.
+Git extension refs MUST resolve to immutable commits. Update MAY replace an
+installed extension mechanically only when its current digest equals its
+installed base digest. Divergence MUST stop for explicit adoption or human
+merge. Hairness MUST NOT provide a generic three-way merge or migration engine.
 
-An artifact MUST have a stable ID, active owner, type, revision history, JSON payload, generated rendering, append-only annotations, labels, signals, relations, freshness, and provenance. The owner extension MUST provide its payload schema. Promotion MUST be atomic.
+## 5. Provider command surface
 
-The selected result MUST expose promotion `none`, `artifact`, or `effect`.
-Promotion MUST remain independent from progress and MUST NOT confer authority.
-A producer MAY create the payload and provenance requested by its parent, but
-MUST NOT change the fixed owner, artifact type, or promotion.
+Standard MUST compile exactly ten human commands: `hairness`,
+`hairness-onboarding`, `hairness-scratch`, `hairness-discuss`, `hairness-map`,
+`hairness-ideate`, `hairness-propose`, `hairness-recap`, `hairness-plan`, and
+`hairness-ship`.
 
-Scratch MUST remain local, namespaced, non-authoritative, and never
-auto-promoted. A `save-*` intent MUST promote the exact latest compatible typed
-result, use the source Invocation as revision, and be idempotent. It MUST NOT
-resynthesize the payload. Artifacts orient; current source evidence proves.
+Codex MUST project `$hairness-…`; Claude MUST project `/hairness-…`. A rebuild
+MUST produce equivalent semantics. Generated outputs MUST be listed exactly in
+Runtime build state and only those exact paths MAY be locally excluded from Git.
+Hairness MUST NOT own, ignore, or clear a complete provider directory.
 
-## 8. Effects, authority, and recovery
+Chat recipes MUST create no operation state or receipt. Recap, map, and plan MUST
+render in chat first and MUST persist only the exact accepted payload after an
+explicit save request.
 
-Integration grants no authority. An effect requires:
+## 6. Overlay, Scratch, and Artifact
 
-```text
-requested effect
-∩ checkpoint grant
-∩ worker capsule
-∩ current extension policies
-∩ exact target and valid lock
-```
+A provider session MUST begin ephemeral. Without an active Scratch, Hairness
+MUST write no work memory. Once attached, notes MAY change only at semantic
+boundaries: accepted decisions, changed constraints, handoffs, changed next
+steps, park, and close. Transcripts and reasoning traces MUST NOT be stored.
 
-A checkpoint MUST show intent, resolved targets, effects, exclusions, proof, risk, and non-actions. It MUST be stored with the Run before approval and MUST NOT exceed the Assignment. Approval MUST address the exact Run/checkpoint pair, revalidate the stored policy digest, acquire locks, and only then make the executor ready. Grants MUST be operation-scoped and store the effective policy digest. Policy MUST be recomputed before every effect; a newly denied effect MUST revoke the grant.
+Overlay Git MAY be enabled as a nested local repository. Boundary snapshots
+SHOULD be the default; manual snapshots MUST remain available. Hairness MUST NOT
+configure a remote or push. Snapshots MUST refuse credential-like paths,
+escaping symbolic links, and oversized accidental files.
 
-Locks MUST use canonical local realpaths or normalized credential-free URI target identities and be acquired atomically. URI targets MUST NOT contain credentials, query parameters or fragments. A dirty target requires a recorded baseline and no overlap. Crash, partial receipt, or ambiguous state MUST produce `unknown` or a partial receipt and a recovery route. The kernel MUST NOT promise generic rollback.
+An Artifact MUST contain one envelope and exactly one canonical payload.
+Human-facing payloads SHOULD use Markdown. Machine-consumed payloads MUST use
+owner-validated JSON. Git supplies history; internal revision graphs, generated
+Markdown mirrors, mandatory relations, labels, and signals MUST NOT exist.
+Receipts are separate immutable core records.
 
-## 9. Extension contract
+## 7. Runtime
 
-An extension MUST contain a validated `extension.json`, its declared README and capability files, and only its owned implementation, schemas, instructions, contributions, and tests. It MUST declare a summary, discovery category, tags, and maturity. Category metadata MUST NOT change the stable `<owner>/<name>` ID or physical path. Declared paths MUST remain inside the extension.
+Machine state MUST live below `~/.hairness/` in preferences, trust, archives,
+and `runtime/<home-id>/`. Runtime MAY contain provider builds, Target bindings,
+adaptive checkouts, checkpoints, locks, caches, temporary staging, and logs.
+Runtime state MUST NOT be committed to the Home or Overlay.
 
-Cross-extension service calls MUST declare dependencies. Cycles, duplicate command owners, duplicate operation IDs, duplicate artifact types, missing exports, and unselected modifiers MUST block doctor and build.
+Legacy Overlays MAY be copied opaquely into archives without schema parsing.
+Only user-selected human content MAY be imported through the generic Scratch
+importer.
 
-The frozen runtime MAY expose contracts, distribution reads, runs, plans, artifacts, authority, declared extension services, and owner-scoped overlay state. It MUST NOT expose generic source or target mutation primitives. Extension state MUST be limited to `.overlay/extensions-state/<extension-id>/`.
+## 8. Effects and receipts
 
-Physical presence MUST NOT activate an extension. Removing an extension MUST remove all its capabilities, commands, services, contributions, source drivers, schemas, and provider projections.
+`operation run` MUST accept only observe and derive adapters. `operation prepare`
+MUST create a Checkpoint bound to exact inputs, Target identity and state,
+evidence, and policy. `operation apply` MUST recompute that state and refuse any
+relevant change.
 
-## 10. Controls and composition
+An effect that succeeds, partially succeeds, or has an unknown outcome MUST
+produce an immutable Receipt. Partial and unknown outcomes MUST stop replay. Extension
+installation and Target registration MUST explicitly grant no operational
+authority.
 
-Controls are ordinary extensions:
+## 9. Onboarding and creation
 
-- Work Controls own mission, segment, frame, discuss, recap, plan, act, execute, SegmentDigest, and WorkPlan.
-- Understanding Controls own map, explain, and compare.
-- Ideation Controls own ideate, propose, and creative strategy.
-- Presentation Controls own presentation policies and views.
-- Constraints own named restrictions and their inheritance.
+The create wizard MUST use the platform readline API and ask, in order: language,
+setup, providers, detected first Target, and local Overlay Git. Standard MUST be
+recommended. Home Git and an initial local commit are mandatory. Overlay Git is
+optional and, when selected, receives its own initial local commit.
 
-Intent composition MAY combine operation, focus, source policy, boundary, execution mode, budget, and accepted modifiers. A modifier MAY change strategy or form; it MUST NOT invent evidence, meaning, structure, or authority. A quick command MUST reference an existing operation rather than duplicate a capability.
+Creation MUST occur in Runtime staging. Install, build, and doctor MUST pass
+before an atomic move to the destination. Failure MUST leave no partial
+destination. Creation MUST NOT configure a remote, push, tag, or publication.
 
-Work Controls MUST keep an append-only event log and reconstructible current state. Only one segment MAY be active. Closing a segment MUST require a valid SegmentDigest and make the segment immutable. Resuming a closed subject MUST open a related segment. Work state MUST NOT contain transcripts or reasoning.
+Agent onboarding MUST use the selected language from its first reply, save a
+resumable draft after every answer, progressively explain Home, Target, Scratch,
+persistence and checkpoints, and finish with a short command tour. Composition
+changes MUST show an exact diff and require a checkpoint.
 
-Operational attention MUST be a derived AttentionIndex, not an independent work
-store. It SHOULD combine active work, open Invocations and Runs, required input
-or authority, stale proof, recent results, extension contributions, and open
-edges from closed SegmentDigests. SessionOpening MUST include no more than the
-three highest-priority signals. Read-only topic recovery MUST NOT reopen a
-closed segment implicitly.
+## 10. Delivery
 
-## 11. Sources
+Delivery MUST create no durable state until the human accepts a typed
+DeliveryBrief. The brief MUST contain outcome, acceptance criteria, scope,
+non-goals, Target, base, release impact, and required checks.
 
-The kernel MUST NOT know concrete source IDs. The `hairness/sources` extension owns source discovery, selection, doctor, evidence validation, redaction, and freshness. Source drivers MUST be declared assets with read-only operations and optional parser modules.
+Checkout policy MUST be adaptive: reuse a clean, available, compatible checkout;
+isolate dirty, occupied, incompatible, or explicitly parallel work in an internal
+Git worktree. Scratch remains the work identity. Runtime owns checkout paths and
+locks. No public worktree controller, pool, lease, takeover, or hook may exist.
 
-`hairness.json.sources` selects drivers. A generated distribution MUST copy only selected drivers. A forge MAY retain a dormant catalogue, but dormant assets MUST NOT execute or appear in shared projections.
+Named stages are `after-implementation`, `before-publish-pr`, `before-merge`, and
+`after-merge`. Extensions MAY contribute gates. Scope drift MUST block PR
+publication. PR, merge, tag, release, and package publication remain separate
+effects. Cleanup MUST refuse dirty or externally used worktrees and MUST NOT
+force deletion implicitly.
 
-SourceEvidence MUST record source, operation, transport, observation time, summary, data, proof, and limits. Credentials and secrets MUST be redacted and MUST NOT be stored.
+## 11. Compatibility
 
-## 12. Onboarding and trust
-
-The generic onboarding engine MUST own only language, profile, workspace trust, providers, answer state, checkpoint, and apply lifecycle. Before explicit trust, extension code MUST NOT execute.
-
-After the trust decision, active extensions MAY contribute questions, gaps, validations, setup actions, and attention. Answers MUST cause no external mutation. Apply MUST require the exact checkpoint and MUST grant no business authority.
-
-Provider doctor states are `blocked`, `stale`, `projected`, `verification-required`, and `verified`. File presence MUST NOT prove hook execution. Verification requires a compatible local receipt from a new trusted provider task.
-
-## 13. Provider projections
-
-Provider commands MUST be compiled from active extension-owned
-CommandSurfaceSpecs. A surface MUST be `bridge`, `namespace`, `intent`, or
-`specialized`. Intent surfaces MUST declare a verb/object/qualifiers lexeme,
-OperationRef, named result, arguments, fixed controls, defaults, modifiers, and
-instructions as applicable. Provider names and ResultContracts MUST be derived,
-not duplicated. The bridge router MAY omit an OperationRef.
-
-Human intent commands MUST use the `hairness-cmd-*` namespace. Controls that
-define the command's intent MUST be immutable; only explicitly declared
-presentation, workload, budget, or route overrides MAY vary.
-
-Shared projections MUST be tracked and repo-local. Managed regions and entries MUST preserve foreign content, reject ambiguous edits, and remove only intact owned content. Local-extension projections MUST remain ignored and separately inventoried.
-
-Adapters MUST translate only host syntax. Providers retain model execution, native workers, sandbox, tools, UI, and thread visibility. Plugins, marketplaces, global registrations, and absolute shared paths are outside protocol `0.2`.
-
-## 14. Distributions and lifecycle
-
-A MaterialSet MUST declare an owner, dependency sets, and exact source-to-target entries. A DistributionRecipe MUST declare its role, material sets, active extensions, capabilities, source drivers, source requirements, providers, codebases, templates, scripts, and tests. Create MUST resolve a deterministic MaterialGraph from declared dependencies, MUST reject cycles and conflicting targets, and MUST NOT infer dependencies by parsing source code or branch on private owners.
-
-`minimal` MUST contain only kernel, cockpit, and distribution lifecycle. `standard` MAY add team controls and selected Git support. `forge` MAY add maintainer behavior and a dormant generic catalogue.
-
-A generated distribution MUST contain its own README and configuration, selected source only, and the required Hairness MIT notice. It MUST NOT inherit upstream SPEC, STATUS, ROADMAP, maintainer documentation, project license, unselected driver, test, or catalogue.
-
-Create MUST NOT commit, create a remote, push, tag, release, or publish. A DistributionLock MUST record recipe digest, provenance, update source, selected material, and base digests without absolute paths.
-
-Update MUST be explicit and conservative. Intact owned material MAY update mechanically. Consumer divergence, changed dependencies, owner conflicts, or edited managed regions MUST require review. Update MUST NOT silently merge or mutate Git.
-
-A MigrationDescriptor MUST identify source/target implementation and protocol
-versions, scopes, one declared structured transform, and validations. Migration
-planning MUST materialize affected state in scratch, reject path escape and
-unknown transforms, rebuild generated projections, and present divergence and
-an exact checkpoint. Apply MUST stage validated state, emit a receipt, record
-applied migration IDs and digests in DistributionLock, and report `unknown` on
-partial application. Consumer-owned divergent material and linked local
-extensions MUST remain `review-required`; Hairness MUST NOT apply an arbitrary
-consumer codemod or merge.
-
-## 15. Codebases and local state
-
-A CodebaseContract MUST identify one repository, accepted remotes, requirement, and tests. A mount MUST identify a named local checkout and capture canonical realpath, remote, branch, HEAD, and dirty baseline. Mounting MUST NOT grant authority or mutate the checkout.
-
-`.hairness/` MAY contain only tracked distribution-owned policies and explicitly published artifacts. `.overlay/` MUST remain unversioned and MAY hold local config, mounts, the append-only Semantic Ledger, runs, artifacts, scratch, local extensions, local projections, and owner-scoped state. Legacy pre-epoch ledger entries MUST remain inspectable but MUST NOT create current completeness alerts. Automatic ledger deletion or compaction is forbidden during the alpha. `~/.hairness/` MAY hold preferences, trust, and global realpath locks. Presence in any state directory MUST NOT activate an extension or grant authority.
-
-Hairness MUST NOT store secrets, credentials, auth artifacts, customer data, private production data, transcripts, or hidden reasoning.
-
-## 16. Session intelligence
-
-A local HairnessSession MUST exist without requiring a provider ID. Provider references MAY bind later. Missing provider binding MUST be a limit, not a digest blocker.
-
-Transcript input requires explicit opt-in and an allowlisted volatile inbox. Only a validated semantic handoff MAY be promoted; the inbox MUST then be removed.
-
-## 17. Testing and conformance
-
-Replayable Hairness E2E machinery MUST belong to `hairness/maintainer`; distributions without that extension MUST not contain it. Test actors MUST answer only declared gaps and approve only declared checkpoint targets, effects, exclusions, and hashes. Generic auto-approval is forbidden.
-
-Conformance requires:
-
-- schema and ownership validation;
-- command parity across selected providers;
-- selected-only minimal, standard, and forge payloads;
-- effect refusal without authority;
-- invalid worker result rejection, correction, and fan-in;
-- Invocation to child Runs to fan-in trace reconstruction;
-- exact make-to-save promotion and AttentionIndex ranking;
-- migration plan/apply, idempotence, divergence and lock recording;
-- no secrets, transcripts, private paths, dormant assets, or private composition in the package.
-
-## 18. CLI and errors
-
-The canonical grammar is `hairness <namespace> <target> [action]`. Human output is default. `--json` MUST return a versioned envelope with `schemaVersion`, `protocolVersion`, `ok`, `data` or `error`, `limits`, and `routes`.
-
-Errors MUST have a stable code, summary, limits, routes, and non-zero exit code. The typed run result remains canonical.
+v0.3 MUST NOT provide v0.2 command aliases, schema readers, runtime bridges,
+Home upgrades, Overlay conversion, migration descriptors, or a legacy
+documentation tree. The supported upgrade is to create a new Home. Published
+v0.2 packages remain available for users who pin them.

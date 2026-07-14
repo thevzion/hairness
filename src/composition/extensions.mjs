@@ -27,12 +27,13 @@ export async function inspectExtension(path) {
 
 export async function resolveExtensionSource(source, options = {}) {
   if (/^(?:https?|file):\/\//.test(source) || /^git@/.test(source)) return resolveGitSource(source, options)
-  const path = source.startsWith('.') || source.startsWith('/') ? resolve(options.cwd ?? process.cwd(), source) : officialPath(source)
+  const base = source.startsWith('.') || source.startsWith('/') ? resolve(options.cwd ?? process.cwd(), source) : officialPath(source)
+  const path = options.path && options.path !== '.' ? assertInside(base, join(base, options.path), 'extension subtree') : base
   const inspected = await inspectExtension(path)
-  const kind = path.startsWith(officialRoot) ? 'official' : 'path'
+  const kind = base.startsWith(officialRoot) ? 'official' : 'path'
   return {
     ...inspected,
-    provenance: { kind, source: kind === 'path' ? path : source, requestedRef: null, resolvedCommit: null, path: '.', digest: inspected.digest },
+    provenance: { kind, source: kind === 'path' ? base : source, requestedRef: null, resolvedCommit: null, path: options.path ?? '.', digest: inspected.digest },
     cleanup: async () => {},
   }
 }
@@ -92,6 +93,10 @@ export function validateComposition(extensions) {
     }
   }
   for (const extension of extensions) {
+    const owned = new Set(extension.manifest.spec.provides)
+    for (const entry of [...extension.manifest.spec.recipes, ...extension.manifest.spec.adapters]) {
+      if (!owned.has(entry.capability)) throw new HairnessError('asset_capability_missing', `${extension.manifest.metadata.id}:${entry.id} references capability ${entry.capability}, which the extension does not provide.`)
+    }
     for (const required of extension.manifest.spec.requires) {
       if (!capabilities.has(required)) throw new HairnessError('capability_missing', `${extension.manifest.metadata.id} requires ${required}.`)
     }

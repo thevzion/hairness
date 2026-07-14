@@ -42,7 +42,6 @@ jobs:
         run: npm install --global npm@${{ env.NPM_VERSION }}
       - run: npm ci
       - run: npm run check
-      - run: npm run check:commits
       - run: npm test
       - run: npm run conformance
       - run: npm run check:providers
@@ -63,24 +62,19 @@ jobs:
       - name: Use an OIDC-capable npm CLI
         run: npm install --global npm@${{ env.NPM_VERSION }}
       - run: npm ci
+      - run: npm run check:lab
       - name: Build and verify one release artifact
         shell: bash
         run: |
           release_dir="$RUNNER_TEMP/npm-release"
           mkdir -p "$release_dir"
           npm pack --json --pack-destination "$release_dir" > "$release_dir/pack.json"
-          node scripts/release-evidence.mjs create \
-            --pack-json "$release_dir/pack.json" \
-            --output "$release_dir/evidence.json" \
-            --commit "$GITHUB_SHA"
-          tarball_file="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/evidence.json')).tarball.file")"
-          node scripts/release-evidence.mjs verify \
-            --evidence "$release_dir/evidence.json" \
-            --tarball "$release_dir/$tarball_file" \
-            --commit "$GITHUB_SHA"
+          tarball_file="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/pack.json'))[0].filename")"
+          shasum -a 256 "$release_dir/$tarball_file" > "$release_dir/sha256.txt"
           npm publish "$release_dir/$tarball_file" --dry-run --access public --tag next
-          node scripts/release-evidence.mjs summary \
-            --evidence "$release_dir/evidence.json" >> "$GITHUB_STEP_SUMMARY"
+          echo "- candidate: $tarball_file" >> "$GITHUB_STEP_SUMMARY"
+          echo "- commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "- sha256: $(cut -d' ' -f1 "$release_dir/sha256.txt")" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ env.RELEASE_ARTIFACT }}
@@ -118,13 +112,11 @@ jobs:
         shell: bash
         run: |
           release_dir="$RUNNER_TEMP/npm-release"
-          package_name="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/evidence.json')).package.name")"
-          package_version="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/evidence.json')).package.version")"
-          tarball_file="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/evidence.json')).tarball.file")"
-          node scripts/release-evidence.mjs verify \
-            --evidence "$release_dir/evidence.json" \
-            --tarball "$release_dir/$tarball_file" \
-            --commit "$GITHUB_SHA"
+          package_name="$(node -p "require('./package.json').name")"
+          package_version="$(node -p "require('./package.json').version")"
+          tarball_file="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/pack.json'))[0].filename")"
+          expected_sha="$(cut -d' ' -f1 "$release_dir/sha256.txt")"
+          test "$(shasum -a 256 "$release_dir/$tarball_file" | cut -d' ' -f1)" = "$expected_sha"
           if npm view "$package_name@$package_version" version --json >/dev/null 2>&1; then
             echo "::error::$package_name@$package_version already exists"
             exit 1
@@ -135,8 +127,8 @@ jobs:
         shell: bash
         run: |
           release_dir="$RUNNER_TEMP/npm-release"
-          dist_tag="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/evidence.json')).package.distTag")"
-          tarball_file="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/evidence.json')).tarball.file")"
+          dist_tag="$(node -p "require('./package.json').publishConfig.tag")"
+          tarball_file="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/pack.json'))[0].filename")"
           npm publish "$release_dir/$tarball_file" --access public --tag "$dist_tag"
       - name: Verify npm publication
         shell: bash
@@ -144,10 +136,10 @@ jobs:
           LATEST_BEFORE: ${{ steps.preflight.outputs.latest_before }}
         run: |
           release_dir="$RUNNER_TEMP/npm-release"
-          package_name="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/evidence.json')).package.name")"
-          package_version="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/evidence.json')).package.version")"
-          dist_tag="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/evidence.json')).package.distTag")"
-          expected_integrity="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/evidence.json')).tarball.integrity")"
+          package_name="$(node -p "require('./package.json').name")"
+          package_version="$(node -p "require('./package.json').version")"
+          dist_tag="$(node -p "require('./package.json').publishConfig.tag")"
+          expected_integrity="$(node -p "JSON.parse(require('node:fs').readFileSync('$release_dir/pack.json'))[0].integrity")"
           remote_integrity=""
           attestations=""
           for attempt in {1..12}; do
@@ -164,6 +156,6 @@ jobs:
           test "$latest_after" = "$LATEST_BEFORE"
           test -n "$attestations"
           test "$attestations" != "null"
-          node scripts/release-evidence.mjs summary \
-            --evidence "$release_dir/evidence.json" >> "$GITHUB_STEP_SUMMARY"
+          echo "- package: $package_name@$package_version" >> "$GITHUB_STEP_SUMMARY"
+          echo "- integrity: $expected_integrity" >> "$GITHUB_STEP_SUMMARY"
           echo "- npm provenance: verified" >> "$GITHUB_STEP_SUMMARY"

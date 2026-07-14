@@ -57,7 +57,7 @@ test('extension inspection validates files without importing adapter code', asyn
     metadata: { id: 'acme/two-file', version: '1.0.0', summary: 'Test extension.' },
     spec: {
       provides: ['acme.test'], requires: [], recipes: [],
-      adapters: [{ id: 'danger', mode: 'observe', path: 'adapter.mjs' }],
+      adapters: [{ id: 'danger', mode: 'observe', path: 'adapter.mjs', capability: 'acme.test' }],
       schemas: [], gates: [], onboarding: [], tests: [],
     },
   })
@@ -67,7 +67,7 @@ test('extension inspection validates files without importing adapter code', asyn
 })
 
 test('provider compiler emits exactly ten parity commands and preserves native skills', async (t) => {
-  const { home, document } = await homeFixture(t)
+  const { root, home, document } = await homeFixture(t)
   await mkdir(join(home, '.agents/skills/user-native'), { recursive: true })
   await writeFile(join(home, '.agents/skills/user-native/SKILL.md'), '# User native\n')
   const first = await buildProviders(home)
@@ -96,4 +96,25 @@ test('provider compiler emits exactly ten parity commands and preserves native s
   const exclude = await readFile(join(home, '.git/info/exclude'), 'utf8')
   assert.equal(exclude.includes('.agents/skills/hairness/SKILL.md'), true)
   assert.equal(exclude.includes('.agents/skills/user-native'), false)
+
+  const clone = join(root, 'clone')
+  await copyTree(join(home, 'extensions'), join(clone, 'extensions'))
+  await writeJsonAtomic(join(clone, 'hairness.json'), document)
+  await mkdir(join(clone, '.agents/skills/user-native'), { recursive: true })
+  await writeFile(join(clone, '.agents/skills/user-native/SKILL.md'), '# Clone native\n')
+  await git(['init', '--quiet'], { cwd: clone })
+  process.env.HAIRNESS_STATE_HOME = join(root, 'clone-state')
+  const restored = await buildProviders(clone)
+  assert.equal(restored.outputs.length, 10)
+  assert.match(await readFile(join(clone, '.agents/skills/hairness/SKILL.md'), 'utf8'), /\$hairness/)
+  assert.equal((await readFile(join(clone, '.agents/skills/user-native/SKILL.md'), 'utf8')).trim(), '# Clone native')
+
+  await git(['add', '--all'], { cwd: home })
+  await git(['-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'commit', '--quiet', '-m', 'home source'], { cwd: home })
+  await writeFile(join(home, '.git/info/exclude'), '')
+  const worktree = join(root, 'home-worktree')
+  await git(['worktree', 'add', '--quiet', '-b', 'linked-home', worktree], { cwd: home })
+  process.env.HAIRNESS_STATE_HOME = join(root, 'worktree-state')
+  await buildProviders(worktree)
+  assert.match(await git(['check-ignore', '-v', '.agents/skills/hairness/SKILL.md'], { cwd: worktree }), /info\/exclude/)
 })

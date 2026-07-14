@@ -6,10 +6,13 @@
     "id": "hairness/standard",
     "version": "0.3.0-alpha.0",
     "source": "standard+maintainer",
+    "sourceKind": "official",
+    "requestedRef": null,
+    "resolvedCommit": null,
     "digest": "sha256:3c83e8c250c1b765fedc30ddf4583abf04e17e8e32d9eda091371dfcd704a545"
   },
   "extensions": [
-    { "id": "hairness/cockpit", "source": "hairness/cockpit", "sourceKind": "official", "requestedRef": null, "resolvedCommit": null, "path": ".", "digest": "sha256:a2bb128f2a4f2ed93ab294618a63e1134f1f81bc6ab2b090f45aa80daff6944a", "installedBaseDigest": "sha256:a2bb128f2a4f2ed93ab294618a63e1134f1f81bc6ab2b090f45aa80daff6944a" },
+    { "id": "hairness/cockpit", "source": "hairness/cockpit", "sourceKind": "official", "requestedRef": null, "resolvedCommit": null, "path": ".", "digest": "sha256:0873f07f67e43faecb3691c7dd9c3ef9f71a85af67a0e874676f5cb241c5e295", "installedBaseDigest": "sha256:0873f07f67e43faecb3691c7dd9c3ef9f71a85af67a0e874676f5cb241c5e295" },
     { "id": "hairness/work", "source": "hairness/work", "sourceKind": "official", "requestedRef": null, "resolvedCommit": null, "path": ".", "digest": "sha256:97ca160195be61cedf2f388b45134166557eadac7f31f93e5a34daa1efeaffdb", "installedBaseDigest": "sha256:97ca160195be61cedf2f388b45134166557eadac7f31f93e5a34daa1efeaffdb" },
     { "id": "hairness/sources", "source": "hairness/sources", "sourceKind": "official", "requestedRef": null, "resolvedCommit": null, "path": ".", "digest": "sha256:745a0189734b1221eb63edf9b03ea69f04255e25213156dc8457d78cb9eec6a5", "installedBaseDigest": "sha256:745a0189734b1221eb63edf9b03ea69f04255e25213156dc8457d78cb9eec6a5" },
     { "id": "hairness/codebase", "source": "hairness/codebase", "sourceKind": "official", "requestedRef": null, "resolvedCommit": null, "path": ".", "digest": "sha256:9b554d3a9cfc2bdf23f9def709014108ffcb2f9225a05d2a683cb26a1f3fff63", "installedBaseDigest": "sha256:9b554d3a9cfc2bdf23f9def709014108ffcb2f9225a05d2a683cb26a1f3fff63" },

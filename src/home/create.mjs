@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { basename, dirname, join, resolve } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
@@ -20,10 +20,18 @@ const packageRoot = fileURLToPath(new URL('../../', import.meta.url))
 const packageDocument = JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8'))
 
 export async function previewCreate(destination, options = {}) {
+  const preset = options.preset ?? 'standard'
+  const loaded = await loadDistribution(options.from ?? preset, { ref: options.distributionRef, path: options.distributionPath })
+  try {
+    return createPreview(destination, options, loaded.document)
+  } finally {
+    await loaded.cleanup()
+  }
+}
+
+function createPreview(destination, options, distribution) {
   const target = options.target ? resolve(options.target) : null
   const providers = options.providers ?? ['codex']
-  const preset = options.preset ?? 'standard'
-  const distribution = (await loadDistribution(options.from ?? preset)).document
   return {
     destination: resolve(destination),
     dependency: options.packageSpec ?? `@hairness/cli@${packageDocument.version}`,
@@ -42,23 +50,33 @@ export async function createHome(destination, options = {}) {
   const target = resolve(destination)
   if (await exists(target)) throw new HairnessError('destination_exists', `Destination already exists: ${target}.`)
   const id = homeId(target)
-  const stage = join(userPaths().runtime, id, 'tmp', `create-${randomUUID()}`)
-  const preview = await previewCreate(target, options)
-  const distributionResult = await loadDistribution(options.from ?? options.preset ?? 'standard')
-  const distribution = distributionResult.document
-  const providers = options.providers ?? ['codex']
-  const targetInput = options.target ? await targetIdentity(options.target, options.targetId) : null
-  const document = homeDocument({
-    id,
-    language: options.language ?? 'en',
-    providers,
-    extensions: distribution.spec.extensions,
-    targets: targetInput ? [{ id: targetInput.id }] : [],
-    overlayGit: Boolean(options.overlayGit),
-    snapshot: options.snapshot ?? 'boundary',
-  })
-  const extensionLocks = []
+  const runtime = runtimePaths(id)
+  await mkdir(userPaths().runtime, { recursive: true })
   try {
+    await mkdir(runtime.root)
+  } catch (error) {
+    if (error.code === 'EEXIST') throw new HairnessError('home_runtime_exists', `Runtime identity ${id} already exists. Archive or remove that Home runtime before creating another Home with the same identity.`)
+    throw error
+  }
+  const stage = join(runtime.tmp, `create-${randomUUID()}`)
+  let distributionResult
+  try {
+    await mkdir(runtime.tmp, { recursive: true })
+    distributionResult = await loadDistribution(options.from ?? options.preset ?? 'standard', { ref: options.distributionRef, path: options.distributionPath, tmp: runtime.tmp })
+    const distribution = distributionResult.document
+    const preview = createPreview(target, options, distribution)
+    const providers = options.providers ?? ['codex']
+    const targetInput = options.target ? await targetIdentity(options.target, options.targetId) : null
+    const document = homeDocument({
+      id,
+      language: options.language ?? 'en',
+      providers,
+      extensions: distribution.spec.extensions,
+      targets: targetInput ? [{ id: targetInput.id }] : [],
+      overlayGit: Boolean(options.overlayGit),
+      snapshot: options.snapshot ?? 'boundary',
+    })
+    const extensionLocks = []
     await mkdir(stage, { recursive: true })
     await writeJsonAtomic(join(stage, 'hairness.json'), document)
     const dependency = dependencyValue(options.packageSpec)
@@ -74,17 +92,19 @@ export async function createHome(destination, options = {}) {
     await git(['init', '--quiet'], { cwd: stage })
 
     for (const extensionId of distribution.spec.extensions) {
-      const source = await resolveExtensionSource(extensionId)
+      const bundled = join(distributionResult.root, 'extensions', ...extensionId.split('/'))
+      const isBundled = await exists(join(bundled, 'extension.json'))
+      const source = await resolveExtensionSource(isBundled ? bundled : extensionId)
       try {
         const destinationPath = join(stage, 'extensions', ...extensionId.split('/'))
         await copyTree(source.root, destinationPath)
         extensionLocks.push({
           id: extensionId,
-          source: source.provenance.source,
-          sourceKind: source.provenance.kind,
-          requestedRef: source.provenance.requestedRef,
-          resolvedCommit: source.provenance.resolvedCommit,
-          path: source.provenance.path,
+          source: isBundled ? distributionResult.provenance.source : source.provenance.source,
+          sourceKind: isBundled ? distributionResult.provenance.kind : source.provenance.kind,
+          requestedRef: isBundled ? distributionResult.provenance.requestedRef : source.provenance.requestedRef,
+          resolvedCommit: isBundled ? distributionResult.provenance.resolvedCommit : source.provenance.resolvedCommit,
+          path: isBundled ? `extensions/${extensionId}` : source.provenance.path,
           digest: source.digest,
           installedBaseDigest: source.digest,
         })
@@ -97,7 +117,10 @@ export async function createHome(destination, options = {}) {
       distribution: {
         id: distribution.metadata.id,
         version: distribution.metadata.version,
-        source: options.from ?? options.preset ?? 'standard',
+        source: distributionResult.provenance.source,
+        sourceKind: distributionResult.provenance.kind,
+        requestedRef: distributionResult.provenance.requestedRef,
+        resolvedCommit: distributionResult.provenance.resolvedCommit,
         digest: digest(distribution),
       },
       extensions: extensionLocks,
@@ -124,9 +147,10 @@ export async function createHome(destination, options = {}) {
     await replaceDirectory(stage, target)
     return { status: 'created', home: target, id, preview, launch: launchInstructions(target, providers, targetInput?.path) }
   } catch (error) {
-    await rm(stage, { recursive: true, force: true })
-    if (await exists(target)) await rm(target, { recursive: true, force: true })
+    await rm(runtime.root, { recursive: true, force: true })
     throw error
+  } finally {
+    await distributionResult?.cleanup()
   }
 }
 

@@ -1,38 +1,34 @@
-# Provider projections
+# Provider compilation
 
-Hairness compiles active extension commands into files that Codex and Claude discover natively. These files are projections with loss: the provider sees skills or slash commands, while Hairness keeps the canonical distinction between bridge, namespace guide, intent command, operation, result and CLI route.
+Hairness currently compiles the same active recipes for Codex and Claude.
 
-| Logical surface | Codex | Claude |
+| Provider | Native projection | Command syntax |
 | --- | --- | --- |
-| Guidance | `AGENTS.md` | `CLAUDE.md` |
-| Commands | `.agents/skills/*/SKILL.md` | `.claude/skills/*/SKILL.md` |
-| Workers | `.codex/agents/*.toml` | `.claude/agents/*.md` |
-| Session opening | `.codex/hooks.json` | `.claude/settings.json` |
-| Project limits | `.codex/config.toml` | Claude settings and worker tools |
+| Codex | `.agents/skills/<command>/SKILL.md` | `$hairness-…` |
+| Claude | `.claude/skills/<command>/SKILL.md` | `/hairness-…` |
 
-The shared projection is versioned. A fresh clone needs only dependency installation, onboarding, provider trust for hooks, and a new provider session.
+Generated skills are local build output. Runtime `build.json` records each exact
+path, owner, provider, and digest. Build writes only those entries into the Home
+repository's `.git/info/exclude`. It preserves unmanaged provider files and
+user-authored skills.
 
-Provider commands use one semantic path on both hosts: infer a compact draft, set the command origin and named result, submit it to `hairness invoke start`, ask only a returned gap, then complete and render the typed result. `hairness-cmd-*` surfaces are chat-first intent commands. Fixed intent controls are immutable. `--auto` advances progress only and never changes promotion or authority. Hairness does not claim a deterministic prompt-interception hook where the provider exposes none. In that case `host doctor` reports the honest `guarded` `agent-first-call` path; `strict` is reserved for a verified native fast hook.
+`AGENTS.md` and `CLAUDE.md` use one small managed region. All surrounding content
+is user-owned. A rebuild refuses edited generated outputs instead of silently
+destroying divergence.
 
-Provider state is evidence-based: `projected` means files exist, `verification-required` means onboarding is applied but a new trusted task has not executed the hook, and `verified` requires a compatible local SessionStart receipt. `blocked` and `stale` are never reported as ready.
+Clone recovery is deterministic:
 
 ```bash
-hairness build                 # reconstruct both shared projections
-hairness build --provider codex
-hairness build --local         # include trusted local extensions under .overlay
-hairness build --check         # detect missing, stale, or edited outputs
-hairness host doctor codex
-hairness host doctor claude
+npm install
+hairness build
+hairness doctor
 ```
 
-## Managed ownership
+The compiler owns syntax only. Recipes and capabilities remain provider-neutral;
+the provider retains model execution, UI, sessions, tools, and native execution.
 
-Markdown and TOML use content-addressed managed regions. JSON uses owned entries recorded in `hairness.build.json`. The compiler preserves all foreign content and returns `review-required` when an owned entry changed outside its canonical extension source.
-
-`hairness clean` removes only intact owned outputs and regions. It never removes foreign keys or human content.
-
-## Worker isolation
-
-Both providers receive protocol-owned `hairness-producer` and `hairness-executor` profiles. A worker receives only its capsule, including its `fast|balanced|deep` workload; shared projections never hardcode a model. A worker may not load the main-session cockpit or spawn nested workers. The provider retains native thread visibility; Hairness validates the result and performs fan-in.
-
-Plugins, marketplaces, global registrations, attachments, and absolute symlinks are not part of protocol 0.2.
+Effect adapters use `prepare` and `apply`. If an adapter can prove that an effect
+was only partial, it returns `effectOutcome('partial', evidence)` from the runtime
+operation module. Hairness consumes the checkpoint, writes the immutable Receipt,
+and blocks replay until a human reconciles it. An exception is conservatively
+recorded as an unknown outcome.

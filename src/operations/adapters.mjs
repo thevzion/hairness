@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { readFile } from 'node:fs/promises'
 import { activeExtensions } from '../composition/extensions.mjs'
 import { loadHome } from '../home/index.mjs'
 import { HairnessError } from '../lib/errors.mjs'
@@ -23,30 +24,34 @@ export async function prepareAdapterEffect(root, reference, inputs = {}) {
     operation: reference,
     adapter: reference,
     inputs,
-    evidence: prepared.evidence ?? {},
+    evidence: adapterEvidence(adapter, prepared.evidence),
     policy: prepared.policy ?? {},
     target: prepared.target,
   })
   const home = await loadHome(root)
   const runtime = await ensureRuntime(home)
-  await writeJsonAtomic(join(runtime.checkpoints, `${checkpoint.metadata.id}.adapter.json`), { reference, inputs })
+  await writeJsonAtomic(join(runtime.checkpoints, `${checkpoint.metadata.id}.adapter.json`), {
+    reference,
+    inputs,
+    adapter: { sourceDigest: adapter.sourceDigest, extensionDigest: adapter.extension.digest },
+  })
   return { status: 'checkpoint-required', checkpoint, prepared }
 }
 
 export async function applyAdapterEffect(root, checkpointId) {
   const home = await loadHome(root)
   const stored = await readJson(join(runtimePaths(home.metadata.id).checkpoints, `${checkpointId}.adapter.json`))
-  const adapter = await loadAdapter(root, stored.reference)
+  const adapter = await loadAdapter(root, stored.reference, stored.adapter)
   const prepared = await adapter.module.prepare({ root, inputs: stored.inputs })
   return applyEffect(root, checkpointId, {
     inputs: stored.inputs,
-    evidence: prepared.evidence ?? {},
+    evidence: adapterEvidence(adapter, prepared.evidence),
     policy: prepared.policy ?? {},
     target: prepared.target,
   }, async () => adapter.module.apply({ root, inputs: stored.inputs, prepared }))
 }
 
-async function loadAdapter(root, reference) {
+async function loadAdapter(root, reference, expected) {
   const separator = reference.lastIndexOf(':')
   if (separator < 1) throw new HairnessError('adapter_reference_invalid', 'Use <extension-id>:<adapter-id>.')
   const owner = reference.slice(0, separator)
@@ -57,7 +62,17 @@ async function loadAdapter(root, reference) {
   const entry = extension.manifest.spec.adapters.find((item) => item.id === id)
   if (!entry) throw new HairnessError('adapter_missing', `${reference} does not exist.`)
   const path = assertInside(extension.root, join(extension.root, entry.path), 'adapter path')
-  const module = await import(`${pathToFileURL(path).href}?digest=${digest(await import('node:fs/promises').then(({ readFile }) => readFile(path)))}`)
-  return { extension, entry, module }
+  const sourceDigest = digest(await readFile(path))
+  if (expected && (sourceDigest !== expected.sourceDigest || extension.digest !== expected.extensionDigest)) {
+    throw new HairnessError('checkpoint_stale', `Adapter source changed after its checkpoint was prepared: ${reference}.`, { exitCode: 5 })
+  }
+  const module = await import(`${pathToFileURL(path).href}?digest=${sourceDigest}`)
+  return { extension, entry, module, sourceDigest }
 }
 
+function adapterEvidence(adapter, prepared) {
+  return {
+    adapter: { sourceDigest: adapter.sourceDigest, extensionDigest: adapter.extension.digest },
+    prepared: prepared ?? {},
+  }
+}

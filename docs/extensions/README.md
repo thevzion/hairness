@@ -1,58 +1,77 @@
-# Extensions
+# Extension contract
 
-Extensions are the executable owners of Hairness behavior.
+An Extension is a portable package of agentic assets. Hairness supplies the
+harness and provider compilers; the extension supplies domain behavior.
+
+## Smallest useful extension
 
 ```text
-extensions/<owner>/<name>/
+acme/review/
 ├── extension.json
-├── README.md
-├── capabilities/*.json
-├── index.mjs
-├── commands/
-├── schemas/
-├── guidance/
-├── drivers/
-└── tests/
+└── review.md
 ```
 
-`extension.json` declares summary, discovery category, tags, maturity, README, dependencies, capability files, provider commands, services, contributions, modifiers, relation types, artifact schemas, source drivers, and declarative onboarding questions. Categories organize the catalogue but never enter an extension ID or physical path. Each declared implementation file remains inside its owner.
+The manifest declares identity, capabilities, recipes, adapters, schemas, gates,
+onboarding, and tests. Every list is explicit, including empty lists. Declared
+paths must stay within the extension root.
 
-Capability files declare operations. Provider-independent CommandSurfaceSpecs
-declare bridge, namespace, intent, or specialized projections. Every non-bridge
-surface references one operation; names and ResultContracts are derived by the
-compiler. Provider instructions define host behavior while fixed intent
-controls remain immutable.
+Recipes are provider-neutral Markdown and converse directly. They should not call
+the CLI to generate ordinary chat. The compiler adds provider syntax, language,
+ownership, persistence, and authority rules.
 
-Handlers receive a frozen runtime. Cross-extension services require declared dependencies. Extension state is limited to `.overlay/extensions-state/<extension-id>/`. There is no generic source API: a business extension depends on `hairness/sources` and calls its declared service.
+## Capabilities and composition
 
-## Shared source
+`spec.provides` and `spec.requires` contain capability IDs. Build rejects missing
+requirements, multiple providers of one capability, and command collisions.
+Physical source presence never activates an extension.
+
+Minimal selects cockpit and work. Standard adds sources, codebase, and delivery.
+The upstream maintainer extension is explicitly selected only by the Hairness
+development Home.
+
+## Adapters
+
+Adapters declare one mode:
+
+- `observe`: deterministic read;
+- `derive`: deterministic transformation;
+- `effect`: external or filesystem mutation.
+
+Observe and derive export `run()` and use `hairness operation run`. Effect
+adapters export separate `prepare()` and `apply()` functions. Prepare describes
+the exact Target, evidence, and policy. Apply runs only after checkpoint
+revalidation.
+
+## Gates and onboarding
+
+Delivery gates attach to `after-implementation`, `before-publish-pr`,
+`before-merge`, or `after-merge`. Onboarding entries are declarative questions
+with optional conditions and explanations. No extension module is imported while
+an untrusted source is inspected.
+
+## Sources and updates
 
 ```bash
-hairness extension add <owner/name> --from <path|tarball|npm-spec>
-hairness extension remove <owner/name>
+hairness extension add hairness/codebase
+hairness extension add ./path/to/extension
+hairness extension add https://github.com/acme/review.git --ref v1.2.0 --path extensions/acme/review
 ```
 
-Add inspects an explicit source, resolves dependency closure, shows a checkpoint, copies source, updates the manifest, and rebuilds projections. Copying transfers ownership to the distribution.
+Git refs resolve to commits. The lock stores source, requested ref, resolved
+commit, subtree digest, and installed base digest. Update is mechanical only for
+an intact install. `adopt` accepts deliberate local source. Divergence otherwise
+requires a human merge. Removing an extension never deletes personal Artifacts
+and blocks when another active extension requires its capabilities.
 
-## Local source
+## Authoring lifecycle
 
 ```bash
-hairness extension init --local <owner/name>
-hairness extension link --local <owner/name> --from <path>
-hairness extension unlink --local <owner/name>
-hairness build --local
+hairness extension init acme/review
+hairness extension doctor acme/review
+hairness extension add ./extensions/acme/review
+hairness extension update acme/review
+hairness extension remove acme/review
 ```
 
-Linking preserves external ownership. It requires explicit path trust and affects only ignored local projections. Unlink never deletes the source.
-
-`init --local` creates one disabled experimental scaffold with a manifest, module and complete README contract. The main-session agent may fill its capability, schemas, instructions and tests, but Hairness validates them before enablement. Promotion uses `extension add --from` and an explicit checkpoint.
-
-## Documentation contract
-
-Every extension README explains value and use cases, selection and setup, capabilities and operations, inputs and results, state and artifacts, effects and safety, provider projections, tests and maturity. `official` means maintained by Hairness; `verified` means conformance for a pinned version, not automatic trust.
-
-Community extensions remain source-owned in their publisher repository. A future registry may index immutable source, commit and digest, but discovery never grants trust or authority.
-
-Removing or disabling an extension removes all of its active capabilities, operations, commands, services, contributions, schemas, drivers, and projections. A used dependency cannot be disabled.
-
-See the [catalogue](catalog.md).
+Every composition mutation previews the exact diff and returns a Checkpoint. Pass
+that checkpoint back to the same command with `--checkpoint <id>` to apply it.

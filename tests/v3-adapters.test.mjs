@@ -38,6 +38,7 @@ export async function prepare({ inputs }) {
   return { target: { id: 'file', state }, evidence: { state }, policy: { explicit: true } }
 }
 export async function apply({ inputs }) {
+  if (inputs.fail) throw new Error('simulated ambiguous transport')
   await writeFile(inputs.output, inputs.value)
   return { output: inputs.output }
 }
@@ -59,4 +60,18 @@ export async function apply({ inputs }) {
   const fresh = await prepareAdapterEffect(home, 'acme/adapters:write', { state, output, value: 'applied' })
   await applyAdapterEffect(home, fresh.checkpoint.metadata.id)
   assert.equal(await readFile(output, 'utf8'), 'applied')
+
+  const unknown = await prepareAdapterEffect(home, 'acme/adapters:write', { state, output, value: 'ignored', fail: true })
+  await assert.rejects(
+    applyAdapterEffect(home, unknown.checkpoint.metadata.id),
+    (error) => error.code === 'effect_unknown' && error.details.receipt.spec.outcome === 'unknown',
+  )
+
+  const changed = await prepareAdapterEffect(home, 'acme/adapters:write', { state, output, value: 'changed' })
+  const installedAdapter = join(home, 'extensions/acme/adapters/write.mjs')
+  await writeFile(installedAdapter, `${await readFile(installedAdapter, 'utf8')}\n// changed after prepare\n`)
+  await assert.rejects(
+    applyAdapterEffect(home, changed.checkpoint.metadata.id),
+    (error) => error.code === 'checkpoint_stale',
+  )
 })

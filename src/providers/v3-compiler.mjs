@@ -1,10 +1,11 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, rmdir, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { activeExtensions } from '../composition/extensions.mjs'
 import { loadHome } from '../home/index.mjs'
 import { HairnessError } from '../lib/errors.mjs'
 import { digest, exists, now, readJson, writeFileAtomic, writeJsonAtomic } from '../lib/io.mjs'
 import { ensureRuntime } from '../runtime/index.mjs'
+import { git } from '../runtime/git.mjs'
 
 const supportedProviders = new Set(['codex', 'claude'])
 const regionPattern = /<!-- hairness:begin id="agent-contract" -->[\s\S]*?<!-- hairness:end id="agent-contract" -->/g
@@ -40,10 +41,9 @@ async function mergeAgentContract(path, language, check) {
 }
 
 async function updateLocalExcludes(root, paths, check) {
-  const gitDirectory = await readFile(join(root, '.git'), 'utf8').catch(() => null)
-  let info
-  if (gitDirectory?.startsWith('gitdir: ')) info = join(resolve(root, gitDirectory.slice(8).trim()), 'info', 'exclude')
-  else info = join(root, '.git', 'info', 'exclude')
+  const gitPath = await git(['rev-parse', '--git-path', 'info/exclude'], { cwd: root }).catch(() => null)
+  if (!gitPath) return
+  const info = resolve(root, gitPath)
   if (!await exists(dirname(info))) return
   const current = await readFile(info, 'utf8').catch((error) => error.code === 'ENOENT' ? '' : Promise.reject(error))
   const begin = '# hairness:begin generated-provider-outputs'
@@ -84,7 +84,10 @@ export async function buildProviders(root, options = {}) {
     if (!await exists(path)) continue
     const currentDigest = digest(await readFile(path))
     if (currentDigest !== prior.digest) throw new HairnessError('generated_output_diverged', `${prior.path} was edited and cannot be removed automatically.`, { exitCode: 5 })
-    if (!options.check) await rm(dirname(path), { recursive: true, force: true })
+    if (!options.check) {
+      await rm(path, { force: true })
+      await rmdir(dirname(path)).catch((error) => { if (error.code !== 'ENOTEMPTY' && error.code !== 'ENOENT') throw error })
+    }
     else throw new HairnessError('build_stale', `${prior.path} is a stale generated output.`, { exitCode: 5 })
   }
 

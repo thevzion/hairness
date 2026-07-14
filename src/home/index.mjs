@@ -29,10 +29,7 @@ export async function loadHome(root) {
 export async function loadHomeLock(root) {
   root ??= await findHome()
   const lock = await readJson(join(root, 'hairness.lock.json'))
-  if (lock.apiVersion !== API.home || lock.kind !== 'HomeLock') {
-    throw new HairnessError('home_lock_invalid', 'hairness.lock.json must be a HomeLock document.')
-  }
-  return lock
+  return validateDocument(lock, 'HomeLock')
 }
 
 export function homeId(destination) {
