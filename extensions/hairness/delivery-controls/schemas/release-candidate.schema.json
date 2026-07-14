@@ -3,10 +3,27 @@
   "$id": "https://hairness.dev/extensions/delivery-controls/release-candidate.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["planId", "policyDigest", "package", "commit", "changes", "checks", "tarball", "dryRun", "limitations", "observedAt"],
+  "required": ["planId", "policyDigest", "checkoutContext", "package", "commit", "changes", "checks", "tarball", "dryRun", "limitations", "observedAt"],
   "properties": {
     "planId": { "type": "string", "minLength": 1 },
     "policyDigest": { "type": "string", "pattern": "^sha256:" },
+    "checkoutContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["handleRef", "policyDigest"],
+      "properties": {
+        "handleRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "digest"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "digest": { "type": "string", "pattern": "^sha256:" }
+          }
+        },
+        "policyDigest": { "type": "string", "pattern": "^sha256:" }
+      }
+    },
     "package": {
       "type": "object",
       "additionalProperties": false,

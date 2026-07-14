@@ -11,7 +11,7 @@
   "readme": "./README.md",
   "module": "./index.mjs",
   "capabilities": ["./capabilities/delivery.json"],
-  "dependencies": ["hairness/initiative-controls", "hairness/work-controls", "hairness/sources"],
+  "dependencies": ["hairness/initiative-controls", "hairness/work-controls", "hairness/sources", "hairness/worktree-controls"],
   "commands": [{ "namespace": "delivery", "actions": ["status", "want", "accept", "plan", "next", "checkpoint", "receipt", "reconcile", "release-candidate"] }],
   "artifactSchemas": [
     { "type": "delivery-brief", "schema": "./schemas/delivery-brief.schema.json" },

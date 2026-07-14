@@ -42,7 +42,7 @@
     "plan": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "kind", "initiativeId", "briefArtifact", "state", "repository", "base", "branch", "version", "versionRecommendation", "baseline", "policyDigest", "evidenceMaxAgeMinutes", "stages", "runs", "checkpoints", "artifacts", "changes", "createdAt", "updatedAt"],
+      "required": ["id", "kind", "initiativeId", "briefArtifact", "state", "repository", "base", "branch", "version", "versionRecommendation", "baseline", "policyDigest", "evidenceMaxAgeMinutes", "checkoutContext", "candidateCheckoutContext", "stages", "runs", "checkpoints", "artifacts", "changes", "createdAt", "updatedAt"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "kind": { "enum": ["change", "release"] },
@@ -57,6 +57,8 @@
         "baseline": { "type": ["string", "null"] },
         "policyDigest": { "type": "string", "pattern": "^sha256:" },
         "evidenceMaxAgeMinutes": { "type": "integer", "minimum": 1 },
+        "checkoutContext": { "anyOf": [{ "$ref": "#/$defs/checkoutContext" }, { "type": "null" }] },
+        "candidateCheckoutContext": { "anyOf": [{ "$ref": "#/$defs/checkoutContext" }, { "type": "null" }] },
         "stages": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true },
         "runs": { "type": "object", "additionalProperties": { "type": "string" } },
         "checkpoints": { "type": "object", "additionalProperties": { "type": "string" } },
@@ -64,6 +66,23 @@
         "changes": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string" },
         "updatedAt": { "type": "string" }
+      }
+    },
+    "checkoutContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["handleRef", "policyDigest"],
+      "properties": {
+        "handleRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "digest"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "digest": { "type": "string", "pattern": "^sha256:" }
+          }
+        },
+        "policyDigest": { "type": "string", "pattern": "^sha256:" }
       }
     },
     "receipt": {
