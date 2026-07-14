@@ -12,7 +12,7 @@
   "module": "./index.mjs",
   "capabilities": ["./capabilities/codebase.json"],
   "dependencies": ["hairness/sources", "hairness/presentation-controls"],
-  "services": ["inspect"],
+  "services": ["inspect", "mount-managed", "unmount-managed"],
   "contributes": ["attention", "session-opening", "onboarding"],
   "artifactSchemas": [
     { "type": "codebase-map", "schema": "./schemas/map.schema.json" },

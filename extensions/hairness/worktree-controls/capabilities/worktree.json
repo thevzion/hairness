@@ -1,0 +1,142 @@
+{
+  "$schema": "../../../../schemas/capability.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/worktree",
+  "owner": "hairness/worktree-controls",
+  "version": "0.2.0-alpha.0",
+  "summary": "Own managed checkout placement, writer leases and recovery boundaries.",
+  "operations": [
+    {
+      "id": "inspect",
+      "class": "observe",
+      "summary": "Inspect managed and discovered Git worktrees.",
+      "results": [{ "id": "default", "contract": { "schema": "ContextPacket", "disposition": "response" } }],
+      "defaultResult": "default",
+      "sources": ["git"],
+      "effects": [],
+      "routes": ["deterministic"],
+      "acceptsModifiers": []
+    },
+    {
+      "id": "reconcile",
+      "class": "derive",
+      "summary": "Derive a recovery proposal from live worktree evidence.",
+      "inputSchema": "./schemas/checkout-request.schema.json",
+      "results": [{ "id": "default", "contract": { "schema": "ContextPacket", "disposition": "response" } }],
+      "defaultResult": "default",
+      "sources": ["git"],
+      "effects": [],
+      "routes": ["deterministic"],
+      "acceptsModifiers": []
+    },
+    {
+      "id": "open",
+      "class": "effect",
+      "summary": "Create and lock one managed branch worktree.",
+      "inputSchema": "./schemas/checkout-request.schema.json",
+      "results": [{ "id": "default", "contract": { "schema": "CheckoutReceipt", "disposition": "effect" } }],
+      "defaultResult": "default",
+      "sources": ["git"],
+      "effects": ["filesystem:write", "git:worktree", "git:branch"],
+      "routes": ["deterministic"],
+      "acceptsModifiers": []
+    },
+    {
+      "id": "candidate-checkout",
+      "class": "effect",
+      "summary": "Create a detached qualification checkout at one exact commit.",
+      "inputSchema": "./schemas/checkout-request.schema.json",
+      "results": [{ "id": "default", "contract": { "schema": "CheckoutReceipt", "disposition": "effect" } }],
+      "defaultResult": "default",
+      "sources": ["git"],
+      "effects": ["filesystem:write", "git:worktree"],
+      "routes": ["deterministic"],
+      "acceptsModifiers": []
+    },
+    {
+      "id": "adopt",
+      "class": "effect",
+      "summary": "Adopt one existing safe checkout without rewriting it.",
+      "inputSchema": "./schemas/checkout-request.schema.json",
+      "results": [{ "id": "default", "contract": { "schema": "CheckoutReceipt", "disposition": "effect" } }],
+      "defaultResult": "default",
+      "sources": ["git"],
+      "effects": ["target-mutation", "filesystem:write", "git:worktree"],
+      "routes": ["deterministic"],
+      "acceptsModifiers": []
+    },
+    {
+      "id": "sync",
+      "class": "effect",
+      "summary": "Rebase a managed branch onto its live base and optionally update its remote ref.",
+      "inputSchema": "./schemas/checkout-request.schema.json",
+      "results": [{ "id": "default", "contract": { "schema": "CheckoutReceipt", "disposition": "effect" } }],
+      "defaultResult": "default",
+      "sources": ["git"],
+      "effects": ["git:rebase", "git:push"],
+      "routes": ["deterministic"],
+      "acceptsModifiers": []
+    },
+    {
+      "id": "handoff",
+      "class": "effect",
+      "summary": "Transfer a writer lease to one explicit session.",
+      "inputSchema": "./schemas/checkout-request.schema.json",
+      "results": [{ "id": "default", "contract": { "schema": "CheckoutReceipt", "disposition": "effect" } }],
+      "defaultResult": "default",
+      "sources": ["git"],
+      "effects": ["filesystem:write"],
+      "routes": ["deterministic"],
+      "acceptsModifiers": []
+    },
+    {
+      "id": "takeover",
+      "class": "effect",
+      "summary": "Replace a stale writer lease after explicit recovery approval.",
+      "inputSchema": "./schemas/checkout-request.schema.json",
+      "results": [{ "id": "default", "contract": { "schema": "CheckoutReceipt", "disposition": "effect" } }],
+      "defaultResult": "default",
+      "sources": ["git"],
+      "effects": ["filesystem:write"],
+      "routes": ["deterministic"],
+      "acceptsModifiers": []
+    },
+    {
+      "id": "close",
+      "class": "effect",
+      "summary": "Remove one clean, integrated managed worktree without force.",
+      "inputSchema": "./schemas/checkout-request.schema.json",
+      "results": [{ "id": "default", "contract": { "schema": "CheckoutReceipt", "disposition": "effect" } }],
+      "defaultResult": "default",
+      "sources": ["git"],
+      "effects": ["filesystem:write", "git:worktree"],
+      "routes": ["deterministic"],
+      "acceptsModifiers": []
+    },
+    {
+      "id": "repair",
+      "class": "effect",
+      "summary": "Repair only explicit Hairness worktree metadata or guards.",
+      "inputSchema": "./schemas/checkout-request.schema.json",
+      "results": [{ "id": "default", "contract": { "schema": "CheckoutReceipt", "disposition": "effect" } }],
+      "defaultResult": "default",
+      "sources": ["git"],
+      "effects": ["filesystem:write", "git:worktree"],
+      "routes": ["deterministic"],
+      "acceptsModifiers": []
+    },
+    {
+      "id": "prune",
+      "class": "effect",
+      "summary": "Prune one previously observed stale Git worktree entry.",
+      "inputSchema": "./schemas/checkout-request.schema.json",
+      "results": [{ "id": "default", "contract": { "schema": "CheckoutReceipt", "disposition": "effect" } }],
+      "defaultResult": "default",
+      "sources": ["git"],
+      "effects": ["filesystem:write", "git:worktree"],
+      "routes": ["deterministic"],
+      "acceptsModifiers": []
+    }
+  ]
+}

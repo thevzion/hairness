@@ -6,7 +6,7 @@ import { cp, mkdir, mkdtemp, readdir, realpath, rm, symlink, writeFile } from 'n
 import { dirname, join, relative, resolve } from 'node:path'
 import { HairnessError } from '../core/errors.mjs'
 import { artifactHistory, listArtifacts, promoteArtifact, readArtifact, stageArtifact } from '../core/artifacts.mjs'
-import { acquireLocks, approveCheckpoint, grantCheckpoint, proposeCheckpoint, quarantineLocks, releaseLocks } from '../core/authority.mjs'
+import { acquireLocks, approveCheckpoint, assertEffectAllowed, grantCheckpoint, proposeCheckpoint, quarantineLocks, releaseLocks } from '../core/authority.mjs'
 import { createExtensionRuntime } from '../core/extension-runtime/index.mjs'
 import { readJson, userPaths, workspacePaths, writeJsonAtomic } from '../core/io.mjs'
 import { readPlan, reduceStoredPlan, writePlan } from '../core/plans.mjs'
@@ -201,6 +201,7 @@ async function runtimeFor(root, owner, stack = []) {
       grant: (value) => grantCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
       propose: (value) => proposeCheckpoint(root, value, (effects) => aggregateAuthorityPolicy(root, effects)),
       approve: (runId, checkpointId) => approveCheckpoint(root, runId, checkpointId, (effects) => aggregateAuthorityPolicy(root, effects)),
+      assert: (runId, effect, target) => assertEffectAllowed(root, runId, effect, target, (effects) => aggregateAuthorityPolicy(root, effects, { runId })),
       acquireLocks, releaseLocks, quarantineLocks,
     },
     extensions: {

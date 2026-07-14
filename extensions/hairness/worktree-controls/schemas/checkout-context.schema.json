@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/extensions/worktree-controls/checkout-context.schema.json",
+  "title": "CheckoutContext",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "protocolVersion", "handleRef", "path", "head", "branch", "leaseRef", "policyDigest"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "protocolVersion": { "const": "0.2" },
+    "handleRef": { "$ref": "#/$defs/DigestRef" },
+    "path": { "type": "string", "minLength": 1 },
+    "head": { "type": ["string", "null"] },
+    "branch": { "type": ["string", "null"] },
+    "leaseRef": { "oneOf": [{ "$ref": "#/$defs/DigestRef" }, { "type": "null" }] },
+    "policyDigest": { "type": "string", "pattern": "^sha256:" }
+  },
+  "$defs": {
+    "DigestRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "digest"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "pattern": "^sha256:" }
+      }
+    }
+  }
+}

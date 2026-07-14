@@ -560,6 +560,30 @@
         "routes": { "type": "array", "items": { "type": "string" } }
       }
     },
+    "CheckoutReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "id", "proposalId", "action", "runId", "checkpointId", "status", "summary", "targets", "effects", "proof", "head", "policyDigest", "observedAt", "limits", "context"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "protocolVersion": { "const": "0.2" },
+        "id": { "$ref": "#/$defs/Id" },
+        "proposalId": { "$ref": "#/$defs/Id" },
+        "action": { "$ref": "#/$defs/NonEmpty" },
+        "runId": { "$ref": "#/$defs/Id" },
+        "checkpointId": { "$ref": "#/$defs/Id" },
+        "status": { "enum": ["succeeded", "partial", "failed", "unknown"] },
+        "summary": { "$ref": "#/$defs/NonEmpty" },
+        "targets": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "effects": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "proof": { "type": "array", "items": { "type": "string" } },
+        "head": { "type": ["string", "null"] },
+        "policyDigest": { "$ref": "#/$defs/NonEmpty" },
+        "observedAt": { "type": "string" },
+        "limits": { "type": "array", "items": { "type": "string" } },
+        "context": { "type": ["object", "null"] }
+      }
+    },
     "CodebaseContract": {
       "type": "object",
       "additionalProperties": false,

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/extensions/worktree-controls/worktree-state.schema.json",
+  "title": "WorktreeState",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "protocolVersion", "handles", "leases", "proposals", "receipts", "reconciliations", "updatedAt"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "protocolVersion": { "const": "0.2" },
+    "handles": { "type": "array", "items": { "type": "object" } },
+    "leases": { "type": "array", "items": { "type": "object" } },
+    "proposals": { "type": "array", "items": { "type": "object" } },
+    "receipts": { "type": "array", "items": { "type": "object" } },
+    "reconciliations": { "type": "array", "items": { "type": "object" } },
+    "updatedAt": { "type": "string", "minLength": 1 }
+  }
+}

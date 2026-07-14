@@ -298,6 +298,7 @@ export async function applyCreate(id, checkpointId, options = {}) {
   const materializedExtensions = [...new Set([...activeExtensions, ...(selectedRecipe.catalogExtensions ?? [])])]
   await copyExtensions(state.target, materializedExtensions)
   if (activeExtensions.includes('hairness/sources')) await selectSourceDrivers(state.target, selectedRecipe.sourceDrivers)
+  const sourceManifest = await readJson(join(sourceRoot, 'hairness.json'))
 
   const manifest = {
     $schema: './schemas/distribution.schema.json',
@@ -312,7 +313,10 @@ export async function applyCreate(id, checkpointId, options = {}) {
     ...(state.answers.cliAlias !== 'none' ? { cliAlias: slug(state.answers.cliAlias) } : {}),
     generatedFrom: { source: packageName, implementationVersion, protocolVersion: PROTOCOL_VERSION, createdAt: new Date().toISOString() },
     core: './src/core/index.mjs',
-    defaults: { interaction: { language: state.answers.language } },
+    defaults: {
+      interaction: { language: state.answers.language },
+      ...(activeExtensions.includes('hairness/worktree-controls') ? { worktrees: sourceManifest.defaults.worktrees } : {}),
+    },
     extensions: activeExtensions.map((extensionId) => ({ id: extensionId, path: `./extensions/${extensionId}` })),
     sources: selectedRecipe.sources,
     codebases: plan.codebases
@@ -331,7 +335,7 @@ export async function applyCreate(id, checkpointId, options = {}) {
   await writeJsonAtomic(join(state.target, 'package.json'), sourcePackage)
   await writeFile(join(state.target, 'README.md'), generatedReadme(state, selectedRecipe))
   if (state.role === 'forge') await writeFile(join(state.target, 'STATUS.md'), generatedStatus(state))
-  await writeFile(join(state.target, '.gitignore'), '.overlay/\nnode_modules/\ncoverage/\n.DS_Store\n*.log\n.claude/settings.local.json\n')
+  await writeFile(join(state.target, '.gitignore'), '.overlay\nnode_modules/\ncoverage/\n.DS_Store\n*.log\n.claude/settings.local.json\n')
   await writeJsonAtomic(join(state.target, 'hairness.lock.json'), await distributionLock(state, selectedRecipe, materializedExtensions, graph))
 
   if (options.install !== false) await exec('npm', ['install'], { cwd: state.target, encoding: 'utf8' })

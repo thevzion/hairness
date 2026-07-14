@@ -172,7 +172,67 @@ async function mapCodebase({ root, runtime, kind, id, focus, workload }) {
   return { summary: `Prepared ${kind} producer.`, status: 'ready', planId, runId, capsule: await runtime.runs.capsule(runId), limits: [], routes: [`spawn producer for ${runId}`, `hairness plan ${planId} reduce`] }
 }
 
-export const services = { inspect }
+async function mountManaged({ root, input, runtime }) {
+  const { runId, effect, target, codebaseId, checkout, path } = input
+  if (!runId || !effect || !target || !codebaseId || !checkout || !path) throw new Error('mount-managed requires runId, effect, target, codebaseId, checkout and path.')
+  if (effect !== 'filesystem:write') throw new Error('mount-managed requires the filesystem:write effect.')
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(checkout)) throw new Error(`Invalid checkout id: ${checkout}`)
+  const grant = await runtime.authority.assert(runId, effect, target)
+  const found = (await contracts(root, runtime)).find((value) => value.contract.id === codebaseId)
+  if (!found) throw new Error(`Unknown codebase: ${codebaseId}`)
+  const state = await targetState(runtime, path, found.contract.repository.acceptedRemotes)
+  const destination = await placeMount(root, codebaseId, checkout, state.canonical)
+  const value = await config(root)
+  value.schemaVersion ??= 2
+  value.protocolVersion ??= '0.2'
+  value.codebases ??= { local: [], mounts: {} }
+  value.codebases.local ??= []
+  value.codebases.mounts ??= {}
+  value.codebases.mounts[codebaseId] ??= {}
+  value.codebases.mounts[codebaseId][checkout] = { path: `./.overlay/codebases/${codebaseId}/${checkout}` }
+  await writeConfig(root, value)
+  return {
+    schemaVersion: 2,
+    protocolVersion: '0.2',
+    runId,
+    action: 'mount-managed',
+    target,
+    grantId: grant.id,
+    codebaseId,
+    checkout,
+    destination,
+    realpath: state.canonical,
+    head: state.status.head ?? null,
+    status: 'mounted',
+  }
+}
+
+async function unmountManaged({ root, input, runtime }) {
+  const { runId, effect, target, codebaseId, checkout } = input
+  if (!runId || !effect || !target || !codebaseId || !checkout) throw new Error('unmount-managed requires runId, effect, target, codebaseId and checkout.')
+  if (effect !== 'filesystem:write') throw new Error('unmount-managed requires the filesystem:write effect.')
+  const grant = await runtime.authority.assert(runId, effect, target)
+  const destination = join(root, '.overlay', 'codebases', codebaseId, checkout)
+  const prior = await lstat(destination).catch((error) => error.code === 'ENOENT' ? null : Promise.reject(error))
+  if (prior && !prior.isSymbolicLink()) throw new Error(`Refusing to remove non-symlink mount path: ${destination}`)
+  await rm(destination, { force: true })
+  const value = await config(root)
+  if (value.codebases?.mounts?.[codebaseId]) delete value.codebases.mounts[codebaseId][checkout]
+  await writeConfig(root, value)
+  return {
+    schemaVersion: 2,
+    protocolVersion: '0.2',
+    runId,
+    action: 'unmount-managed',
+    target,
+    grantId: grant.id,
+    codebaseId,
+    checkout,
+    status: 'unmounted',
+  }
+}
+
+export const services = { inspect, 'mount-managed': mountManaged, 'unmount-managed': unmountManaged }
 
 async function discoverCodebase(root, contract) {
   const candidates = [join(resolve(root, '..'), contract.id), ...(contract.discovery?.paths ?? []).map(resolve)]

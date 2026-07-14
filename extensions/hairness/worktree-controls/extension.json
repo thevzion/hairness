@@ -1,0 +1,34 @@
+{
+  "$schema": "../../../schemas/extension.schema.json",
+  "schemaVersion": 2,
+  "protocolVersion": "0.2",
+  "id": "hairness/worktree-controls",
+  "version": "0.2.0-alpha.0",
+  "summary": "Explicit, leased and recoverable Git worktrees for parallel delivery.",
+  "category": "execution-safety",
+  "tags": ["worktree", "git", "delivery", "parallelism"],
+  "maturity": "experimental",
+  "readme": "./README.md",
+  "module": "./index.mjs",
+  "capabilities": ["./capabilities/worktree.json"],
+  "dependencies": ["hairness/codebase", "hairness/sources", "hairness/session-intelligence"],
+  "services": ["inspect", "propose", "resolve", "execute", "assert-writer"],
+  "contributes": ["attention", "authority-policy", "session-opening"],
+  "commands": [{ "namespace": "worktree", "actions": ["status", "show", "doctor", "open", "adopt", "sync", "handoff", "takeover", "close", "repair", "reconcile", "prune"] }],
+  "commandSurfaces": [
+    {
+      "id": "hairness.worktree",
+      "summary": "Inspect and manage explicit delivery worktrees.",
+      "classification": "primary",
+      "surface": "namespace",
+      "machineRoute": "hairness worktree",
+      "arguments": [
+        { "name": "action", "required": false },
+        { "name": "worktree", "required": false }
+      ],
+      "resultId": "default",
+      "operation": { "capability": "hairness/worktree", "id": "inspect" },
+      "instructions": "./commands/worktree.md"
+    }
+  ]
+}

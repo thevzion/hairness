@@ -13,6 +13,14 @@
     "interaction": { "language": "en", "mode": "auto", "budget": "balanced" },
     "session": { "transcript": false },
     "maintenance": { "gitWarnings": true },
+    "worktrees": {
+      "placement": "sibling",
+      "directorySuffix": "-worktrees",
+      "layout": "{type}/{slug}",
+      "enforcement": "required",
+      "hooks": "required",
+      "cleanup": "checkpoint"
+    },
     "delivery": {
       "profile": "github-flow",
       "repository": "thevzion/hairness",
@@ -75,16 +83,20 @@
       "path": "./extensions/hairness/initiative-controls"
     },
     {
-      "id": "hairness/delivery-controls",
-      "path": "./extensions/hairness/delivery-controls"
-    },
-    {
       "id": "hairness/codebase",
       "path": "./extensions/hairness/codebase"
     },
     {
       "id": "hairness/sources",
       "path": "./extensions/hairness/sources"
+    },
+    {
+      "id": "hairness/worktree-controls",
+      "path": "./extensions/hairness/worktree-controls"
+    },
+    {
+      "id": "hairness/delivery-controls",
+      "path": "./extensions/hairness/delivery-controls"
     }
   ],
   "sources": [

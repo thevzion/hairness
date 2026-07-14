@@ -12,6 +12,7 @@
   "module": "./index.mjs",
   "capabilities": ["./capabilities/session.json"],
   "dependencies": ["hairness/cockpit"],
+  "services": ["current"],
   "relationTypes": ["session-handoff-for"],
   "contributes": ["attention", "session-opening"],
   "commands": [{ "namespace": "session", "actions": ["open", "opening", "status", "digest", "reconcile"] }],

@@ -51,6 +51,10 @@ async function current(root, flags, runtime) {
   return { ...session, status: 'active', limits: bound ? [] : ['provider-session-unbound'], routes: bound ? [] : ['hairness session reconcile'] }
 }
 
+export const services = {
+  current: ({ root, input, runtime }) => current(root, input ?? {}, runtime),
+}
+
 async function digest(root, flags, runtime) {
   const session = await current(root, flags, runtime)
   const preferences = await runtime.distribution.preferences()

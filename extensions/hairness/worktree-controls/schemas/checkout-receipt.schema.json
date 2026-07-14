@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/extensions/worktree-controls/checkout-receipt.schema.json",
+  "title": "CheckoutReceipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "protocolVersion", "id", "proposalId", "action", "runId", "checkpointId", "status", "summary", "targets", "effects", "proof", "head", "policyDigest", "observedAt", "limits", "context"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "protocolVersion": { "const": "0.2" },
+    "id": { "type": "string", "minLength": 1 },
+    "proposalId": { "type": "string", "minLength": 1 },
+    "action": { "type": "string", "minLength": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "checkpointId": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["succeeded", "partial", "failed", "unknown"] },
+    "summary": { "type": "string", "minLength": 1 },
+    "targets": { "type": "array", "items": { "type": "string" } },
+    "effects": { "type": "array", "items": { "type": "string" } },
+    "proof": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "head": { "type": ["string", "null"] },
+    "policyDigest": { "type": "string", "pattern": "^sha256:" },
+    "observedAt": { "type": "string", "minLength": 1 },
+    "limits": { "type": "array", "items": { "type": "string" } },
+    "context": { "type": ["object", "null"] }
+  }
+}

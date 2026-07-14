@@ -15,12 +15,13 @@
     "hairness/constraints",
     "hairness/session-intelligence",
     "hairness/codebase",
-    "hairness/sources"
+    "hairness/sources",
+    "hairness/worktree-controls"
   ],
   "capabilities": [
     "hairness/cockpit", "hairness/distribution-lifecycle", "hairness/work", "hairness/understanding",
     "hairness/ideation", "hairness/presentation", "hairness/constraints",
-    "hairness/session", "hairness/codebase", "hairness/sources"
+    "hairness/session", "hairness/codebase", "hairness/sources", "hairness/worktree"
   ],
   "sourceDrivers": ["git"],
   "sources": [

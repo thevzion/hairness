@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/extensions/worktree-controls/repository-ref.schema.json",
+  "title": "RepositoryRef",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "root"],
+      "properties": {
+        "kind": { "const": "workspace" },
+        "root": { "type": "string", "minLength": 1 },
+        "remote": { "type": ["string", "null"] }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "const": "codebase" },
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "checkout": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "root": { "type": "string", "minLength": 1 },
+        "remote": { "type": ["string", "null"] }
+      }
+    }
+  ]
+}

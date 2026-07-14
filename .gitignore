@@ -1,4 +1,4 @@
-.overlay/
+.overlay
 node_modules/
 coverage/
 .DS_Store
