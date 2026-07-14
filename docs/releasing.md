@@ -1,127 +1,16 @@
 # Releasing
 
-A Hairness release is an explicit `ReleaseDeliveryPlan`. Planning and
-validation may advance automatically, but publication always stops at a named
-authority boundary. Initial npm alphas may be published manually from one exact
-candidate; later versions use GitHub Trusted Publishing behind a protected
-environment approval.
+The architectural reset and package publication are separate PRs.
 
-## Alpha policy
+After the reset PR merges:
 
-Pre-release versions are intentionally published with the npm dist-tag `next`;
-release automation never assigns `latest`. If the registry exposes an extra
-tag, record and reconcile the exact publication receipt before continuing.
-Consumers should use `next` or an exact version. Protocol and implementation
-versions are independent and MUST both be reported by the CLI.
+1. open a release PR for `0.3.0-alpha.0` against the exact merge commit;
+2. run Node.js 22/24, tests, check, conformance, provider, package, README, and
+   fresh packed-tarball lab gates;
+3. approve npm publication as its own checkpoint;
+4. reconcile registry integrity with the packed artifact;
+5. create the exact Git tag as a separate checkpoint;
+6. create the GitHub prerelease as a separate checkpoint.
 
-## Release candidate
-
-Start the explicit release plan with a nested version argument:
-
-```bash
-hairness delivery plan --kind release --version <version> --baseline <commit-or-tag>
-```
-
-1. Collect all conventional pull requests merged since the previous tag, or
-   the configured bootstrap baseline when no tag exists. Exclude release PRs
-   and `releaseImpact: none`.
-2. Choose the version explicitly, compare it to the SemVer recommendation, and
-   open `release/<version>`. The release PR contains only the frozen changelog,
-   candidate notes and status metadata.
-3. Merge that PR independently, then require a clean tree with
-   `HEAD === origin/main` at the exact public commit.
-4. Run deterministic checks on Node.js 22 and 24 and fresh Codex dogfood.
-   Codex/Claude projection parity remains deterministic; live Claude auth is
-   not a release gate.
-5. Run `npm ci`, inspect the provider projections and produce one tarball under
-   `.overlay/scratch/release/<version>/`.
-6. Record its absolute path, SHA-256 and npm integrity; install that exact
-   tarball in a temporary workspace; verify `hairness --version` and bootstrap.
-7. Run `npm publish <tarball> --dry-run --access public --tag next` on the same
-   file and promote one typed `ReleaseCandidate`.
-
-The dry-run commands are safe preparation steps:
-
-```bash
-npm pack --dry-run --json
-npm publish --dry-run --access public --tag next
-```
-
-Immediately before publishing a version, Sources must revalidate:
-
-```text
-npm identity is thevzion
-thevzion remains authorized to publish under @hairness
-the target package/version is absent before a first attempt, or matches the reconciled receipt after an unknown result
-latest is absent or unchanged
-package, version, registry, commit, tarball and digests match the candidate
-```
-
-The displayed checkpoint includes those fields. Only an explicit `go` for that
-checkpoint permits `npm publish <exact-tarball> --access public --tag next`.
-Timeout or unknown output requires `npm view` reconciliation and integrity
-comparison before any retry.
-
-## Reconciliation
-
-A partial, failed or unknown effect receipt is immutable. Delivery Controls
-requires a fresh proof and one separately checkpointed decision:
-`accept-deviation`, `retry` or `abort`. The checkpoint binds the exact receipt
-digest and current policy. `--auto` can prepare the decision but cannot apply
-it, and the original effect must never be repeated until reconciliation has
-resolved its observed outcome.
-
-## External effects
-
-The following actions require separate confirmation and receipts:
-
-```text
-npm publish --access public --tag next
-git tag v0.2.0-alpha.0
-git push origin v0.2.0-alpha.0
-GitHub Release publication
-social or community posts
-```
-
-Do not combine package publication, Git tagging, GitHub Release publication,
-or announcements into one implicit approval. If an effect is partial or its
-result is unknown, stop and reconcile before continuing.
-
-After npm verification, create the annotated Git tag, push it, and create the
-GitHub prerelease through three separate stages, Runs and checkpoints. Download the registry
-tarball and compare integrity and SHA-256 with the candidate before tagging.
-The post-release traceability PR records date, commit, tag, npm URL and digests;
-it also introduces Trusted Publishing without a long-lived npm token.
-
-## Trusted Publishing workflow
-
-`.github/workflows/release.yml` is manual-only. It requires the exact public
-`main` commit, qualifies Node.js 22 and 24, produces one tarball, records its
-digests and uploads it as a workflow artifact. A separate publish job waits for
-the protected `npm` environment, downloads and revalidates the same artifact,
-checks that the version is absent, then publishes through OIDC. The job verifies
-registry integrity, provenance, the requested dist-tag and that `latest` did
-not change.
-
-The workflow uses a GitHub-hosted runner, Node.js 24 and npm 11.5.1 for the OIDC
-publish boundary. Configure the npm trusted publisher with these exact values:
-
-```text
-package: @hairness/cli
-repository: thevzion/hairness
-workflow file: release.yml
-environment: npm
-allowed action: npm publish
-```
-
-After this PR is merged, create the protected GitHub environment before
-configuring npm. Verify the final relationship with:
-
-```bash
-npm trust list @hairness/cli
-```
-
-The workflow never creates a Git tag or GitHub Release. Those remain separate
-delivery stages and authority boundaries.
-
-The alpha release notes live in [releases/0.2.0-alpha.0.md](releases/0.2.0-alpha.0.md).
+Do not publish from the architectural reset branch. npm publish, tag, and GitHub
+Release are distinct effects and must not inherit authority from one another.

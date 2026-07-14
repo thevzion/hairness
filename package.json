@@ -1,18 +1,13 @@
 {
   "name": "@hairness/cli",
-  "version": "0.2.0-alpha.0",
-  "description": "Provider-agnostic harness that equips native AI agents to operate across your codebases, tools, and workflows.",
+  "version": "0.3.0-alpha.0",
+  "description": "A lightweight, provider-agnostic harness for typed agentic assets, explicit memory, and safe delivery.",
   "keywords": [
     "ai-agents",
-    "agentic-ai",
-    "agentic-systems",
+    "agentic-assets",
     "ai-harness",
     "provider-agnostic",
     "developer-tools",
-    "cli",
-    "automation",
-    "human-in-the-loop",
-    "multi-repo",
     "codex",
     "claude-code"
   ],
@@ -38,30 +33,13 @@
     "node": ">=22"
   },
   "files": [
+    "assets/extensions/hairness/",
     "bin/",
-    "catalog/",
-    "docs/compatibility.md",
-    "docs/extensions/catalog.md",
-    "docs/known-limitations.md",
-    "docs/releases/0.2.0-alpha.0.md",
-    "docs/releasing.md",
-    "extensions/hairness/",
-    "migrations/",
-    "schemas/",
-    "scripts/check-commits.mjs",
-    "scripts/check-pack.mjs",
-    "scripts/generate-extension-catalog.mjs",
-    "scripts/check-providers.mjs",
-    "scripts/check.mjs",
-    "scripts/conformance.mjs",
-    "scripts/extension-ownership-gate.mjs",
-    "scripts/impact-gate.mjs",
-    "scripts/run-tests.mjs",
+    "distributions/",
+    "schemas/v3/",
     "src/",
-    "templates/",
     "LICENSE",
-    "README.md",
-    "hairness.json"
+    "README.md"
   ],
   "scripts": {
     "test": "node scripts/run-tests.mjs",
@@ -69,13 +47,9 @@
     "conformance": "node scripts/conformance.mjs",
     "test:node22": "npx -y node@22 scripts/run-tests.mjs",
     "test:node24": "npx -y node@24 scripts/run-tests.mjs",
+    "check:lab": "node scripts/lab-dogfood.mjs",
     "check:pack": "node scripts/check-pack.mjs",
-    "check:impact": "node scripts/impact-gate.mjs",
-    "check:providers": "node scripts/check-providers.mjs",
-    "check:commits": "node scripts/check-commits.mjs",
-    "check:ownership": "node scripts/extension-ownership-gate.mjs",
-    "catalog": "node scripts/generate-extension-catalog.mjs",
-    "check:catalog": "node scripts/generate-extension-catalog.mjs --check"
+    "check:providers": "node scripts/check-providers.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0"

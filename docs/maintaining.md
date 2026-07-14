@@ -1,25 +1,24 @@
 # Maintaining Hairness
 
-Use Conventional Commits and keep each commit owned by one subsystem. Run the
-impact gate before claiming a change complete; update contracts, tests,
-provider projections, packaging, or documentation when the gate requires it.
-CI fetches full history and validates the non-merge commits introduced by each
-pull request rather than GitHub's synthetic merge commit.
+The repository dogfoods Standard plus the explicit `hairness/maintainer`
+extension. Maintainer is not part of either public preset.
 
-Change canonical extension sources, never generated projections. Managed regions protect human content while making ownership inspectable.
+Canonical assets live under `assets/extensions/`; provider projections do not.
+Read [STATUS](../STATUS.md), [SPEC](../SPEC.md), and the relevant decision before
+changing a public owner. Keep contracts, source, projections, examples, and tests
+in one commit boundary.
 
-Before any private-distribution cutover, materialize a standalone preview under
-`.overlay/scratch/distributions/<id>/<run-id>` and run its manifests, tests,
-protocol conformance, and provider parity checks. A preview performs no provider
-installation, remote write, or legacy overlay import.
+Required local checks:
 
 ```bash
-npm run check
 npm test
+npm run check
 npm run conformance
+npm run check:providers
 npm run check:pack
-hairness build --check
-hairness maintain test run forge-smoke
+npm run check:lab
 ```
 
-Shared provider projections and `hairness.build.json` belong in Git. Local-only projections and all `.overlay/` state do not.
+Release qualification additionally runs Node.js 22 and 24 and a fresh Home from
+the exact packed tarball. Never test a release by importing the source checkout
+when the user will receive the tarball.

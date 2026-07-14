@@ -1,26 +1,27 @@
 # Contributing
 
-Use Node.js 22 or newer.
+Hairness values small contracts, direct recipes, and evidence-backed behavior.
+
+1. Read [STATUS.md](STATUS.md), [SPEC.md](SPEC.md), and only the relevant ADR.
+2. Change canonical runtime or `assets/extensions/` source, never generated
+   `.agents/skills/` or `.claude/skills/` output.
+3. Keep public behavior, schemas, README examples, and tests aligned.
+4. Add a durable test for every recurring correction.
+5. Run the full local matrix:
 
 ```bash
 npm install
-npm run check
 npm test
+npm run check
 npm run conformance
 npm run check:providers
 npm run check:pack
-hairness maintain test run forge-smoke
-hairness maintain status --json
 ```
 
-Keep public behavior aligned across README, SPEC, CLI, provider projections, and tests. Add protocol infrastructure to the core, provider syntax to the compiler, and capability behavior to extensions. Do not add compatibility layers for the archived harness.
+Use Conventional Commits. Keep PRs coherent around one outcome. Do not add
+compatibility shims, dependencies, provider abstractions, persistence, or effect
+authority without an accepted contract and concrete use case.
 
-Change extension-owned capabilities and command sources instead of generated skills. Keep `STATUS.md` aligned with the active Work Controls segment. Run `hairness build --check` and `hairness maintain impact` before a Git checkpoint. Never commit `.overlay/` or sensitive data.
-
-## Extension contributions
-
-Start from a repeated user need and state the human command, operations, inputs, sources, results, effects and proof. Prototype locally first. A PR under `extensions/hairness/` transfers long-term maintenance to the Hairness project and therefore requires an accepted proposal, a complete extension README and behavioral tests.
-
-Community extensions should remain in their publisher repository. Hairness may later index an immutable release and digest without taking ownership. Use the issue forms for extension proposals, protocol RFCs, provider bugs and documentation gaps.
-
-Maturity is explicit: `experimental`, `community`, `verified` or `official`. Verification never implies trust or authority.
+Extensions should begin as the smallest useful shape—often `extension.json` and
+one Markdown recipe. Add an adapter only when deterministic reads or real effects
+are necessary. Security reports follow [SECURITY.md](SECURITY.md).

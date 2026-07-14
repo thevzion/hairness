@@ -1,0 +1,24 @@
+{
+  "apiVersion": "hairness.dev/extension/v1alpha1",
+  "kind": "Extension",
+  "metadata": { "id": "hairness/delivery", "version": "0.3.0-alpha.0", "summary": "Evidence-backed delivery with adaptive checkouts and exact checkpoints." },
+  "spec": {
+    "provides": ["hairness.delivery"],
+    "requires": ["hairness.work", "hairness.codebase"],
+    "recipes": [
+      { "id": "hairness-ship", "path": "recipes/ship.md", "summary": "Shape and deliver one coherent change safely.", "capability": "hairness.delivery" }
+    ],
+    "adapters": [],
+    "schemas": [
+      { "id": "delivery-brief", "path": "schemas/delivery-brief.schema.json" }
+    ],
+    "gates": [
+      { "id": "implementation", "stage": "after-implementation" },
+      { "id": "publish-pr", "stage": "before-publish-pr" },
+      { "id": "merge", "stage": "before-merge" },
+      { "id": "merged", "stage": "after-merge" }
+    ],
+    "onboarding": [],
+    "tests": []
+  }
+}

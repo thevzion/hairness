@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/schemas/home-lock/v1alpha1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "distribution", "extensions"],
+  "properties": {
+    "apiVersion": { "const": "hairness.dev/home/v1alpha1" },
+    "kind": { "const": "HomeLock" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": { "id": { "$ref": "#/$defs/id" } }
+    },
+    "distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "source", "sourceKind", "requestedRef", "resolvedCommit", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "version": { "$ref": "#/$defs/semver" },
+        "source": { "type": "string", "minLength": 1 },
+        "sourceKind": { "enum": ["official", "path", "git"] },
+        "requestedRef": { "$ref": "#/$defs/nullableString" },
+        "resolvedCommit": { "$ref": "#/$defs/nullableCommit" },
+        "digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "extensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "source", "sourceKind", "requestedRef", "resolvedCommit", "path", "digest", "installedBaseDigest"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "source": { "type": "string", "minLength": 1 },
+          "sourceKind": { "enum": ["official", "path", "git", "adopted"] },
+          "requestedRef": { "$ref": "#/$defs/nullableString" },
+          "resolvedCommit": { "$ref": "#/$defs/nullableCommit" },
+          "path": { "type": "string", "minLength": 1 },
+          "digest": { "$ref": "#/$defs/digest" },
+          "installedBaseDigest": { "$ref": "#/$defs/digest" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]{0,127}$" },
+    "semver": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$" },
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableString": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "nullableCommit": { "anyOf": [{ "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, { "type": "null" }] }
+  }
+}

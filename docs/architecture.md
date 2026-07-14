@@ -1,95 +1,57 @@
 # Architecture
 
-Hairness separates a minimal protocol kernel from selected behavior and native provider execution.
-
-```mermaid
-flowchart TD
-  human["Human intent"] --> main["Native provider main session"]
-  opening["Compact SessionOpening"] --> main
-  commands["Repo-local commands"] --> main
-  main --> cli["Deterministic Hairness CLI"]
-  cli --> registry["Active extension registry"]
-  registry --> capability["Capability"]
-  capability --> operation["Operation: observe · derive · effect"]
-  operation --> route["Route: deterministic · inline · worker · external"]
-  route --> gates["Schemas · fan-in · policy · authority · locks"]
-  gates --> result["Typed Result"]
-  result --> main
-  result --> ledger["Semantic Ledger + Attention Index"]
-  ledger --> opening
-  sources["Selected source drivers"] --> registry
-  targets["Mounted codebase checkouts"] --> gates
-```
-
-## Owners
-
-| Owner | Owns | Does not own |
-| --- | --- | --- |
-| Kernel | contracts, registry, storage, runs, plans, fan-in, artifacts, authority enforcement, locks | domain behavior or concrete sources |
-| Extension | capabilities, operations, commands, services, contributions, schemas, instructions, tests | implicit authority |
-| Distribution | active selection, defaults, source drivers, codebase contracts, provider projections | upstream control after generation |
-| Provider adapter | Codex/Claude syntax and managed output mechanics | capabilities or model runtime |
-| Provider | model, UI, tools, sandbox, native workers and threads | Hairness source ownership |
-| Mounted codebase | Git history, runtime, conventions and files | Hairness local state |
-
-The generic invocation store and event lifecycle live in the kernel. Operation lookup, preferences and trusted resolver contributions live in the distribution layer. Provider models may propose drafts but never mutate canonical invocation state directly.
-
-Forge-only Initiative and Delivery Controls sit above Work Controls. They
-preserve macro outcomes, parallel change plans and aggregated release evidence
-while delegating every GitHub Flow or publication effect to a separately
-checkpointed native executor. GitHub and npm remain source drivers and URI
-targets; the kernel knows only plans, effects, policies, checkpoints, locks and
-receipts.
-
-Partial, failed and unknown receipts remain immutable; append-only
-reconciliation records resolve them through an exact decision checkpoint.
-Release delivery also separates local tag creation from remote tag push so
-neither effect can inherit the other's authority.
-
-```text
-core owns grammar
-extensions own behavior
-distribution owns selection
-providers own execution
-```
-
-## Source-owned flow
+Hairness adds a small deterministic harness around native AI-agent sessions. It
+separates source-owned agentic assets from local runtime bindings and from the
+repositories an agent works on.
 
 ```mermaid
 flowchart LR
-  package["@hairness/cli"] --> recipe["minimal · standard · forge recipe"]
-  recipe --> generated["Standalone source-owned repository"]
-  generated --> codex["Codex projection"]
-  generated --> claude["Claude projection"]
-  update["Explicit update proposal"] --> generated
+  human["Human"] --> provider["Codex or Claude"]
+  home["Hairness Home\nagentic assets"] --> provider
+  provider --> recipe["Provider-neutral recipe"]
+  provider --> cli["@hairness/cli\ndeterministic boundary"]
+  cli --> target["Target repositories"]
+  cli --> runtime["~/.hairness/runtime"]
+  provider --> overlay[".overlay\nexplicit human memory"]
+  cli --> overlay
 ```
 
-A recipe selects named material sets. Hairness resolves their declared dependency graph, rejects cycles and target conflicts, and copies the exact resulting entries. A generated distribution contains selected extensions and drivers only. A forge can retain dormant generic catalogue source, but only manifest-selected extensions execute.
+## Four ownership layers
 
-## State
+| Layer | Owns | Never owns |
+| --- | --- | --- |
+| npm runtime | CLI, schemas, registry, compiler, checkpoints, receipts and local bindings | provider sessions or team policy |
+| Home | selected extensions, provider-neutral recipes, tracked configuration and lock provenance | target checkout state or generated projections |
+| Overlay | explicit profile, Scratch, accepted Artifacts and Receipts | transcripts, secrets or runtime locks |
+| Target | product source, Git history and project conventions | Hairness configuration or memory |
 
-```text
-Git tracked
-├── kernel and public schemas
-├── selected extension source
-├── selected source drivers
-├── hairness.json and hairness.lock.json
-├── provider projections and hairness.build.json
-└── distribution-owned documentation
+The Home may be a sibling of one Target or coordinate many independent Targets.
+Generated Codex and Claude projections are reproducible build output. Exact owned
+paths live in runtime `build.json` and are locally excluded from the Home Git
+repository; unmanaged native provider files remain untouched.
 
-.overlay (workspace local)
-├── config and named codebase mounts
-├── invocation ledger and epoch
-├── runs, artifacts and scratch
-├── extension-owned state
-└── local-only extension projections
+## Composition
 
-~/.hairness (user local)
-├── preferences
-├── workspace and local-extension trust
-└── canonical path and credential-free URI locks
+```mermaid
+flowchart TD
+  distribution["Distribution\nbootstrap defaults"] --> selection["hairness.json\nactive selection"]
+  extension["Extension\ncapabilities + recipes + adapters"] --> selection
+  selection --> compiler["Provider compiler"]
+  compiler --> codex["$hairness-* skills"]
+  compiler --> claude["/hairness-* skills"]
 ```
 
-Tracked `.hairness/` state belongs to the distribution. Ignored `.overlay/` state belongs to the local workspace. Personal preferences and trust live in `~/.hairness/`. None of these locations activates an extension by presence.
+A Distribution is a bootstrap bundle, not a runtime role. An Extension provides
+capability IDs. Recipes converse directly with the user. Adapters expose a
+deterministic `observe`, `derive` or `effect` operation. Only effect adapters pass
+through `prepare` and `apply` with an exact Checkpoint.
 
-No provider transcript or hidden reasoning crosses these boundaries.
+## Work and delivery
+
+Scratch is the work identity. A delivery extension may choose a compatible clean
+checkout or create an isolated Git worktree internally. Checkout paths and locks
+remain runtime details. A typed DeliveryBrief is saved only after its delivery
+hypothesis is accepted. Publication, merge and release are separate effects.
+
+See [Persistence](persistence.md), [Extension contract](extensions/README.md) and
+[ADR 0013](decisions/0013-v0-3-clean-architectural-reset.md).

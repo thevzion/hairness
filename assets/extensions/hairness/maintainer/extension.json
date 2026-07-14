@@ -1,0 +1,17 @@
+{
+  "apiVersion": "hairness.dev/extension/v1alpha1",
+  "kind": "Extension",
+  "metadata": { "id": "hairness/maintainer", "version": "0.3.0-alpha.0", "summary": "Upstream Hairness repository maintenance guidance." },
+  "spec": {
+    "provides": ["hairness.maintenance"],
+    "requires": ["hairness.cockpit"],
+    "recipes": [
+      { "id": "hairness-maintain", "path": "recipes/maintain.md", "summary": "Maintain the upstream Hairness package coherently.", "capability": "hairness.maintenance" }
+    ],
+    "adapters": [],
+    "schemas": [],
+    "gates": [],
+    "onboarding": [],
+    "tests": []
+  }
+}

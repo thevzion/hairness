@@ -18,32 +18,29 @@ jobs:
         node: [22, 24]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
       - run: npm run check
-      - run: npm run check:commits
       - run: npm test
       - run: npm run conformance
       - run: npm run check:providers
       - run: npm run check:pack
+      - if: matrix.node == 24
+        run: npm run check:lab
 
   delivery-policy:
     name: delivery policy
-    if: github.event_name == 'pull_request'
+    if: always() && github.event_name == 'pull_request'
+    needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: node scripts/check-delivery-policy.mjs
+      - name: Require the complete qualification matrix
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_HEAD_REF: ${{ github.head_ref }}
-          PR_BASE_REF: ${{ github.base_ref }}
+          TEST_RESULT: ${{ needs.test.result }}
+        run: test "$TEST_RESULT" = success

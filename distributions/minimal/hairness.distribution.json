@@ -1,0 +1,15 @@
+{
+  "apiVersion": "hairness.dev/distribution/v1alpha1",
+  "kind": "Distribution",
+  "metadata": {
+    "id": "hairness/minimal",
+    "version": "0.3.0-alpha.0",
+    "summary": "The smallest useful Hairness Home."
+  },
+  "spec": {
+    "extensions": ["hairness/cockpit", "hairness/work"],
+    "defaults": { "providers": ["codex"], "overlaySnapshot": "boundary" },
+    "policies": [],
+    "onboarding": []
+  }
+}

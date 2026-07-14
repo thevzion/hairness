@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/extensions/delivery/delivery-brief/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["outcome", "acceptanceCriteria", "scope", "nonGoals", "target", "base", "releaseImpact", "requiredChecks"],
+  "properties": {
+    "outcome": { "type": "string", "minLength": 1 },
+    "acceptanceCriteria": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+    "scope": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+    "nonGoals": { "type": "array", "items": { "type": "string" } },
+    "target": { "type": "string", "minLength": 1 },
+    "base": { "type": "string", "minLength": 1 },
+    "releaseImpact": { "enum": ["none", "patch", "minor", "major", "prerelease"] },
+    "requiredChecks": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+  }
+}
