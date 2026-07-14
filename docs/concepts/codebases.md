@@ -34,9 +34,17 @@ Plans freeze an exact TargetSet: codebase ID, checkout ID, canonical realpath, b
 
 Mounts provide addressability and proof. They never grant an executor authority.
 
+Codebase exposes a read-only mount inventory so Worktree Controls can group all
+available repositories in one dashboard. The worktree handle retains only
+`{ kind: "codebase", id, checkout }`; mount paths, Git identity and remote match
+are re-observed on every operation.
+
 Worktree Controls owns the lifecycle of delivery checkouts. For an external
 registered codebase it calls Codebase's `mount-managed` and `unmount-managed`
 services with the exact calling Run, effect and credential-free checkout target.
 Those services assert the Run grant before changing Hairness-owned mount state
 and always preserve the actual checkout. The current Hairness workspace needs
 no Codebase mount: its managed handle points directly at the verified worktree.
+By default, managed codebase worktrees are organized under the anchor-owned
+`<anchor>-worktrees/codebases/<codebase-id>/` pool, while the Codebase mount
+remains a local address into the selected checkout.

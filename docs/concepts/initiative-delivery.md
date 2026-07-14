@@ -26,6 +26,10 @@ Initiative Controls keeps the local macro roadmap in owner-scoped overlay state.
 Delivery Controls implements a generic, distribution-configured GitHub Flow.
 An initiative may contain several parallel `ChangeDeliveryPlan` objects; each
 accepted brief produces one idempotent plan for one coherent pull request.
+Each plan also preserves one logical `RepositoryRef`. Explicit `--workspace` or
+`--codebase <id>` selection wins, then the active checkout or plan; when several
+repositories remain possible the agent asks one material question instead of
+guessing.
 `ReleaseDeliveryPlan` separately aggregates conventional merged pull requests
 since the previous tag. Release commits and changes explicitly carrying
 `releaseImpact: none` are excluded. The explicit version is checked against the
@@ -43,6 +47,9 @@ After `verify-main`, remote delivery is complete and the branch worktree becomes
 `cleanup-ready`. Closing it remains a separate visible checkpoint. A release
 uses an additional detached candidate worktree at the exact public commit, and
 all gates, tarball proof and the `ReleaseCandidate` are bound to that handle.
+`close --all-ready` is an optional exact batch boundary, not an automatic
+continuation; each target retains its own child receipt and partial effects stop
+the batch.
 
 Every effect boundary stores its policy digest, exact targets, Run, checkpoint
 and expected proof before the executor starts. `PullRequestProposal` binds the

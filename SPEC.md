@@ -94,7 +94,9 @@ its capsule MUST return `needs-split` to the parent.
 
 When a selected delivery policy requires managed worktrees, a Git-backed
 versioned mutation MUST target the realpath of one live `WorktreeHandle` with
-the exact plan-owned writer lease. Provider-native implementation workers MUST
+the exact plan-owned writer lease. A delivery plan MUST preserve one logical
+workspace or codebase `RepositoryRef`; physical paths, remotes and Git common
+directories MUST be resolved from live evidence. Provider-native implementation workers MUST
 receive only their capsule and checkout target, never the cockpit or provider
 conversation history. A provider without native workers MAY execute the same
 capsule in the main agent.
@@ -232,12 +234,34 @@ owner-scoped overlay state. A distribution worktree MAY link the ignored
 MUST use an authority-asserting Codebase managed mount without receiving
 injected Hairness files.
 
+The anchor MUST own one stable `WorktreeController` identity. Default physical
+placement MUST partition its sibling `<anchor>-worktrees` pool into
+`workspace/<type>/<slug>` and
+`codebases/<codebase-id>/<type>/<slug>`. A machine-local global or
+repository-specific absolute root MAY override placement; an unavailable or
+invalid override MUST block without fallback. Ownership MUST bind the
+controller ID, handle, exact Git lock, writer lease and correlated receipt.
+Every managed lock MUST encode
+`hairness:<controllerId>:<worktreeId>:<planId>`.
+
+Existing worktrees MAY be adopted without moving them and MUST then be marked
+external. A foreign-controller takeover MUST require a reason, fresh Git proof
+and a separate break-glass checkpoint while retaining controller lineage. An
+anchor relocation MUST block versioned writes until controller repair.
+
 One delivery plan MUST own at most one branch worktree and one active writer
 lease. Other sessions MAY inspect it but MUST NOT write. Inactivity MUST NOT
 release or transfer authority. Cleanup MUST reject dirty, unpushed,
 unintegrated or stale evidence, MUST remain a separate checkpoint and MUST NOT
 force-remove automatically. Partial or unknown Git effects MUST block retry
 until live reconciliation.
+
+An exact `close --all-ready` batch MAY group cleanup-ready targets only after
+all children validate. It MUST retain one child receipt per worktree, stop on a
+partial or unknown result and require reconciliation before retry. Deleting a
+squash-merged local branch with force MUST additionally prove the exact
+published HEAD, merged pull request and fresh `verify-main` receipt; forced
+worktree removal remains forbidden.
 
 Overlay-owned Git guards MAY reject commits in the anchor or unmanaged
 worktrees and direct pushes to the protected base branch. They MUST NOT replace
@@ -267,7 +291,9 @@ Conformance requires:
 - Invocation to child Runs to fan-in trace reconstruction;
 - exact make-to-save promotion and AttentionIndex ranking;
 - NUL-safe worktree inventory, one-plan/one-writer enforcement, stale lease and
-  HEAD refusal, explicit recovery and detached release qualification;
+  HEAD refusal, logical multi-repository pools, controller relocation and
+  takeover, explicit recovery, batch-cleanup reconciliation and detached
+  release qualification;
 - migration plan/apply, idempotence, divergence and lock recording;
 - no secrets, transcripts, private paths, dormant assets, or private composition in the package.
 

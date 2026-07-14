@@ -103,9 +103,14 @@ executor with an exact grant.
 ## Ship in parallel without sharing a working tree
 
 Worktree Controls gives each delivery plan one explicit Git worktree, one
-owner and one writer lease. The default checkout lives under the sibling
-`<repository>-worktrees/<type>/<slug>` directory, while its registry and
-receipts stay in the anchor workspace overlay.
+owner and one writer lease. The Hairness anchor owns a central sibling pool,
+while its registry and receipts stay in the anchor workspace overlay.
+
+```text
+<anchor>-worktrees/
+├── workspace/<type>/<slug>
+└── codebases/<codebase-id>/<type>/<slug>
+```
 
 ```text
 want-ship → prepare managed worktree → bounded native worker

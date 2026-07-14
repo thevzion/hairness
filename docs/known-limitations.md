@@ -33,6 +33,9 @@ These limitations apply to `0.2.0-alpha.0`.
   writer lease, but it is not a workspace/global provider-task scheduler.
   Durable cross-device ownership, attention scheduling, autonomous issue intake
   and PR-only loops remain post-alpha work.
+- The anchor-owned pool organizes workspace and codebase worktrees, but moving
+  the anchor requires an explicit controller repair. Machine-local root
+  overrides never migrate or relocate existing checkouts automatically.
 - Git guards, writer leases and branch protection do not sandbox arbitrary OS
   writes. Existing hook managers require explicit integration, and dirty,
   unpushed or unintegrated worktrees are never force-removed automatically.

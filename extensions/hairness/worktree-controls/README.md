@@ -14,17 +14,28 @@ Distributions configure `defaults.worktrees`:
 
 ```json
 {
-  "placement": "sibling",
+  "placement": "anchor-sibling",
   "directorySuffix": "-worktrees",
-  "layout": "{type}/{slug}",
+  "layout": "{repository}/{type}/{slug}",
   "enforcement": "required",
   "hooks": "required",
   "cleanup": "checkpoint"
 }
 ```
 
-`preferences.worktrees.root` may override the physical root locally. With the
-default policy, `<parent>/<repository>-worktrees/<type>/<slug>` is used.
+The distribution anchor owns one controller and one sibling pool:
+
+```text
+<anchor>-worktrees/
+├── workspace/<type>/<slug>
+└── codebases/<codebase-id>/<type>/<slug>
+```
+
+Machine-local preferences may set one global `worktrees.root` or exact
+`worktrees.repositoryRoots` entries such as `workspace` and
+`codebase:customer-api`. A repository-specific root receives only
+`<type>/<slug>` beneath it. Invalid or unavailable roots block; Hairness never
+falls back to a different location silently.
 
 ## Capabilities and operations
 
@@ -34,8 +45,10 @@ default policy, `<parent>/<repository>-worktrees/<type>/<slug>` is used.
 
 Dependent extensions use the read-only `inspect`, `propose` and `resolve`
 services, the authority-bound `execute` service, and `assert-writer` before
-their own Git-backed effects. Delivery stores only a handle reference and its
-digest; path, branch, HEAD, policy and lease are resolved live.
+their own Git-backed effects. Codebase also exposes a read-only mount inventory.
+Delivery stores only a logical `RepositoryRef`, handle reference and digest;
+path, remote, common directory, branch, HEAD, policy and lease are resolved
+live.
 
 ## Inputs, controls and results
 
@@ -48,6 +61,9 @@ checkpoint, policy and live `CheckoutContext`. `--auto` never grants authority.
 The canonical registry is owner-scoped under
 `.overlay/extensions-state/hairness/worktree-controls/`. It contains handles,
 leases, proposals and receipts, never credentials or provider conversations.
+`WorktreeController.id` is generated once and binds the anchor, overlay and
+default pool. Its ID is part of every Git lock:
+`hairness:<controllerId>:<worktreeId>:<planId>`.
 
 ## Effects and safety
 
@@ -57,8 +73,15 @@ mounted through Codebase services without adding files to their repository.
 Guards live under the anchor overlay and may be installed only when no existing
 `core.hooksPath` would be overwritten.
 
+Existing checkouts are adopted in place as `managed-external`. A foreign
+controller can be replaced only by an exact break-glass takeover with fresh
+Git proof and a reason; controller lineage is retained. Anchor relocation
+blocks writes until a repair checkpoint.
+
 No command force-removes a checkout. Dirty, unpushed, unintegrated, stale,
 partial or unknown states block cleanup or retry until fresh reconciliation.
+`close --all-ready` is an explicit batch preview with one child receipt per
+worktree; it stops and requires reconciliation on partial or unknown effects.
 Git locks protect worktree metadata; writer leases are the Hairness authority
 contract and not an operating-system sandbox.
 

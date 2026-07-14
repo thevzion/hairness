@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "protocolVersion": "0.2",
   "implementationVersion": "0.2.0-alpha.0",
-  "sourceDigest": "sha256:1daf7d967e8cba87b3a511e6800aeeeda4f2f371b741bb498692a5e5adcbc87f",
+  "sourceDigest": "sha256:212adf749827975ac31c6f21ef18c3a06adcb52625dd2e8d3bc7708a75aaf147",
   "composition": "hairness",
   "role": "forge",
   "local": false,
@@ -480,8 +480,8 @@
       "path": ".agents/skills/hairness-worktree/SKILL.md",
       "owner": "hairness/worktree-controls",
       "provider": "codex",
-      "digest": "sha256:3db0c979beeed21439fc109a0bdb6751b28420ad1d43b4b8aae2b92b080ad90d",
-      "byteSize": 941
+      "digest": "sha256:aa7b9bb0f4eaa4f103aa50902aed1c8a74e7fe54df7db4599ca967f30efbbf22",
+      "byteSize": 863
     },
     {
       "path": ".agents/skills/hairness-cmd-want-ship/SKILL.md",
@@ -739,8 +739,8 @@
       "path": ".claude/skills/hairness-worktree/SKILL.md",
       "owner": "hairness/worktree-controls",
       "provider": "claude",
-      "digest": "sha256:692d97717b08a8af9474e4a98c817697add3de5e5db151778c20b0109ad59f77",
-      "byteSize": 941
+      "digest": "sha256:d9a27da96f90dbb07529ce3902c572a9954bbfdcf8ba86376f019a1ffe614243",
+      "byteSize": 863
     },
     {
       "path": ".claude/skills/hairness-cmd-want-ship/SKILL.md",

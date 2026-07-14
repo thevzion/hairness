@@ -8,7 +8,9 @@ entries.
 
 ### Added
 
-- Added generic Worktree Controls with explicit checkout handles, writer leases, recovery, cleanup attention and safe sibling placement.
+- Added generic Worktree Controls with an anchor-owned controller, central
+  workspace/codebase pools, exact checkout handles, writer leases, recovery
+  and cleanup attention.
 - Added read-only Git worktree, exact-ref and merge-ancestry evidence plus authority-asserted managed Codebase mounts.
 - Added a manual, protected npm Trusted Publishing workflow that qualifies Node.js 22 and 24, promotes one exact tarball between jobs and publishes through OIDC without a long-lived npm token.
 - Recorded the public npm alpha, exact Git tag, GitHub prerelease and registry digests as durable release evidence.
@@ -20,6 +22,10 @@ entries.
 - Preserve partial, failed and unknown delivery receipts as immutable evidence and resume only through append-only `accept-deviation`, `retry` or `abort` reconciliation decisions.
 - Split local Git tag creation from remote tag push into separate release stages, Runs and checkpoints.
 - Preserve pre-commit qualification across the resulting pull-request head while requiring exact PR and CI head agreement at merge.
+- Preserve logical workspace or codebase repository references throughout
+  Delivery, while resolving paths, remotes and Git common directories live.
+- Add proof-backed foreign-controller takeover and opt-in batch cleanup with
+  one child receipt per worktree and explicit partial-effect reconciliation.
 
 ## 0.2.0-alpha.0 - 2026-07-13
 

@@ -7,8 +7,8 @@ Current target: `0.2.0-alpha.0`
 - `managed-worktrees`
   - Outcome: Isolate every Hairness-controlled versioned mutation in an explicit checkout with one writer lease and recoverable receipts.
   - State: active
-  - Gate: Merge Worktree Controls, run live doctor/reconciliation, then dogfood the complete release flow from managed checkouts.
-  - Evidence: Worktree, Sources, Codebase and Delivery owner tests plus a fresh Codex draft-PR receipt.
+  - Gate: Review and merge draft PR #17 after Node.js 22/24 and delivery-policy checks; then reconcile obsolete local worktrees separately.
+  - Evidence: Active dogfood handle migrated in place to an anchor controller and exact lock, multi-repository owner tests, and the fresh Codex draft-PR receipt.
 
 - `trusted-publishing`
   - Outcome: Make future npm releases use GitHub OIDC with one qualified artifact and no long-lived publish token.

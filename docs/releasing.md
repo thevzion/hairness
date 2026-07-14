@@ -26,8 +26,9 @@ hairness delivery plan --kind release --version <version> --baseline <commit-or-
    the configured bootstrap baseline when no tag exists. Exclude release PRs
    and `releaseImpact: none`.
 2. Choose the version explicitly, compare it to the SemVer recommendation, and
-   prepare one managed `release/<version>` worktree. The release PR contains
-   only the frozen changelog, candidate notes and status metadata.
+   prepare one managed `release/<version>` worktree in the anchor-owned
+   `workspace/release/` pool. The release PR contains only the frozen changelog,
+   candidate notes and status metadata.
 3. Observe CI, synchronize a stale base when required, merge that PR
    independently and verify the exact public `main` commit.
 4. Create a separate detached candidate worktree at that commit. Run
@@ -45,7 +46,9 @@ hairness delivery plan --kind release --version <version> --baseline <commit-or-
 
 The release-branch and detached candidate worktrees each become
 `cleanup-ready`; their closure is checkpointed separately from remote delivery
-and package publication.
+and package publication. `hairness worktree close --all-ready` may group those
+exact cleanup-ready targets, but still emits one child receipt per checkout and
+stops on any partial or unknown effect.
 
 The dry-run commands are safe preparation steps:
 

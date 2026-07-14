@@ -37,13 +37,18 @@
 ## Managed parallel delivery
 
 - Give every change and release plan one managed Git worktree and one writer
-  lease, with safe sibling placement and machine-local overrides.
+  lease, with one anchor-owned pool partitioned by workspace/codebase and
+  machine-local global or repository-specific overrides.
+- Bind ownership to one controller, exact Git lock, handle, writer lease and
+  receipt; preserve external adoption and proof-backed foreign takeover.
 - Surface unmanaged, stale, prunable, orphaned and cleanup-ready checkouts in
   session attention without adopting or deleting them automatically.
 - Rebase plan-owned branches before qualification and bind release candidates
   to detached checkouts at the exact public commit.
 - Dispatch bounded provider-native workers into those checkouts and fan typed
   results back into the stable main session.
+- Keep cleanup separate, with an opt-in `close --all-ready` batch that retains
+  child receipts and stops on partial or unknown effects.
 
 ## Alpha hardening
 

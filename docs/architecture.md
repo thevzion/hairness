@@ -97,8 +97,10 @@ Git tracked
 Tracked `.hairness/` state belongs to the distribution. Ignored `.overlay/` state belongs to the local workspace. Personal preferences and trust live in `~/.hairness/`. None of these locations activates an extension by presence.
 
 Managed worktrees live outside the anchor by default under a sibling
-`<repository>-worktrees` directory. Their canonical registry stays in the
-anchor overlay; `~/.hairness` remains limited to preferences, trust and target
-locks.
+`<anchor>-worktrees` pool, partitioned into `workspace/` and
+`codebases/<codebase-id>/`. One anchor-owned controller binds that pool to the
+overlay; handles keep logical repository references and re-resolve physical Git
+state live. Their canonical registry stays in the anchor overlay;
+`~/.hairness` remains limited to preferences, trust and target locks.
 
 No provider transcript or hidden reasoning crosses these boundaries.

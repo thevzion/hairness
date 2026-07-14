@@ -30,7 +30,9 @@ shown by the agent.
 `hairness-worktree` is the single human namespace for checkout status,
 inspection, doctor, creation, adoption, synchronization, handoff, takeover,
 closure, repair, reconciliation and pruning. Mutating actions return a preview
-and exact checkpoint; `--auto` never supplies their authority.
+and exact checkpoint; `--auto` never supplies their authority. The explicit
+`close --all-ready` form batches only cleanup-ready handles and preserves one
+child receipt per target.
 
 Removing an extension removes its commands at the next build. Internal CLI
 routes remain available for machine/debug use even when they are not projected

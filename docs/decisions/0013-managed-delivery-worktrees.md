@@ -18,6 +18,17 @@ reference. Sources owns Git evidence, Codebase owns mounts, Session Intelligence
 owns session identity and the kernel remains limited to targets, locks, grants
 and receipts.
 
-Default physical placement is the sibling `<repository>-worktrees` directory.
-Cleanup, handoff, takeover, adoption and repair remain explicit; no inactivity,
-merge or successful delivery silently deletes or transfers a checkout.
+The Hairness distribution anchor owns one controller and one default sibling
+pool. Workspace worktrees live under `<anchor>-worktrees/workspace/`; mounted
+codebase worktrees live under
+`<anchor>-worktrees/codebases/<codebase-id>/`. `RepositoryRef` stays logical;
+paths, remotes and Git common directories are resolved from live Sources and
+Codebase evidence.
+
+The controller identity, handle, exact Git lock, writer lease and correlated
+receipt jointly prove ownership. Physical placement is organization, not
+authority. Existing worktrees may be adopted in place, a foreign controller
+requires an explicit proof-backed takeover, and moving an anchor blocks until
+a repair checkpoint. Cleanup, handoff, takeover, adoption and repair remain
+explicit; no inactivity, merge or successful delivery silently deletes or
+transfers a checkout.
