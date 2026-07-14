@@ -25,7 +25,13 @@ ownership, persistence, and authority rules.
 requirements, multiple providers of one capability, and command collisions.
 Physical source presence never activates an extension.
 
-Minimal selects cockpit and work. Standard adds sources, codebase, and delivery.
+An extension may point `spec.configSchema` at its own JSON Schema. Its config
+lives only at `Home.spec.config[extension-id]`. Invalid or missing config blocks
+that owner's adapters, not its onboarding recipes. Home-local extension packages
+share the root npm workspace and lock; Hairness never creates nested locks.
+
+Minimal selects cockpit and work. Standard adds sources and delivery. Target
+identity is native core capability and `hairness-map` belongs to work.
 The upstream maintainer extension is explicitly selected only by the Hairness
 development Home.
 
@@ -52,7 +58,7 @@ an untrusted source is inspected.
 ## Sources and updates
 
 ```bash
-hairness extension add hairness/codebase
+hairness extension add ./extensions/acme/review
 hairness extension add ./path/to/extension
 hairness extension add https://github.com/acme/review.git --ref v1.2.0 --path extensions/acme/review
 ```

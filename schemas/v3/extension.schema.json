@@ -25,7 +25,8 @@
         "schemas": { "type": "array", "items": { "$ref": "#/$defs/fileEntry" } },
         "gates": { "type": "array", "items": { "$ref": "#/$defs/gate" } },
         "onboarding": { "type": "array", "items": { "$ref": "#/$defs/onboarding" } },
-        "tests": { "type": "array", "items": { "$ref": "#/$defs/fileEntry" } }
+        "tests": { "type": "array", "items": { "$ref": "#/$defs/fileEntry" } },
+        "configSchema": { "type": "string", "minLength": 1 }
       }
     }
   },

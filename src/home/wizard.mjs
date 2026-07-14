@@ -6,15 +6,18 @@ import { inspectGit } from '../runtime/git.mjs'
 
 export async function runCreateWizard(destination, options = {}) {
   const io = options.io ?? createInterface({ input, output })
+  const stream = options.output ?? output
+  const color = Boolean(stream.isTTY && !process.env.NO_COLOR)
   const close = !options.io
   try {
+    stream.write(`${style('Hairness Home setup', color)}\nA small deterministic bootstrap; the agent completes onboarding with you.\n\n`)
     const detectedLanguage = detectLanguage()
     const language = options.language ?? await choose(io, `Preferred response language`, [
       { label: `${detectedLanguage} (detected)`, value: detectedLanguage },
       { label: 'English', value: 'en' },
       { label: 'French', value: 'fr' },
     ])
-    const preset = options.preset ?? await choose(io, 'Setup', [
+    const preset = options.from ? options.preset ?? 'custom' : options.preset ?? await choose(io, 'Setup', [
       { label: 'Standard (recommended)', value: 'standard' },
       { label: 'Minimal', value: 'minimal' },
       { label: 'Custom distribution', value: 'custom' },
@@ -26,28 +29,57 @@ export async function runCreateWizard(destination, options = {}) {
       { label: 'Codex and Claude', value: ['codex', 'claude'] },
     ])
     const detectedTarget = await inspectGit(options.cwd ?? process.cwd()).then((value) => value.root).catch(() => null)
-    const target = options.target !== undefined ? options.target : detectedTarget
-      ? await choose(io, `First Target detected at ${detectedTarget}`, [
-          { label: 'Use detected repository', value: detectedTarget },
-          { label: 'Skip', value: null },
-        ])
-      : null
+    let target = options.target
+    let workspaceRoot = options.workspaceRoot
+    if (target === undefined && workspaceRoot === undefined) {
+      const access = await choose(io, 'Repository access', [
+        ...(detectedTarget ? [{ label: `Use current repository (${detectedTarget})`, value: 'target' }] : []),
+        { label: 'Choose a workspace root for onboarding discovery', value: 'workspace' },
+        { label: 'Skip for now', value: 'skip' },
+      ])
+      if (access === 'target') target = detectedTarget
+      else if (access === 'workspace') workspaceRoot = (await io.question('Workspace root: ')).trim()
+      else target = null
+    }
     const overlayGit = options.overlayGit ?? await choose(io, 'Version Overlay memory with local Git', [
       { label: 'Yes (recommended)', value: true },
       { label: 'No', value: false },
     ])
-    const settings = { ...options, language, preset, from, providers, target, overlayGit }
+    const settings = { ...options, language, preset, from, providers, target, workspaceRoot, overlayGit }
     const preview = await previewCreate(resolve(destination), settings)
-    output.write(`\nCreation preview\n${JSON.stringify(preview, null, 2)}\n`)
+    stream.write(`\n${style('Creation preview', color)}\n${renderPreview(preview)}\n`)
     const confirmed = options.yes ?? await choose(io, 'Create this Home', [
       { label: 'Create', value: true },
       { label: 'Cancel', value: false },
     ])
     if (!confirmed) return { status: 'cancelled', preview }
-    return createHome(destination, settings)
+    stream.write('\nCreating Home: install → build → doctor → local commit\n')
+    const created = await createHome(destination, settings)
+    stream.write(`${style('Home ready', color)}\n`)
+    return created
   } finally {
     if (close) io.close()
   }
+}
+
+function renderPreview(preview) {
+  const access = preview.repositoryAccess ? `${preview.repositoryAccess.kind}: ${preview.repositoryAccess.path}` : 'skipped'
+  return [
+    `Destination: ${preview.destination}`,
+    `Runtime: ${preview.dependency}`,
+    `Distribution: ${preview.distribution}`,
+    `Extensions: ${preview.extensions.join(', ')}`,
+    `Providers: ${preview.providers.join(', ')}`,
+    `Repository access: ${access}`,
+    'Home Git: initialize and create a local initial commit',
+    `Overlay Git: ${preview.overlayGit.initialize ? 'initialize and create a local initial commit' : 'disabled'}`,
+    `Qualification: ${preview.qualification.join(', ')}`,
+    `Will not: ${preview.exclusions.join(', ')}`,
+  ].join('\n')
+}
+
+function style(value, enabled) {
+  return enabled ? `\u001b[1;36m${value}\u001b[0m` : value
 }
 
 async function choose(io, question, choices) {
@@ -62,4 +94,3 @@ async function choose(io, question, choices) {
 function detectLanguage() {
   return /^fr\b/i.test(process.env.LC_ALL ?? process.env.LANG ?? '') ? 'fr' : 'en'
 }
-

@@ -2,7 +2,6 @@ import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { mkdir } from 'node:fs/promises'
 import { loadHome } from '../home/index.mjs'
-import { readJson, writeJsonAtomic } from '../lib/io.mjs'
 
 export function userRoot() {
   return resolve(process.env.HAIRNESS_STATE_HOME ?? join(homedir(), '.hairness'))
@@ -26,7 +25,9 @@ export function runtimePaths(id) {
     build: join(root, 'build.json'),
     providers: join(root, 'providers'),
     targets: join(root, 'targets'),
-    targetBindings: join(root, 'targets', 'bindings.json'),
+    sources: join(root, 'sources'),
+    sourceBindings: join(root, 'sources', 'bindings.json'),
+    onboarding: join(root, 'onboarding.json'),
     checkouts: join(root, 'checkouts'),
     checkpoints: join(root, 'checkpoints'),
     locks: join(root, 'locks'),
@@ -39,21 +40,6 @@ export function runtimePaths(id) {
 export async function ensureRuntime(home) {
   const document = typeof home === 'string' ? await loadHome(home) : home
   const paths = runtimePaths(document.metadata.id)
-  await Promise.all(['providers', 'targets', 'checkouts', 'checkpoints', 'locks', 'cache', 'tmp', 'logs'].map((key) => mkdir(paths[key], { recursive: true })))
+  await Promise.all(['providers', 'targets', 'sources', 'checkouts', 'checkpoints', 'locks', 'cache', 'tmp', 'logs'].map((key) => mkdir(paths[key], { recursive: true })))
   return paths
 }
-
-export async function targetBindings(home) {
-  const document = typeof home === 'string' ? await loadHome(home) : home
-  const paths = await ensureRuntime(document)
-  return readJson(paths.targetBindings, { home: document.metadata.id, targets: {} })
-}
-
-export async function bindTarget(home, id, path) {
-  const document = typeof home === 'string' ? await loadHome(home) : home
-  const bindings = await targetBindings(document)
-  bindings.targets[id] = { path: resolve(path), boundAt: new Date().toISOString() }
-  await writeJsonAtomic(runtimePaths(document.metadata.id).targetBindings, bindings)
-  return bindings.targets[id]
-}
-

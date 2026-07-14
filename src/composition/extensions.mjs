@@ -1,4 +1,5 @@
 import { mkdtemp, readFile, realpath, rm } from 'node:fs/promises'
+import Ajv2020 from 'ajv/dist/2020.js'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { validateDocument } from '../contracts/index.mjs'
@@ -14,6 +15,7 @@ function officialPath(id) {
 
 export async function inspectExtension(path) {
   const root = await realpath(path)
+  if (await exists(join(root, 'package-lock.json'))) throw new HairnessError('extension_nested_lock', 'Extensions use the Home package-lock.json; nested npm locks are not allowed.')
   const manifest = await readJson(join(root, 'extension.json'))
   await validateDocument(manifest, 'Extension')
   for (const collection of ['recipes', 'adapters', 'schemas', 'tests']) {
@@ -22,6 +24,8 @@ export async function inspectExtension(path) {
       if (!await exists(target)) throw new HairnessError('extension_file_missing', `${manifest.metadata.id} is missing ${entry.path}.`)
     }
   }
+  if (manifest.spec.configSchema) assertInside(root, resolve(root, manifest.spec.configSchema), 'config schema')
+  if (manifest.spec.configSchema && !await exists(resolve(root, manifest.spec.configSchema))) throw new HairnessError('extension_file_missing', `${manifest.metadata.id} is missing ${manifest.spec.configSchema}.`)
   return { root, manifest, digest: await treeDigest(root) }
 }
 
@@ -80,7 +84,7 @@ export async function activeExtensions(root, home) {
 }
 
 export function validateComposition(extensions) {
-  const capabilities = new Map()
+  const capabilities = new Map([['hairness.targets', 'hairness/core']])
   const recipes = new Map()
   for (const extension of extensions) {
     for (const id of extension.manifest.spec.provides) {
@@ -102,4 +106,24 @@ export function validateComposition(extensions) {
     }
   }
   return { capabilities, recipes }
+}
+
+export async function inspectHomeConfig(root, home, extensions = null) {
+  extensions ??= await activeExtensions(root, home)
+  const active = new Set(extensions.map((item) => item.manifest.metadata.id))
+  const inactive = Object.keys(home.spec.config).filter((id) => !active.has(id))
+  if (inactive.length) throw new HairnessError('config_owner_inactive', `Home config belongs to inactive extensions: ${inactive.join(', ')}.`)
+  const limits = []
+  for (const extension of extensions) {
+    const path = extension.manifest.spec.configSchema
+    if (!path) continue
+    const schema = JSON.parse(await readFile(assertInside(extension.root, resolve(extension.root, path), 'config schema'), 'utf8'))
+    const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema)
+    if (!validate(home.spec.config[extension.manifest.metadata.id] ?? {})) limits.push({
+      code: `extension-config-invalid:${extension.manifest.metadata.id}`,
+      extension: extension.manifest.metadata.id,
+      errors: validate.errors,
+    })
+  }
+  return { status: limits.length ? 'partial' : 'ready', limits }
 }

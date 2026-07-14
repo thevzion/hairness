@@ -14,7 +14,8 @@ for normative contracts.
 - [Maintaining Hairness](maintaining.md)
 - [Releasing](releasing.md)
 - [ADR 0013 — v0.3 clean architectural reset](decisions/0013-v0-3-clean-architectural-reset.md)
+- [ADR 0014 — post-reset 80/20 vertical slice](decisions/0014-post-reset-80-20.md)
 
 The legacy documentation tree was removed at cutover. Only the still-valid
-non-invasive authority decision and ADR 0013 remain; neither is a compatibility
+non-invasive authority decision and current ADRs remain; none is a compatibility
 contract for v0.2.

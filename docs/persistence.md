@@ -8,6 +8,8 @@ The Home is a normal Git repository. `package-lock.json` pins the CLI;
 `hairness.json` selects providers, extensions and target identities; and
 `hairness.lock.json` records immutable distribution and extension provenance.
 Local paths, generated provider outputs and live target state are never tracked.
+Local Target paths exist only as ignored `targets/<id>` symlinks; there is no
+second Target path registry.
 
 ## Overlay
 
@@ -24,8 +26,8 @@ or JSON payload. Git supplies their history. Receipts are immutable and separate
 ## Runtime
 
 Credential-free machine state lives below `~/.hairness/runtime/<home-id>/`:
-provider build manifests, target path bindings, adaptive checkouts, checkpoints,
-locks, cache, temporary staging and logs. User preferences, trust and opaque
+provider build manifests, Source accessor bindings, adaptive checkouts,
+checkpoints, locks, cache, temporary staging and logs. User preferences, trust and opaque
 legacy archives are siblings under `~/.hairness/`.
 
 Runtime state can be rebuilt or discarded. Overlay state may be valuable and is
@@ -59,7 +61,7 @@ The machine-owned counterpart is deliberately separate:
 └── runtime/<home-id>/
     ├── build.json
     ├── providers/
-    ├── targets/
+    ├── sources/
     ├── checkouts/
     ├── checkpoints/
     ├── locks/

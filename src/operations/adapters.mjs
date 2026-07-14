@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { readFile } from 'node:fs/promises'
-import { activeExtensions } from '../composition/extensions.mjs'
+import { activeExtensions, inspectHomeConfig } from '../composition/extensions.mjs'
 import { loadHome } from '../home/index.mjs'
 import { HairnessError } from '../lib/errors.mjs'
 import { assertInside, digest, readJson, writeJsonAtomic } from '../lib/io.mjs'
@@ -57,8 +57,11 @@ async function loadAdapter(root, reference, expected) {
   const owner = reference.slice(0, separator)
   const id = reference.slice(separator + 1)
   const home = await loadHome(root)
-  const extension = (await activeExtensions(root, home)).find((item) => item.manifest.metadata.id === owner)
+  const extensions = await activeExtensions(root, home)
+  const extension = extensions.find((item) => item.manifest.metadata.id === owner)
   if (!extension) throw new HairnessError('extension_not_active', `${owner} is not active.`)
+  const config = await inspectHomeConfig(root, home, extensions)
+  if (config.limits.some((item) => item.extension === owner)) throw new HairnessError('extension_config_invalid', `${owner} configuration is missing or invalid.`)
   const entry = extension.manifest.spec.adapters.find((item) => item.id === id)
   if (!entry) throw new HairnessError('adapter_missing', `${reference} does not exist.`)
   const path = assertInside(extension.root, join(extension.root, entry.path), 'adapter path')

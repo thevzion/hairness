@@ -6,14 +6,15 @@ import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { loadDistribution } from '../composition/distributions.mjs'
 import { resolveExtensionSource } from '../composition/extensions.mjs'
-import { bindTarget, runtimePaths, userPaths } from '../runtime/index.mjs'
-import { inspectGit, git } from '../runtime/git.mjs'
+import { runtimePaths, userPaths } from '../runtime/index.mjs'
+import { git } from '../runtime/git.mjs'
 import { buildProviders } from '../providers/v3-compiler.mjs'
 import { initializeOverlay } from '../overlay/index.mjs'
 import { doctorHome } from './doctor.mjs'
 import { homeDocument, homeId, homeLockDocument } from './index.mjs'
 import { HairnessError } from '../lib/errors.mjs'
 import { copyTree, digest, exists, replaceDirectory, writeJsonAtomic } from '../lib/io.mjs'
+import { bindTargetLink, inspectRepository, normalizeRemote } from '../targets/index.mjs'
 
 const exec = promisify(execFile)
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url))
@@ -31,6 +32,7 @@ export async function previewCreate(destination, options = {}) {
 
 function createPreview(destination, options, distribution) {
   const target = options.target ? resolve(options.target) : null
+  const workspace = options.workspaceRoot ? resolve(options.workspaceRoot) : null
   const providers = options.providers ?? ['codex']
   return {
     destination: resolve(destination),
@@ -38,7 +40,7 @@ function createPreview(destination, options, distribution) {
     distribution: distribution.metadata.id,
     extensions: distribution.spec.extensions,
     providers,
-    target,
+    repositoryAccess: target ? { kind: 'target', path: target } : workspace ? { kind: 'workspace', path: workspace } : null,
     homeGit: { initialize: true, initialCommit: true },
     overlayGit: { initialize: Boolean(options.overlayGit), initialCommit: Boolean(options.overlayGit) },
     qualification: ['provider build', 'doctor'],
@@ -66,13 +68,15 @@ export async function createHome(destination, options = {}) {
     const distribution = distributionResult.document
     const preview = createPreview(target, options, distribution)
     const providers = options.providers ?? ['codex']
-    const targetInput = options.target ? await targetIdentity(options.target, options.targetId) : null
+    const targetInput = options.target ? await targetIdentity(options.target, options.targetId, distribution.spec.targets ?? []) : null
+    const targets = [...(distribution.spec.targets ?? [])]
+    if (targetInput && !targets.some((item) => item.id === targetInput.target.id)) targets.push(targetInput.target)
     const document = homeDocument({
       id,
-      language: options.language ?? 'en',
       providers,
       extensions: distribution.spec.extensions,
-      targets: targetInput ? [{ id: targetInput.id }] : [],
+      targets,
+      config: distribution.spec.config ?? {},
       overlayGit: Boolean(options.overlayGit),
       snapshot: options.snapshot ?? 'boundary',
     })
@@ -85,10 +89,11 @@ export async function createHome(destination, options = {}) {
       private: true,
       type: 'module',
       engines: { node: '>=22' },
+      workspaces: ['extensions/*/*'],
       dependencies: { '@hairness/cli': dependency },
       scripts: { build: 'hairness build', doctor: 'hairness doctor' },
     }, null, 2)}\n`)
-    await writeFile(join(stage, '.gitignore'), 'node_modules/\n.overlay/\n.DS_Store\n')
+    await writeFile(join(stage, '.gitignore'), 'node_modules/\ntargets/\n.overlay/\n.DS_Store\n')
     await git(['init', '--quiet'], { cwd: stage })
 
     for (const extensionId of distribution.spec.extensions) {
@@ -137,15 +142,16 @@ export async function createHome(destination, options = {}) {
       await writeFile(join(stage, 'package-lock.json'), `${JSON.stringify({ name: id, lockfileVersion: 3, requires: true, packages: {} }, null, 2)}\n`)
     }
 
-    if (targetInput) await bindTarget(document, targetInput.id, targetInput.path)
-    await initializeOverlay(stage, { git: Boolean(options.overlayGit) })
+    await initializeOverlay(stage, { git: Boolean(options.overlayGit), profile: { language: options.language ?? 'en' } })
+    if (targetInput) await bindTargetLink(stage, targetInput.target.id, targetInput.path)
+    if (options.workspaceRoot) await writeJsonAtomic(runtime.onboarding, { discoveryRoot: resolve(options.workspaceRoot), createdAt: new Date().toISOString() })
     await buildProviders(stage)
     await doctorHome(stage, { allowMissingDependency: options.install === false })
     await git(['add', '--all'], { cwd: stage })
     await git(['-c', 'user.name=Hairness', '-c', 'user.email=local@hairness.dev', 'commit', '--quiet', '-m', 'chore: initialize Hairness Home'], { cwd: stage })
     if (await git(['remote'], { cwd: stage })) throw new HairnessError('home_remote_forbidden', 'Home creation must not configure a remote.')
     await replaceDirectory(stage, target)
-    return { status: 'created', home: target, id, preview, launch: launchInstructions(target, providers, targetInput?.path) }
+    return { status: 'created', home: target, id, preview, launch: launchInstructions(target, providers, targetInput?.path ?? options.workspaceRoot) }
   } catch (error) {
     await rm(runtime.root, { recursive: true, force: true })
     throw error
@@ -154,10 +160,13 @@ export async function createHome(destination, options = {}) {
   }
 }
 
-async function targetIdentity(path, explicitId) {
-  const evidence = await inspectGit(path)
-  const id = explicitId ?? basename(evidence.root).toLowerCase().replace(/[^a-z0-9._-]+/g, '-')
-  return { id, path: evidence.root, evidence }
+async function targetIdentity(path, explicitId, expected) {
+  const evidence = await inspectRepository(path)
+  const observed = new Set(evidence.remotes.map((item) => item.normalized))
+  const matched = expected.find((target) => target.remotes.some((remote) => observed.has(normalizeRemote(remote))))
+  const id = explicitId ?? matched?.id ?? basename(evidence.root).toLowerCase().replace(/[^a-z0-9._-]+/g, '-')
+  const target = matched ?? { id, kind: 'git', summary: basename(evidence.root), requirement: 'recommended', remotes: evidence.remotes.map((item) => item.url) }
+  return { target: { ...target, id }, path: evidence.root, evidence }
 }
 
 export function launchInstructions(home, providers, target) {

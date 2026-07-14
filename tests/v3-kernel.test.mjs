@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -7,22 +7,25 @@ import { API, compileSchemas, validateDocument } from '../src/contracts/index.mj
 import { homeDocument } from '../src/home/index.mjs'
 import { writeJsonAtomic } from '../src/lib/io.mjs'
 import { applyEffect, effectOutcome, prepareEffect } from '../src/operations/index.mjs'
-import { bindTarget, runtimePaths } from '../src/runtime/index.mjs'
+import { bindTargetLink, targetBinding } from '../src/targets/index.mjs'
+import { initializeOverlay } from '../src/overlay/index.mjs'
+import { git } from '../src/runtime/git.mjs'
 
-async function fixture(t) {
+async function fixture(t, options = {}) {
   const root = await mkdtemp(join(tmpdir(), 'hairness-v3-kernel-'))
   const state = join(root, 'state')
   const home = join(root, 'home')
   process.env.HAIRNESS_STATE_HOME = state
   const document = homeDocument({
     id: 'test-home',
-    language: 'fr',
     providers: ['codex', 'claude'],
     extensions: ['hairness/cockpit', 'hairness/work'],
-    targets: [{ id: 'product' }],
-    overlayGit: false,
+    targets: [{ id: 'product', summary: 'Product', requirement: 'required', remotes: [] }],
+    config: {},
+    overlayGit: Boolean(options.overlayGit),
   })
   await writeJsonAtomic(join(home, 'hairness.json'), document)
+  await initializeOverlay(home, { git: Boolean(options.overlayGit), profile: { language: 'fr' } })
   t.after(async () => {
     delete process.env.HAIRNESS_STATE_HOME
     await rm(root, { recursive: true, force: true })
@@ -32,24 +35,30 @@ async function fixture(t) {
 
 test('v0.3 type-specific schema registry compiles without a global protocol version', async () => {
   const keys = await compileSchemas()
-  assert.equal(keys.length, 9)
+  assert.equal(keys.length, 8)
   assert.ok(keys.includes(`${API.home}:Home`))
   assert.ok(keys.every((key) => !key.includes('0.2')))
 })
 
-test('Home tracks target identity while runtime owns its local path binding', async (t) => {
-  const { home, document } = await fixture(t)
+test('Home tracks target identity while an ignored local link owns its path binding', async (t) => {
+  const { root, home, document } = await fixture(t)
   await validateDocument(document, 'Home')
-  await bindTarget(home, 'product', join(home, '..', 'product'))
+  const product = join(root, 'product')
+  await mkdir(product, { recursive: true })
+  await git(['init', '--quiet'], { cwd: product })
+  await writeFile(join(product, 'README.md'), '# Product\n')
+  await git(['add', 'README.md'], { cwd: product })
+  await git(['-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'commit', '--quiet', '-m', 'initial'], { cwd: product })
+  await bindTargetLink(home, 'product', product)
 
   const tracked = await readFile(join(home, 'hairness.json'), 'utf8')
-  const bindings = JSON.parse(await readFile(runtimePaths('test-home').targetBindings, 'utf8'))
-  assert.equal(tracked.includes(join(home, '..', 'product')), false)
-  assert.equal(bindings.targets.product.path, join(home, '..', 'product'))
+  const binding = await targetBinding(home, 'product')
+  assert.equal(tracked.includes(product), false)
+  assert.equal(binding.path, await realpath(product))
 })
 
 test('effect checkpoints bind exact inputs, target evidence and policy', async (t) => {
-  const { home } = await fixture(t)
+  const { home } = await fixture(t, { overlayGit: true })
   const current = {
     inputs: { title: 'Ship reset' },
     evidence: { head: 'abc123' },
@@ -69,6 +78,7 @@ test('effect checkpoints bind exact inputs, target evidence and policy', async (
   const receipt = await applyEffect(home, checkpoint.metadata.id, current, async () => ({ url: 'https://example.test/pr/1' }))
   assert.equal(receipt.kind, 'Receipt')
   assert.equal(receipt.spec.outcome, 'succeeded')
+  assert.match(await git(['log', '-1', '--pretty=%s'], { cwd: join(home, '.overlay') }), /effect: delivery\.publish-pr succeeded/)
 
   const partial = await prepareEffect(home, {
     operation: 'delivery.publish-pr', adapter: 'hairness/delivery:publish-pr', ...current,

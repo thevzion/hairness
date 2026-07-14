@@ -48,7 +48,7 @@ try {
   assert.equal(minimal.launch[0].command.includes('--add-dir'), false)
   await assert.rejects(readFile(join(minimalHome, '.overlay/.git/HEAD')), (error) => error.code === 'ENOENT')
   const minimalBuild = JSON.parse(await readFile(join(state, 'runtime/minimal-home/build.json'), 'utf8'))
-  assert.equal(minimalBuild.outputs.length, 8)
+  assert.equal(minimalBuild.outputs.length, 9)
 
   const target = join(lab, 'product')
   await mkdir(join(target, 'src'), { recursive: true })
@@ -76,7 +76,6 @@ try {
     'hairness/cockpit',
     'hairness/work',
     'hairness/sources',
-    'hairness/codebase',
     'hairness/delivery',
   ])
   assert.deepEqual(created.launch.map((entry) => entry.provider), ['codex', 'claude'])
@@ -84,22 +83,23 @@ try {
   const cli = join(home, 'node_modules', '.bin', 'hairness')
   const doctor = await hairnessJson(cli, ['doctor'], home)
   assert.equal(doctor.status, 'ready')
-  const opening = await hairnessJson(cli, ['opening'], home)
-  assert.equal(opening.home.language, 'fr')
+  assert.equal(doctor.profile.language, 'fr')
   assert.match(created.launch[0].command, /codex -C/)
   assert.match(created.launch[1].command, /claude --add-dir/)
 
   const answers = {
+    'profile.name': 'Alexis',
+    'profile.note': 'Répondre en français et rester concret.',
     situation: 'Un dépôt Git existant, déjà configuré sur cette machine.',
     'project-context': 'Prouver le parcours v0.3 sans coupler la mémoire au dépôt produit.',
     'working-memory': 'Proposer un Scratch quand le sujet devient durable ou doit être transmis.',
     'work.boundaries': 'Conserver uniquement les décisions, contraintes, handoffs et prochaines étapes.',
-    'codebase.focus': 'Commencer par les frontières et le flux principal du dépôt.',
   }
   let onboarding = await hairnessJson(cli, ['onboarding', 'status'], home)
   while (onboarding.next) {
-    const answer = answers[onboarding.next.id] ?? `Réponse de qualification pour ${onboarding.next.id}.`
-    onboarding = await hairnessJson(cli, ['onboarding', 'answer', onboarding.next.id, '--value', answer], home)
+    const structured = onboarding.next.id === 'targets' || onboarding.next.id === 'sources'
+    const answer = structured ? [] : answers[onboarding.next.id] ?? `Réponse de qualification pour ${onboarding.next.id}.`
+    onboarding = await hairnessJson(cli, ['onboarding', 'answer', onboarding.next.id, structured ? '--value-json' : '--value', structured ? JSON.stringify(answer) : answer], home)
   }
   const onboardingPlan = await hairnessJson(cli, ['onboarding', 'plan'], home)
   assert.equal(onboardingPlan.status, 'checkpoint-required')
@@ -199,7 +199,7 @@ try {
     tarball: basename(tarball),
     home: basename(home),
     providers: created.launch.map((entry) => entry.provider),
-    language: opening.home.language,
+    language: doctor.profile.language,
     target: map.target,
     extension: extensionPlan.preview.id,
     prCheckpoint: pullRequestCheckpoint.metadata.id,

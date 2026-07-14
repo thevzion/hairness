@@ -13,8 +13,9 @@ checkpoints, receipts, and provider compilation. Providers MUST retain their
 models, UI, threads, tools, workers, and scheduling.
 
 A Home MUST own agentic assets and MUST NOT own a Target repository. A Target
-MUST remain an independent repository identity with its local path stored only
-in Runtime. Integration, installation, registration, or file presence MUST NOT
+MUST remain an independent repository identity. Its local binding MUST be an
+ignored `targets/<id>` symbolic link and MUST NOT be duplicated in tracked
+documents or Runtime registries. Integration, installation, registration, or file presence MUST NOT
 grant effect authority.
 
 ## 2. Document APIs
@@ -24,7 +25,7 @@ or protocol version.
 
 | Document | API |
 | --- | --- |
-| Home, HomeLock and SessionOpening | `hairness.dev/home/v1alpha1` |
+| Home and HomeLock | `hairness.dev/home/v1alpha1` |
 | Distribution | `hairness.dev/distribution/v1alpha1` |
 | Extension | `hairness.dev/extension/v1alpha1` |
 | Scratch | `hairness.dev/scratch/v1alpha1` |
@@ -40,14 +41,22 @@ A generated Home MUST contain a pinned npm dependency, `hairness.json`,
 `hairness.lock.json`, installed extension source, small managed regions in
 `AGENTS.md` and `CLAUDE.md`, provider skill sentinel files, and an Overlay.
 
-`hairness.json` MUST select providers, extension IDs, Target identities, language,
-and Overlay policy. `hairness.lock.json` MUST record Distribution provenance and
+`hairness.json` MUST select providers, extension IDs, Target identities,
+namespaced extension config, and Overlay policy. `hairness.lock.json` MUST record Distribution provenance and
 each extension source kind, requested ref, immutable Git commit when applicable,
 source digest, and installed base digest. Neither file may contain local Target
 paths or generated provider output paths.
 
-A Distribution MUST be bootstrap-only. It MAY contain extensions, defaults,
-policies, onboarding contributions, documentation, and tests. It MUST NOT
+The personal profile MUST be the unwrapped `.overlay/profile.json` object with
+only optional `name`, required `language`, and optional stable `note`. Values
+MUST be bounded and sanitized before projection. Every non-empty field MUST
+appear in the managed provider prologue. Targets, maps, active Scratch and live
+health MUST NOT appear there. A profile change MUST make provider build checks
+stale until rebuilt.
+
+A Distribution MUST be bootstrap-only. It MAY contain extensions, expected
+Targets, initial namespaced config, defaults, policies, onboarding contributions,
+documentation, and tests. It MUST NOT
 contain a kernel, CLI, runtime, Overlay, Targets, provider output, or material
 graph. After creation it has no synchronization role.
 
@@ -61,6 +70,14 @@ kind: Extension
 metadata: id, version, summary
 spec: provides, requires, recipes, adapters, schemas, gates, onboarding, tests
 ```
+
+`spec.configSchema` MAY point to a JSON Schema owned by the extension. Home
+config keys MUST belong to active extensions and present values MUST validate
+against their owner's schema. Missing or invalid config MAY make doctor partial
+and MUST block the affected adapter, but MUST NOT prevent onboarding recipes
+from compiling. A chat-only extension without config or package metadata MUST
+remain valid. Home extension packages MUST share one root npm workspace and lock;
+install before explicit trust MUST use `--ignore-scripts`.
 
 `provides` and `requires` MUST reference capability IDs. One active composition
 MUST NOT contain two providers for the same capability, two recipes with the
@@ -117,9 +134,15 @@ Receipts are separate immutable core records.
 ## 7. Runtime
 
 Machine state MUST live below `~/.hairness/` in preferences, trust, archives,
-and `runtime/<home-id>/`. Runtime MAY contain provider builds, Target bindings,
+and `runtime/<home-id>/`. Runtime MAY contain provider builds, Source bindings,
 adaptive checkouts, checkpoints, locks, caches, temporary staging, and logs.
 Runtime state MUST NOT be committed to the Home or Overlay.
+
+Source configuration MUST be extension-owned. v0.3 accessors are `cli`,
+`provider`, and explicitly acknowledged `none`. Hairness MUST NOT install or
+authenticate a Source. Runtime MAY record only Source identity, accessor kind,
+command or provider identity, optional version, and validation time. It MUST NOT
+record secrets, fetched Source results, or redundant Target paths.
 
 Legacy Overlays MAY be copied opaquely into archives without schema parsing.
 Only user-selected human content MAY be imported through the generic Scratch
@@ -140,8 +163,8 @@ authority.
 ## 9. Onboarding and creation
 
 The create wizard MUST use the platform readline API and ask, in order: language,
-setup, providers, detected first Target, and local Overlay Git. Standard MUST be
-recommended. Home Git and an initial local commit are mandatory. Overlay Git is
+setup or explicit Distribution, providers, current repository/workspace/skip,
+and local Overlay Git. Standard MUST be recommended. Home Git and an initial local commit are mandatory. Overlay Git is
 optional and, when selected, receives its own initial local commit.
 
 Creation MUST occur in Runtime staging. Install, build, and doctor MUST pass
@@ -149,9 +172,26 @@ before an atomic move to the destination. Failure MUST leave no partial
 destination. Creation MUST NOT configure a remote, push, tag, or publication.
 
 Agent onboarding MUST use the selected language from its first reply, save a
-resumable draft after every answer, progressively explain Home, Target, Scratch,
-persistence and checkpoints, and finish with a short command tour. Composition
-changes MUST show an exact diff and require a checkpoint.
+resumable draft after every answer, capture optional profile fields, situation
+and immediate objective, discover Target candidates without choosing between
+clones, select Source accessors, ask declarative extension questions,
+progressively explain Home, Target, Scratch, persistence and checkpoints, and
+finish with a short command tour. One exact checkpoint MUST guard atomic config,
+binding, rebuild and doctor application. Completion describes configuration;
+later live health failures MUST make doctor partial without reopening onboarding.
+
+`hairness doctor [--json]` MUST be the single computed macro view. It MUST expose
+Home, extensions, providers, profile, onboarding configuration, build, Targets,
+Sources, saved Target-map freshness, active session Scratch, limits and repair
+routes. No SessionOpening document or `opening` command may exist.
+
+Target discovery MUST be recursive and read-only, recognize Git directories and
+worktree files, stop descending after finding a repository below the explicit
+workspace root, ignore symlinked
+directories and known dependency caches, continue past unreadable directories,
+inspect all remotes, normalize SSH/SCP-like/HTTPS identities, and return every
+matching clone without implicit selection. Target mutation MUST use exact
+checkpoints and refuse remote mismatch or dirty/occupied removal.
 
 ## 10. Delivery
 

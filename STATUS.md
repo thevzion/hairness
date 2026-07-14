@@ -4,11 +4,11 @@ Current target: `0.3.0-alpha.0`
 
 ## Now
 
-- `architectural-reset-review`
-  - Outcome: review and merge the qualified v0.3 reset without expanding its compatibility surface.
+- `post-merge-80-20`
+  - Outcome: prove the complete `create → onboarding → Targets/Sources → Scratch → map → Artifact → ship` path with a real Hupso consumer.
   - State: ready
-  - Gate: PR #18 CI and maintainer approval.
-  - Evidence: the eight reset commits and PR qualification summary.
+  - Gate: generic suite, packed-tarball Hupso dogfood and draft PR evidence.
+  - Evidence: ADR 0014, 34 integration tests, Node 22/24, packed-tarball lab, and the local `hupso-hairness` consumer proof.
 
 ## Completed
 
@@ -29,10 +29,10 @@ Current target: `0.3.0-alpha.0`
 
 ## Next
 
-- `0.3.0-alpha.0-release`
-  - Outcome: publish the exact qualified package after the reset PR merges.
+- `post-merge-80-20-review`
+  - Outcome: review the one breaking polish PR without publishing or merging it from this workstream.
   - State: planned
-  - Gate: separate release PR; npm publish, Git tag and GitHub Release remain separate checkpoints.
+  - Gate: Node 22/24, package checks, Hupso golden journey and maintainer approval.
 
 - `external-dogfood`
   - Outcome: harden only failures observed in real Homes and independent Targets.
@@ -43,6 +43,8 @@ Current target: `0.3.0-alpha.0`
 
 - README, SPEC, schemas, CLI, providers and tests describe one v0.3 grammar.
 - Minimal and Standard select only declared extensions; maintainer is upstream-only.
+- `opening` and `hairness/codebase` are absent; Target identity is core and map belongs to work.
+- Tracked documents contain no local Target path; Source Runtime contains no secret or fetched result.
 - Package contains no Overlay, runtime state, private path, secret, transcript, test fixture or generated provider output.
 - Node.js 22 and 24 pass.
 - Fresh packed-tarball Home completes onboarding, Scratch, map, save and ship-to-checkpoint.

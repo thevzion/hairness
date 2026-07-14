@@ -3,17 +3,16 @@
   "kind": "Home",
   "metadata": { "id": "hairness-dev" },
   "spec": {
-    "language": "en",
     "providers": ["codex", "claude"],
     "extensions": [
       "hairness/cockpit",
       "hairness/work",
       "hairness/sources",
-      "hairness/codebase",
       "hairness/delivery",
       "hairness/maintainer"
     ],
     "targets": [],
+    "config": { "hairness/sources": { "sources": [] } },
     "overlay": { "git": false, "snapshot": "manual" }
   }
 }

@@ -16,9 +16,8 @@
     "spec": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["language", "providers", "extensions", "targets", "overlay"],
+      "required": ["providers", "extensions", "targets", "config", "overlay"],
       "properties": {
-        "language": { "type": "string", "minLength": 2, "maxLength": 35 },
         "providers": { "type": "array", "uniqueItems": true, "minItems": 1, "items": { "enum": ["codex", "claude"] } },
         "extensions": { "type": "array", "uniqueItems": true, "minItems": 1, "items": { "$ref": "#/$defs/id" } },
         "targets": {
@@ -26,10 +25,17 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "kind"],
-            "properties": { "id": { "$ref": "#/$defs/id" }, "kind": { "const": "git" } }
+            "required": ["id", "kind", "summary", "requirement", "remotes"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "kind": { "const": "git" },
+              "summary": { "type": "string", "minLength": 1 },
+              "requirement": { "enum": ["required", "recommended"] },
+              "remotes": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+            }
           }
         },
+        "config": { "type": "object", "propertyNames": { "$ref": "#/$defs/id" } },
         "overlay": {
           "type": "object",
           "additionalProperties": false,

@@ -4,7 +4,7 @@
   "metadata": { "id": "hairness/delivery", "version": "0.3.0-alpha.0", "summary": "Evidence-backed delivery with adaptive checkouts and exact checkpoints." },
   "spec": {
     "provides": ["hairness.delivery"],
-    "requires": ["hairness.work", "hairness.codebase"],
+    "requires": ["hairness.work", "hairness.targets"],
     "recipes": [
       { "id": "hairness-ship", "path": "recipes/ship.md", "summary": "Shape and deliver one coherent change safely.", "capability": "hairness.delivery" }
     ],
