@@ -34,16 +34,19 @@ for (const extension of manifest.extensions) {
 }
 
 const allFiles = await files(root)
+// v0.3 assets are validated by the new type-specific registry while the v0.2
+// public runtime remains green before the atomic cutover.
+const legacyExtensionFiles = allFiles.filter((path) => path.endsWith('/extension.json') && !relative(root, path).startsWith('assets/extensions/'))
 if (manifest.role === 'forge') {
   const extensionCatalog = await readFile(join(root, 'docs/extensions/catalog.md'), 'utf8')
   const { renderExtensionCatalog } = await import('./generate-extension-catalog.mjs')
   assert.equal(extensionCatalog, await renderExtensionCatalog(root), 'extension catalogue is stale')
-  for (const path of allFiles.filter((path) => path.endsWith('/extension.json'))) {
+  for (const path of legacyExtensionFiles) {
     const extension = JSON.parse(await readFile(path, 'utf8'))
     assert.ok(extensionCatalog.includes(`\`${extension.id}\``), `extension catalogue misses ${extension.id}`)
   }
 }
-for (const path of allFiles.filter((path) => path.endsWith('/extension.json'))) {
+for (const path of legacyExtensionFiles) {
   const extension = await validateContract('ExtensionManifest', JSON.parse(await readFile(path, 'utf8')))
   const rootPath = join(path, '..')
   const readme = await readFile(join(rootPath, extension.readme), 'utf8')

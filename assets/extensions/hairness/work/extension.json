@@ -1,0 +1,22 @@
+{
+  "apiVersion": "hairness.dev/extension/v1alpha1",
+  "kind": "Extension",
+  "metadata": { "id": "hairness/work", "version": "0.3.0-alpha.0", "summary": "Conversation, flexible Scratch memory and accepted work outcomes." },
+  "spec": {
+    "provides": ["hairness.work"],
+    "requires": ["hairness.cockpit"],
+    "recipes": [
+      { "id": "hairness-scratch", "path": "recipes/scratch.md", "summary": "Create, join, park or close explicit working memory.", "capability": "hairness.work" },
+      { "id": "hairness-discuss", "path": "recipes/discuss.md", "summary": "Discuss one bounded frame without side effects.", "capability": "hairness.work" },
+      { "id": "hairness-ideate", "path": "recipes/ideate.md", "summary": "Open several candidate directions without deciding for the user.", "capability": "hairness.work" },
+      { "id": "hairness-propose", "path": "recipes/propose.md", "summary": "Recommend or compare directions with explicit tradeoffs.", "capability": "hairness.work" },
+      { "id": "hairness-recap", "path": "recipes/recap.md", "summary": "Render a chat-first recap with useful diagrams.", "capability": "hairness.work" },
+      { "id": "hairness-plan", "path": "recipes/plan.md", "summary": "Draft an actionable plan, shape or wiring view.", "capability": "hairness.work" }
+    ],
+    "adapters": [],
+    "schemas": [],
+    "gates": [],
+    "onboarding": [],
+    "tests": []
+  }
+}

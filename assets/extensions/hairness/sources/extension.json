@@ -1,0 +1,15 @@
+{
+  "apiVersion": "hairness.dev/extension/v1alpha1",
+  "kind": "Extension",
+  "metadata": { "id": "hairness/sources", "version": "0.3.0-alpha.0", "summary": "Live source inspection as current proof." },
+  "spec": {
+    "provides": ["hairness.sources"],
+    "requires": ["hairness.cockpit"],
+    "recipes": [],
+    "adapters": [],
+    "schemas": [],
+    "gates": [],
+    "onboarding": [],
+    "tests": []
+  }
+}
