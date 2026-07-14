@@ -8,11 +8,13 @@ Initiative
         │
         ▼
 DeliveryBrief → ChangeDeliveryPlan
-  prepare → implement → qualify → publish PR → CI → merge → verify main
+  prepare worktree → implement worker → sync base → qualify
+  → publish PR → CI → merge → verify main → cleanup ready
         │
         ▼ accepted merged plans
 ReleaseDeliveryPlan
-  collect → release PR → CI → merge → verify main → qualify tarball → npm
+  collect → prepare worktree → release PR → CI → sync base → merge
+  → verify main → detached candidate checkout → qualify tarball → npm
   → create Git tag → push Git tag → GitHub Release
         │
         ▼
@@ -28,6 +30,19 @@ accepted brief produces one idempotent plan for one coherent pull request.
 since the previous tag. Release commits and changes explicitly carrying
 `releaseImpact: none` are excluded. The explicit version is checked against the
 configured package manifest and accompanied by a SemVer recommendation.
+
+`prepare` delegates a Worktree Run and stores only a `CheckoutContext`
+reference and digest. `implement` is dispatched to a bounded provider-native
+worker whose capsule targets the handle realpath and excludes cockpit history,
+nested workers and external authority. Providers without native workers fall
+back to the main agent under the same capsule. `sync-base` rebases the plan
+owner's branch onto the fresh base; any new HEAD invalidates downstream
+qualification, PR and CI evidence. Conflicts stay with that plan owner.
+
+After `verify-main`, remote delivery is complete and the branch worktree becomes
+`cleanup-ready`. Closing it remains a separate visible checkpoint. A release
+uses an additional detached candidate worktree at the exact public commit, and
+all gates, tarball proof and the `ReleaseCandidate` are bound to that handle.
 
 Every effect boundary stores its policy digest, exact targets, Run, checkpoint
 and expected proof before the executor starts. `PullRequestProposal` binds the

@@ -29,9 +29,13 @@ These limitations apply to `0.2.0-alpha.0`.
   are not implemented.
 - External routes define the boundary for execution loops and MCP-backed
   operations, but no generic loop adapter ships in this alpha.
-- Delivery Controls coordinates one session at a time. Workspace/global task
-  registries, leases, cross-session ownership, attention scheduling, autonomous
-  issue intake and PR-only loops remain post-alpha work.
+- Worktree Controls serializes each managed checkout with a workspace-local
+  writer lease, but it is not a workspace/global provider-task scheduler.
+  Durable cross-device ownership, attention scheduling, autonomous issue intake
+  and PR-only loops remain post-alpha work.
+- Git guards, writer leases and branch protection do not sandbox arbitrary OS
+  writes. Existing hook managers require explicit integration, and dirty,
+  unpushed or unintegrated worktrees are never force-removed automatically.
 - Updates and migrations are conservative. Diverged source, changed
   dependencies, linked local extensions and edited managed regions require
   manual review. Hairness does not codemod arbitrary consumer code.

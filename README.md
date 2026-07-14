@@ -100,6 +100,25 @@ authority, target expansion, result validation or partial-effect handling.
 Observe and derive work can use bounded producer routes; effects require an
 executor with an exact grant.
 
+## Ship in parallel without sharing a working tree
+
+Worktree Controls gives each delivery plan one explicit Git worktree, one
+owner and one writer lease. The default checkout lives under the sibling
+`<repository>-worktrees/<type>/<slug>` directory, while its registry and
+receipts stay in the anchor workspace overlay.
+
+```text
+want-ship → prepare managed worktree → bounded native worker
+          → sync base → qualify → draft PR → CI → merge → verify main
+          → cleanup-ready (separate checkpoint)
+```
+
+The main session can inspect parallel plans without granting them shared write
+access. Stale, orphaned, prunable and cleanup-ready checkouts appear in
+`hairness worktree`; adoption, handoff, takeover, repair and removal are always
+explicit. Git guards block unmanaged commits and direct pushes to `main`
+without replacing an existing hooks manager.
+
 ## Think in agentic assets, not only delivery surfaces
 
 An **agentic asset** is a versioned unit that changes what an agent can
@@ -193,6 +212,7 @@ npm run check
 npm test
 npm run conformance
 npm run check:pack
+node bin/hairness.mjs worktree doctor
 ```
 
 Contributions should start with [CONTRIBUTING.md](CONTRIBUTING.md). Security

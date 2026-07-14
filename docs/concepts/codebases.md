@@ -33,3 +33,10 @@ Every mount validates its realpath, Git repository and declared remote. A reposi
 Plans freeze an exact TargetSet: codebase ID, checkout ID, canonical realpath, branch, HEAD, dirty baseline, and digest. Authority and locks cannot be reused for a different checkout.
 
 Mounts provide addressability and proof. They never grant an executor authority.
+
+Worktree Controls owns the lifecycle of delivery checkouts. For an external
+registered codebase it calls Codebase's `mount-managed` and `unmount-managed`
+services with the exact calling Run, effect and credential-free checkout target.
+Those services assert the Run grant before changing Hairness-owned mount state
+and always preserve the actual checkout. The current Hairness workspace needs
+no Codebase mount: its managed handle points directly at the verified worktree.

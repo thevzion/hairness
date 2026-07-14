@@ -18,6 +18,7 @@ Start with the [README](../README.md) for the product and commands, then use the
 - [Artifacts](concepts/artifacts.md)
 - [Distributions](concepts/distributions.md)
 - [Codebases and local hub](concepts/codebases.md)
+- [Managed worktrees](concepts/worktrees.md)
 - [Stable session home](concepts/session-home.md)
 - [Distribution lifecycle](concepts/distribution-lifecycle.md)
 - [Semantic results](concepts/semantic-results.md)
@@ -55,3 +56,4 @@ Start with the [README](../README.md) for the product and commands, then use the
 - [0010 — Tracked provenance and safe updates](decisions/0010-tracked-provenance-safe-updates.md)
 - [0011 — Semantic method normalization](decisions/0011-semantic-method-normalization.md)
 - [0012 — Agentic foundation and composable controls](decisions/0012-agentic-foundation-controls.md)
+- [0013 — Managed worktrees for versioned delivery](decisions/0013-managed-delivery-worktrees.md)

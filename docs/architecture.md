@@ -18,7 +18,7 @@ flowchart TD
   result --> ledger["Semantic Ledger + Attention Index"]
   ledger --> opening
   sources["Selected source drivers"] --> registry
-  targets["Mounted codebase checkouts"] --> gates
+  targets["Managed codebase worktrees"] --> gates
 ```
 
 ## Owners
@@ -31,10 +31,13 @@ flowchart TD
 | Provider adapter | Codex/Claude syntax and managed output mechanics | capabilities or model runtime |
 | Provider | model, UI, tools, sandbox, native workers and threads | Hairness source ownership |
 | Mounted codebase | Git history, runtime, conventions and files | Hairness local state |
+| Worktree Controls | placement, inventory, handles, writer leases, synchronization, recovery and cleanup proposals | Git evidence, delivery policy or implicit write authority |
 
 The generic invocation store and event lifecycle live in the kernel. Operation lookup, preferences and trusted resolver contributions live in the distribution layer. Provider models may propose drafts but never mutate canonical invocation state directly.
 
-Forge-only Initiative and Delivery Controls sit above Work Controls. They
+Forge-only Initiative and Delivery Controls sit above Work Controls. Delivery
+depends on generic Worktree Controls, which composes Codebase, Sources and
+Session Intelligence. They
 preserve macro outcomes, parallel change plans and aggregated release evidence
 while delegating every GitHub Flow or publication effect to a separately
 checkpointed native executor. GitHub and npm remain source drivers and URI
@@ -79,6 +82,7 @@ Git tracked
 
 .overlay (workspace local)
 ├── config and named codebase mounts
+├── managed worktree registry, leases and receipts
 ├── invocation ledger and epoch
 ├── runs, artifacts and scratch
 ├── extension-owned state
@@ -91,5 +95,10 @@ Git tracked
 ```
 
 Tracked `.hairness/` state belongs to the distribution. Ignored `.overlay/` state belongs to the local workspace. Personal preferences and trust live in `~/.hairness/`. None of these locations activates an extension by presence.
+
+Managed worktrees live outside the anchor by default under a sibling
+`<repository>-worktrees` directory. Their canonical registry stays in the
+anchor overlay; `~/.hairness` remains limited to preferences, trust and target
+locks.
 
 No provider transcript or hidden reasoning crosses these boundaries.

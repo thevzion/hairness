@@ -34,6 +34,17 @@
   long-lived write token, then verify registry integrity, provenance and tags.
 - Keep Git tags and GitHub Releases outside the npm workflow.
 
+## Managed parallel delivery
+
+- Give every change and release plan one managed Git worktree and one writer
+  lease, with safe sibling placement and machine-local overrides.
+- Surface unmanaged, stale, prunable, orphaned and cleanup-ready checkouts in
+  session attention without adopting or deleting them automatically.
+- Rebase plan-owned branches before qualification and bind release candidates
+  to detached checkouts at the exact public commit.
+- Dispatch bounded provider-native workers into those checkouts and fan typed
+  results back into the stable main session.
+
 ## Alpha hardening
 
 - Expand managed output, update recovery and dependency-change conformance.
@@ -57,6 +68,8 @@
 
 - Add a workspace/global registry of active sessions, declared ownership,
   leases, locks, attention and resumable boundaries.
+- Build on Worktree Controls' workspace-local writer leases without treating a
+  Git checkout as a global provider task registry.
 - Prove collision handling and recovery before adding coordination or optional
   scheduling.
 - Treat GitHub issues as untrusted input to a future PR-only adapter; an issue

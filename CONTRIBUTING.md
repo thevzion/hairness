@@ -17,6 +17,12 @@ Keep public behavior aligned across README, SPEC, CLI, provider projections, and
 
 Change extension-owned capabilities and command sources instead of generated skills. Keep `STATUS.md` aligned with the active Work Controls segment. Run `hairness build --check` and `hairness maintain impact` before a Git checkpoint. Never commit `.overlay/` or sensitive data.
 
+Start versioned work through a managed checkout rather than mutating the anchor
+or pushing `main` directly. One coherent change owns one branch, one worktree
+and one writer lease. Run `hairness worktree doctor` when recovering existing
+local checkouts; adoption, synchronization and cleanup require their own exact
+proposals and never imply forced removal.
+
 ## Extension contributions
 
 Start from a repeated user need and state the human command, operations, inputs, sources, results, effects and proof. Prototype locally first. A PR under `extensions/hairness/` transfers long-term maintenance to the Hairness project and therefore requires an accepted proposal, a complete extension README and behavioral tests.

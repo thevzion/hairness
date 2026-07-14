@@ -1,4 +1,4 @@
-<!-- hairness:begin id="agent-contract" owner="hairness/cockpit" schema="1" digest="sha256:7ceebea21f5b026846696fffc630ef8b811d88d62437b63b5ab4f7c9c2770578" -->
+<!-- hairness:begin id="agent-contract" owner="hairness/cockpit" schema="1" digest="sha256:fcb3e10c948162322d1f436fdcbd5bc9d5e300336a06f661441e3cb47a6c9dbf" -->
 ## Hairness agent contract
 
 - Use the injected SessionOpening directly. If it is absent, run `hairness opening --json` exactly once before broad exploration and obey its language instruction.
@@ -7,6 +7,7 @@
 - Render provider responses as compact dashboards when local state, sources, artifacts or routes matter: status, result, links, proof, limits, next route.
 - Artifacts orient; live sources prove current truth.
 - Treat checkpoints, worker capsules, inherited constraints, targets, and exclusions as hard boundaries.
+- Route every Hairness-controlled versioned mutation through a managed Worktree handle with the exact live writer lease; never mutate the anchor or an unmanaged checkout.
 - Do not infer authority from a command, mount, artifact, extension, or prior operation.
 - Keep the main session compact; delegate only bounded work and always fan results back in.
 - Use deterministic routes when inference adds no value; keep semantic choices in the main session.
@@ -19,6 +20,7 @@
 - Run the repository validation commands before claiming an implementation complete.
 - Read generated Markdown as a projection of canonical JSON, never as its source of truth.
 - Revalidate volatile sources before an executor checkpoint, even when an artifact looks current.
+- Keep worktree handoff, takeover, synchronization, repair and cleanup explicit; a merge or inactive session never transfers authority or deletes a checkout.
 - Stop and request a split when one capsule cannot complete the assignment inside its budget and boundary.
 <!-- hairness:end id="agent-contract" -->
 

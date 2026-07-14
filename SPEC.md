@@ -92,6 +92,13 @@ Worker inspect, source, effect, submit, and fail actions MUST be RunEvents, not
 new Invocations. A worker MUST NOT spawn a nested worker. Work that cannot fit
 its capsule MUST return `needs-split` to the parent.
 
+When a selected delivery policy requires managed worktrees, a Git-backed
+versioned mutation MUST target the realpath of one live `WorktreeHandle` with
+the exact plan-owned writer lease. Provider-native implementation workers MUST
+receive only their capsule and checkout target, never the cockpit or provider
+conversation history. A provider without native workers MAY execute the same
+capsule in the main agent.
+
 ## 7. Results and artifacts
 
 Result disposition MUST be `response`, `run-only`, `scratch`, `artifact`, or `effect`. Provider text is a projection; the typed result is canonical.
@@ -130,7 +137,7 @@ An extension MUST contain a validated `extension.json`, its declared README and 
 
 Cross-extension service calls MUST declare dependencies. Cycles, duplicate command owners, duplicate operation IDs, duplicate artifact types, missing exports, and unselected modifiers MUST block doctor and build.
 
-The frozen runtime MAY expose contracts, distribution reads, runs, plans, artifacts, authority, declared extension services, and owner-scoped overlay state. It MUST NOT expose generic source or target mutation primitives. Extension state MUST be limited to `.overlay/extensions-state/<extension-id>/`.
+The frozen runtime MAY expose contracts, distribution reads, runs, plans, artifacts, authority, declared extension services, and owner-scoped overlay state. Authority MAY expose `assert(runId, effect, target)` to revalidate an exact current grant before a deterministic service effect. It MUST NOT expose generic source or target mutation primitives. Extension state MUST be limited to `.overlay/extensions-state/<extension-id>/`.
 
 Physical presence MUST NOT activate an extension. Removing an extension MUST remove all its capabilities, commands, services, contributions, source drivers, schemas, and provider projections.
 
@@ -192,7 +199,10 @@ Adapters MUST translate only host syntax. Providers retain model execution, nati
 
 A MaterialSet MUST declare an owner, dependency sets, and exact source-to-target entries. A DistributionRecipe MUST declare its role, material sets, active extensions, capabilities, source drivers, source requirements, providers, codebases, templates, scripts, and tests. Create MUST resolve a deterministic MaterialGraph from declared dependencies, MUST reject cycles and conflicting targets, and MUST NOT infer dependencies by parsing source code or branch on private owners.
 
-`minimal` MUST contain only kernel, cockpit, and distribution lifecycle. `standard` MAY add team controls and selected Git support. `forge` MAY add maintainer behavior and a dormant generic catalogue.
+`minimal` MUST contain only kernel, cockpit, and distribution lifecycle.
+`standard` MAY add team controls, managed worktrees and selected Git support.
+`forge` MAY add maintainer and Delivery behavior plus a dormant generic
+catalogue. When Delivery depends on Worktree Controls, both MUST be selected.
 
 A generated distribution MUST contain its own README and configuration, selected source only, and the required Hairness MIT notice. It MUST NOT inherit upstream SPEC, STATUS, ROADMAP, maintainer documentation, project license, unselected driver, test, or catalogue.
 
@@ -213,6 +223,25 @@ consumer codemod or merge.
 ## 15. Codebases and local state
 
 A CodebaseContract MUST identify one repository, accepted remotes, requirement, and tests. A mount MUST identify a named local checkout and capture canonical realpath, remote, branch, HEAD, and dirty baseline. Mounting MUST NOT grant authority or mutate the checkout.
+
+Worktree Controls MAY own placement, inventory, adoption, synchronization,
+writer leases, handoff, takeover, repair, reconciliation and cleanup of Git
+worktrees. Its canonical registry MUST stay in the anchor workspace's
+owner-scoped overlay state. A distribution worktree MAY link the ignored
+`.overlay` entry to that anchor only when no entry exists; an external codebase
+MUST use an authority-asserting Codebase managed mount without receiving
+injected Hairness files.
+
+One delivery plan MUST own at most one branch worktree and one active writer
+lease. Other sessions MAY inspect it but MUST NOT write. Inactivity MUST NOT
+release or transfer authority. Cleanup MUST reject dirty, unpushed,
+unintegrated or stale evidence, MUST remain a separate checkpoint and MUST NOT
+force-remove automatically. Partial or unknown Git effects MUST block retry
+until live reconciliation.
+
+Overlay-owned Git guards MAY reject commits in the anchor or unmanaged
+worktrees and direct pushes to the protected base branch. They MUST NOT replace
+an existing `core.hooksPath` and MUST NOT be represented as an OS sandbox.
 
 `.hairness/` MAY contain only tracked distribution-owned policies and explicitly published artifacts. `.overlay/` MUST remain unversioned and MAY hold local config, mounts, the append-only Semantic Ledger, runs, artifacts, scratch, local extensions, local projections, and owner-scoped state. Legacy pre-epoch ledger entries MUST remain inspectable but MUST NOT create current completeness alerts. Automatic ledger deletion or compaction is forbidden during the alpha. `~/.hairness/` MAY hold preferences, trust, and global realpath locks. Presence in any state directory MUST NOT activate an extension or grant authority.
 
@@ -237,6 +266,8 @@ Conformance requires:
 - invalid worker result rejection, correction, and fan-in;
 - Invocation to child Runs to fan-in trace reconstruction;
 - exact make-to-save promotion and AttentionIndex ranking;
+- NUL-safe worktree inventory, one-plan/one-writer enforcement, stale lease and
+  HEAD refusal, explicit recovery and detached release qualification;
 - migration plan/apply, idempotence, divergence and lock recording;
 - no secrets, transcripts, private paths, dormant assets, or private composition in the package.
 

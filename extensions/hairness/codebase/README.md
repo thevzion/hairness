@@ -10,7 +10,9 @@ Selected by standard and forge. Codebases are declared by the distribution and m
 
 ## Capabilities and operations
 
-Owns list, show, doctor, map, entrypoint and system inspection plus the `inspect` service.
+Owns list, show, doctor, map, entrypoint and system inspection plus `inspect`,
+`mount-managed` and `unmount-managed` services. Worktree Controls uses the
+managed services only for registered external codebases.
 
 ## Inputs, controls and results
 
@@ -22,7 +24,10 @@ Mounts remain local. Maps are revisioned artifacts and must be revalidated again
 
 ## Effects and safety
 
-Inspection is read-only. A map never confers target authority.
+Inspection is read-only. A map never confers target authority. Managed mount
+services require the calling Run, effect and exact credential-free target and
+revalidate them through `authority.assert` before changing overlay state.
+Unmounting always preserves the checkout.
 
 ## Providers
 
@@ -30,4 +35,5 @@ Projects `hairness-codebase` as the namespace guide. Codebase map routes remain 
 
 ## Tests and maturity
 
-Official alpha. Tests cover requiredness, mounts, remote identity and map producers.
+Official alpha. Tests cover requiredness, mounts, exact Run authority, remote
+identity and map producers.

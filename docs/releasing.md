@@ -26,11 +26,13 @@ hairness delivery plan --kind release --version <version> --baseline <commit-or-
    the configured bootstrap baseline when no tag exists. Exclude release PRs
    and `releaseImpact: none`.
 2. Choose the version explicitly, compare it to the SemVer recommendation, and
-   open `release/<version>`. The release PR contains only the frozen changelog,
-   candidate notes and status metadata.
-3. Merge that PR independently, then require a clean tree with
-   `HEAD === origin/main` at the exact public commit.
-4. Run deterministic checks on Node.js 22 and 24 and fresh Codex dogfood.
+   prepare one managed `release/<version>` worktree. The release PR contains
+   only the frozen changelog, candidate notes and status metadata.
+3. Observe CI, synchronize a stale base when required, merge that PR
+   independently and verify the exact public `main` commit.
+4. Create a separate detached candidate worktree at that commit. Run
+   deterministic checks on Node.js 22 and 24 and fresh Codex dogfood only from
+   this checkout.
    Codex/Claude projection parity remains deterministic; live Claude auth is
    not a release gate.
 5. Run `npm ci`, inspect the provider projections and produce one tarball under
@@ -38,7 +40,12 @@ hairness delivery plan --kind release --version <version> --baseline <commit-or-
 6. Record its absolute path, SHA-256 and npm integrity; install that exact
    tarball in a temporary workspace; verify `hairness --version` and bootstrap.
 7. Run `npm publish <tarball> --dry-run --access public --tag next` on the same
-   file and promote one typed `ReleaseCandidate`.
+   file and promote one typed `ReleaseCandidate` that also binds the candidate
+   worktree handle and digest.
+
+The release-branch and detached candidate worktrees each become
+`cleanup-ready`; their closure is checkpointed separately from remote delivery
+and package publication.
 
 The dry-run commands are safe preparation steps:
 

@@ -8,11 +8,15 @@ entries.
 
 ### Added
 
+- Added generic Worktree Controls with explicit checkout handles, writer leases, recovery, cleanup attention and safe sibling placement.
+- Added read-only Git worktree, exact-ref and merge-ancestry evidence plus authority-asserted managed Codebase mounts.
 - Added a manual, protected npm Trusted Publishing workflow that qualifies Node.js 22 and 24, promotes one exact tarball between jobs and publishes through OIDC without a long-lived npm token.
 - Recorded the public npm alpha, exact Git tag, GitHub prerelease and registry digests as durable release evidence.
 
 ### Changed
 
+- Isolate each change and release plan in its own managed checkout, synchronize stale bases before qualification and qualify releases from a detached worktree at the exact public commit.
+- Dispatch bounded provider-native implementation workers without cockpit history or nested workers, with results fanned back into the owning delivery plan.
 - Preserve partial, failed and unknown delivery receipts as immutable evidence and resume only through append-only `accept-deviation`, `retry` or `abort` reconciliation decisions.
 - Split local Git tag creation from remote tag push into separate release stages, Runs and checkpoints.
 - Preserve pre-commit qualification across the resulting pull-request head while requiring exact PR and CI head agreement at merge.

@@ -7,3 +7,8 @@ Session opening begins with an imperative language instruction covering commenta
 `hairness-wake-up` is normally a rendering operation over that fresh opening and uses zero tools. An absent or explicitly refreshed opening requires exactly one `hairness wake-up --json` call.
 
 Deeper context is pulled through CLI routes and reduced into ContextPackets. Workers never inherit this cockpit.
+
+When Delivery reaches `implement`, the main session dispatches the provider's
+native worker with only its `WorkerCapsule` and managed checkout realpath. The
+main session remains the fan-in owner and reports worktrees that need handoff,
+repair, synchronization or cleanup as attention rather than hiding them.

@@ -10,7 +10,9 @@ Selected by standard and forge. Transcript input is optional, temporary and allo
 
 ## Capabilities and operations
 
-Owns local sessions, provider associations, digest, reconcile and handoff operations.
+Owns local sessions, provider associations, digest, reconcile and handoff
+operations. The declared `current` service gives dependent extensions a stable
+local session identity without exposing provider conversation history.
 
 ## Inputs, controls and results
 

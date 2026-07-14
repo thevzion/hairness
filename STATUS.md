@@ -4,6 +4,12 @@ Current target: `0.2.0-alpha.0`
 
 ## Now
 
+- `managed-worktrees`
+  - Outcome: Isolate every Hairness-controlled versioned mutation in an explicit checkout with one writer lease and recoverable receipts.
+  - State: active
+  - Gate: Merge Worktree Controls, run live doctor/reconciliation, then dogfood the complete release flow from managed checkouts.
+  - Evidence: Worktree, Sources, Codebase and Delivery owner tests plus a fresh Codex draft-PR receipt.
+
 - `trusted-publishing`
   - Outcome: Make future npm releases use GitHub OIDC with one qualified artifact and no long-lived publish token.
   - State: active
@@ -18,6 +24,12 @@ Current target: `0.2.0-alpha.0`
   - Evidence: [npm package](https://www.npmjs.com/package/@hairness/cli/v/0.2.0-alpha.0), [GitHub prerelease](https://github.com/thevzion/hairness/releases/tag/v0.2.0-alpha.0), matching registry integrity and release receipts.
 
 ## Next
+
+- `npm-alpha.1`
+  - Outcome: Publish `@hairness/cli@0.2.0-alpha.1` through the protected OIDC workflow from a detached qualified checkout.
+  - State: planned
+  - Gate: Worktree Controls merged, local inventory reconciled and npm Trusted Publisher relation verified live.
+  - Evidence: Exact workflow artifact, SHA-256, npm integrity, provenance, dist-tags and fresh npx bootstrap.
 
 - `alpha-hardening`
   - Outcome: Stabilize the public contracts from external dogfooding feedback.
