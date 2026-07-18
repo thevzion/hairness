@@ -39,7 +39,10 @@ export async function createHome(destination, options = {}) {
       type: 'module',
       engines: { node: '>=22' },
       dependencies: { '@hairness/cli': dependencyValue(packageSpec) },
-      scripts: { build: 'hairness build', doctor: 'hairness doctor' },
+      scripts: {
+        build: 'node ./node_modules/@hairness/cli/src/v4/cli.mjs build',
+        doctor: 'node ./node_modules/@hairness/cli/src/v4/cli.mjs doctor',
+      },
     }, null, 2)}\n`)
     await writeFile(join(stage, '.gitignore'), 'node_modules/\n.hairness/\ntargets/*\n!targets/.gitkeep\n.DS_Store\n')
     await writeFile(join(stage, 'targets', '.gitkeep'), '')

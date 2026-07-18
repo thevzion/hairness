@@ -9,7 +9,7 @@ import { digest, exists, readJson, writeFileAtomic, writeJsonAtomic } from '../l
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url))
 const region = /<!-- hairness:begin id="agent-contract" -->[\s\S]*?<!-- hairness:end id="agent-contract" -->/
-const prologueCommand = 'node ./node_modules/@hairness/cli/bin/hairness.mjs prologue'
+const prologueCommand = 'node ./node_modules/@hairness/cli/src/v4/cli.mjs prologue'
 const coreSkills = [
   { id: 'hairness', summary: 'Orient the user and show the next useful route.' },
   { id: 'hairness-onboarding', summary: 'Configure the smallest useful Home through conversation.' },
