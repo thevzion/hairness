@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url'
 import { createHome } from './create.mjs'
 import { doctorHome } from './doctor.mjs'
 import { activeExtensions } from './extensions.mjs'
+import { addExtension, listInstalledExtensions, removeExtension, updateExtension } from './extension-lifecycle.mjs'
 import { findHome } from './home.mjs'
 import { addIntegration, bindIntegration, doctorIntegrations, listIntegrations, parseAccessors, removeIntegration, unbindIntegration } from './integrations.mjs'
 import { buildProviders } from './providers.mjs'
@@ -45,7 +46,11 @@ async function route(command, action, rest, flags) {
   if (command === 'target') return targetRoute(root, action, rest, flags)
   if (command === 'integration') return integrationRoute(root, action, rest, flags)
   if (command === 'extension') {
-    if (action === 'list' || action === 'doctor') return activeExtensions(root).then((items) => items.map((item) => ({ id: item.manifest.metadata.id, version: item.manifest.metadata.version, digest: item.digest })))
+    if (action === 'list') return listInstalledExtensions(root)
+    if (action === 'doctor') return activeExtensions(root).then((items) => items.map((item) => ({ id: item.manifest.metadata.id, version: item.manifest.metadata.version, digest: item.digest })))
+    if (action === 'add') return addExtension(root, required(rest[0], 'extension source'), { ref: flags.ref, path: flags.path })
+    if (action === 'update') return updateExtension(root, required(rest[0], 'Extension id'))
+    if (action === 'remove') return removeExtension(root, required(rest[0], 'Extension id'))
     throw usage('hairness extension list|add|update|remove|doctor')
   }
   throw usage(`Unknown command ${command}.`)
