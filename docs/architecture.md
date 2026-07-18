@@ -1,62 +1,24 @@
 # Architecture
 
-Hairness adds a small deterministic harness around native AI-agent sessions. It
-separates source-owned agentic assets from local runtime bindings and from the
-repositories an agent works on.
-
 ```mermaid
 flowchart LR
-  human["Human"] --> provider["Codex or Claude"]
-  home["Hairness Home\nagentic assets"] --> provider
-  provider --> recipe["Provider-neutral recipe"]
-  provider --> cli["@hairness/cli\ndeterministic boundary"]
-  cli --> target["Target repositories"]
-  cli --> runtime["~/.hairness/runtime"]
-  provider --> overlay[".overlay\nexplicit human memory"]
-  cli --> overlay
+  K["Hairness Kernel"] --> H["Home"]
+  H --> P["Codex / Claude"]
+  H -. ignored symlink .-> T["Independent Git Targets"]
+  H --> O[".overlay human memory"]
+  H --> R[".hairness machine state"]
 ```
 
-## Four ownership layers
+The Kernel validates four document types, composes neutral agentic assets,
+binds Git Targets and Integrations, renders a bounded prologue and projects
+provider-native files. The Home is the durable boundary. Targets and provider
+sessions remain outside it.
 
-| Layer | Owns | Never owns |
-| --- | --- | --- |
-| npm runtime | CLI, schemas, registry, compiler, checkpoints, receipts and local Source bindings | provider sessions or team policy |
-| Home | selected extensions, provider-neutral recipes, tracked configuration and lock provenance | target checkout state or generated projections |
-| Overlay | explicit profile, Scratch, accepted Artifacts and Receipts | transcripts, secrets or runtime locks |
-| Target | product source, Git history and project conventions | Hairness configuration or memory |
+The source layout follows the same responsibilities: `home`, `targets`,
+`integrations`, `extensions`, `prologue`, `create`, `doctor` and the provider
+compiler. There is no generic workflow, delivery, artifact graph or provider
+runtime hidden behind the CLI.
 
-The Home may be a sibling of one Target or coordinate many independent Targets.
-Generated Codex and Claude projections are reproducible build output. Exact owned
-paths live in runtime `build.json` and are locally excluded from the Home Git
-repository; unmanaged native provider files remain untouched.
-
-Target identity is core (`hairness.targets`), not an extension. A Home declares
-expected remotes and binds a local checkout through an ignored `targets/<id>`
-symlink. `hairness/work` owns live mapping. `hairness/sources` owns declarations
-and local access bindings for external CLIs or provider tools.
-
-## Composition
-
-```mermaid
-flowchart TD
-  distribution["Distribution\nbootstrap defaults"] --> selection["hairness.json\nactive selection"]
-  extension["Extension\ncapabilities + recipes + adapters"] --> selection
-  selection --> compiler["Provider compiler"]
-  compiler --> codex["$hairness-* skills"]
-  compiler --> claude["/hairness-* skills"]
-```
-
-A Distribution is a bootstrap bundle, not a runtime role. An Extension provides
-capability IDs. Recipes converse directly with the user. Adapters expose a
-deterministic `observe`, `derive` or `effect` operation. Only effect adapters pass
-through `prepare` and `apply` with an exact Checkpoint.
-
-## Work and delivery
-
-Scratch is the work identity. A delivery extension may choose a compatible clean
-checkout or create an isolated Git worktree internally. Checkout paths and locks
-remain runtime details. A typed DeliveryBrief is saved only after its delivery
-hypothesis is accepted. Publication, merge and release are separate effects.
-
-See [Persistence](persistence.md), [Extension contract](extensions/README.md) and
-[ADR 0013](decisions/0013-v0-3-clean-architectural-reset.md).
+Provider build owns only generated files recorded in `.hairness/build.json`.
+Managed regions in `AGENTS.md` and `CLAUDE.md` are replaced narrowly; surrounding
+human content and unmanaged skills/hooks survive rebuilds.

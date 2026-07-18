@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/schemas/v4/home.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "hairness.dev/home/v1alpha2" },
+    "kind": { "const": "Home" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providers", "extensions", "targets", "integrations", "config"],
+      "properties": {
+        "providers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["codex", "claude"] }
+        },
+        "extensions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "repository"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "repository": { "type": "string", "minLength": 1, "maxLength": 512 },
+              "summary": { "type": "string", "minLength": 1, "maxLength": 240 }
+            }
+          }
+        },
+        "integrations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "accessors"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "summary": { "type": "string", "minLength": 1, "maxLength": 240 },
+              "accessors": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "$ref": "#/$defs/accessor" }
+              }
+            }
+          }
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._/-]{0,127}$"
+    },
+    "accessor": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "command"],
+          "properties": {
+            "kind": { "const": "cli" },
+            "command": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "provider", "id"],
+          "properties": {
+            "kind": { "const": "provider" },
+            "provider": { "enum": ["codex", "claude"] },
+            "id": { "type": "string", "minLength": 1, "maxLength": 160 }
+          }
+        }
+      ]
+    }
+  }
+}

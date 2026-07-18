@@ -2,11 +2,9 @@ import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { readFile, readdir } from 'node:fs/promises'
 import { join, relative } from 'node:path'
-import { activeExtensions, inspectExtension, validateComposition } from '../src/composition/extensions.mjs'
-import { loadDistribution } from '../src/composition/distributions.mjs'
-import { compileSchemas, validateDocument } from '../src/contracts/index.mjs'
-import { loadHome, loadHomeLock } from '../src/home/index.mjs'
-import { digest } from '../src/lib/io.mjs'
+import { validateComposition } from '../src/extensions.mjs'
+import { compileSchemas } from '../src/contracts.mjs'
+import { exists } from '../src/lib/io.mjs'
 
 const root = new URL('../', import.meta.url).pathname
 
@@ -21,25 +19,11 @@ async function files(directory) {
   return values
 }
 
-assert.equal((await compileSchemas()).length, 8)
-const home = await loadHome(root)
-const lock = await loadHomeLock(root)
-assert.equal(home.metadata.id, lock.metadata.id)
-const active = await activeExtensions(root, home)
-validateComposition(active)
-for (const extension of active) {
-  const entry = lock.extensions.find((item) => item.id === extension.manifest.metadata.id)
-  assert.ok(entry, `lock misses ${extension.manifest.metadata.id}`)
-  assert.equal(entry.installedBaseDigest, extension.digest, `lock digest is stale for ${extension.manifest.metadata.id}`)
-}
-for (const preset of ['minimal', 'standard']) await validateDocument((await loadDistribution(preset)).document, 'Distribution')
-for (const extension of active) await inspectExtension(extension.root)
-
-const standard = (await loadDistribution('standard')).document
-assert.equal(lock.distribution.digest, digest(standard), 'development Distribution lock is stale')
-assert.deepEqual(standard.spec.extensions, ['hairness/cockpit', 'hairness/work', 'hairness/sources', 'hairness/delivery'])
-const recipes = active.filter((extension) => standard.spec.extensions.includes(extension.manifest.metadata.id)).flatMap((extension) => extension.manifest.spec.recipes.map((recipe) => recipe.id)).sort()
-assert.deepEqual(recipes, ['hairness', 'hairness-discuss', 'hairness-ideate', 'hairness-map', 'hairness-onboarding', 'hairness-plan', 'hairness-propose', 'hairness-recap', 'hairness-scratch', 'hairness-ship'].sort())
+assert.equal((await compileSchemas()).length, 4)
+const composition = await validateComposition([])
+assert.equal(composition.skills.size, 3)
+assert.equal(composition.commands.size, 3)
+assert.equal(await exists(`${root}/hairness.json`), false)
 
 const all = await files(root)
 for (const path of all.filter((path) => path.endsWith('.mjs'))) execFileSync(process.execPath, ['--check', path], { stdio: 'pipe' })
@@ -54,4 +38,4 @@ for (const path of all) {
   }
 }
 
-console.log(`check passed (${all.length} files, ${active.length} active development extensions)`)
+console.log(`check passed (${all.length} files, core-only development package)`)
