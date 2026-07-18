@@ -1,7 +1,7 @@
 {
   "name": "@hairness/cli",
-  "version": "0.3.0-alpha.0",
-  "description": "A lightweight, provider-agnostic harness for typed agentic assets, explicit memory, and safe delivery.",
+  "version": "0.4.0-alpha.0",
+  "description": "A lightweight, provider-agnostic Kernel for agent workspaces.",
   "keywords": [
     "ai-agents",
     "agentic-assets",
@@ -34,10 +34,7 @@
   },
   "files": [
     "assets/core/",
-    "assets/extensions/hairness/",
     "bin/",
-    "distributions/",
-    "schemas/v3/",
     "schemas/v4/",
     "src/",
     "LICENSE",

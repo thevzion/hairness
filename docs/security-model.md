@@ -1,24 +1,21 @@
 # Security model
 
-Hairness separates visibility, trust, and authority.
+The trust boundary is deliberately small:
 
 ```mermaid
 flowchart LR
-  source["Extension source"] --> inspect["Manifest + file inspection"]
-  inspect --> checkpoint["Composition checkpoint"]
-  checkpoint --> active["Active extension"]
-  active --> observe["Observe / derive"]
-  active --> prepare["Prepare exact effect"]
-  prepare --> revalidate["Revalidate Target + inputs + proof + policy"]
-  revalidate --> effect["Apply effect"]
-  effect --> receipt["Immutable Receipt"]
+  source["Extension source"] --> inspect["Manifest/path inspection"]
+  inspect --> active["Explicit Home activation"]
+  active --> project["Neutral provider projection"]
+  target["Git Target"] -. ignored binding .-> home["Home"]
 ```
 
-Source inspection imports no adapter. Activation grants no effect authority.
-Target registration stores only a local binding and grants no authority. Effect
-checkpoints are single-use and stale on any relevant change.
+Inspection executes no extension code, rejects escaping paths and symlinks, and
+never activates a physically present extension. Git refs are locked to commits.
+Target registration and Integration selection do not grant operational authority.
+Hairness does not install tools, authenticate accounts, create remotes or push.
 
-Home Git, Overlay Git, and Target Git are independent. Creation configures no
-remote. Generated provider paths are exact. Overlay snapshots reject obvious
-credential paths, symlinks, and oversized files. Unknown effects stop replay and
-leave an immutable Receipt for reconciliation.
+Prologue contributors are timed, isolated, read-only processes returning only
+bounded facts and signals. Secrets and obvious credential-like values are
+rejected. Provider output ownership is exact; Hairness never clears a whole
+provider directory.

@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
-import { validateDocument } from '../src/contracts/index.mjs'
-import { inspectExtension, validateComposition } from '../src/composition/extensions.mjs'
+import { validateDocument } from '../src/contracts.mjs'
+import { validateComposition } from '../src/extensions.mjs'
 
-const fixture = JSON.parse(await readFile(new URL('../tests/fixtures/v0.3/golden-home.json', import.meta.url), 'utf8'))
+const fixture = {
+  apiVersion: 'hairness.dev/home/v1alpha2',
+  kind: 'Home',
+  metadata: { id: 'conformance' },
+  spec: { providers: ['codex', 'claude'], extensions: [], targets: [], integrations: [], config: {} },
+}
 await validateDocument(fixture, 'Home')
-const extensions = []
-for (const id of fixture.spec.extensions) extensions.push(await inspectExtension(new URL(`../assets/extensions/${id}/`, import.meta.url).pathname))
-const composition = validateComposition(extensions)
-assert.equal(composition.capabilities.size, 5)
-assert.equal(composition.recipes.size, 10)
+const composition = await validateComposition([])
+assert.deepEqual([...composition.skills.keys()].sort(), ['hairness', 'hairness-onboarding', 'hairness-scratch'])
+assert.deepEqual([...composition.commands.keys()].sort(), ['hairness', 'hairness-onboarding', 'hairness-scratch'])
 assert.equal(JSON.stringify(fixture).includes('protocolVersion'), false)
-console.log('v0.3 conformance passed (Home + 4 extensions + core Targets + 10 recipes)')
+console.log('v0.4 conformance passed (Home + core Skills/Commands)')

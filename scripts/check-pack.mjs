@@ -12,12 +12,12 @@ const files = pack.files.map((entry) => entry.path)
 for (const required of [
   'bin/hairness.mjs',
   'src/cli.mjs',
-  'schemas/v3/home.schema.json',
-  'distributions/standard/hairness.distribution.json',
-  'assets/extensions/hairness/cockpit/extension.json',
+  'schemas/v4/home.schema.json',
+  'schemas/v4/extension.schema.json',
+  'assets/core/skills/hairness/skill.md',
 ]) assert.ok(files.includes(required), `tarball misses ${required}`)
 for (const path of files) {
-  assert.ok(!/(^|\/)(?:\.overlay|node_modules|tests|\.agents|\.claude|\.codex)(?:\/|$)/.test(path) && !path.startsWith('runtime/'), `tarball contains forbidden path ${path}`)
+  assert.ok(!/(^|\/)(?:\.overlay|node_modules|tests|\.agents|\.claude|\.codex|extensions|targets|distributions|runtime)(?:\/|$)/.test(path), `tarball contains forbidden path ${path}`)
   assert.ok(!/\/Users\//.test(String(await readFile(new URL(`../${path}`, import.meta.url)))), `tarball contains a private path in ${path}`)
 }
 assert.equal(pack.version, packageDocument.version)
