@@ -144,7 +144,7 @@ async function updateHookConfig(path, active, check) {
   const currentText = await readFile(path, 'utf8').catch((error) => error.code === 'ENOENT' ? null : Promise.reject(error))
   const current = currentText ? JSON.parse(currentText) : {}
   current.hooks ??= {}
-  const entries = (current.hooks.SessionStart ?? []).filter((entry) => !entry.hooks?.some((hook) => hook.command === prologueCommand))
+  const entries = (current.hooks.SessionStart ?? []).filter((entry) => !entry.hooks?.some((hook) => /node \.\/node_modules\/@hairness\/cli\/(?:src\/v4\/cli\.mjs|bin\/hairness\.mjs) prologue$/.test(hook.command ?? '')))
   if (active) entries.push({
     matcher: 'startup|resume|clear|compact',
     hooks: [{ type: 'command', command: prologueCommand }],
