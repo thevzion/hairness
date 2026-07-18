@@ -1,6 +1,8 @@
 # ADR 0014 — Post-reset 80/20 vertical slice
 
-Status: accepted
+Status: superseded
+
+Superseded by [ADR 0015](0015-agent-workspace-kernel-reset.md).
 
 ## Context
 

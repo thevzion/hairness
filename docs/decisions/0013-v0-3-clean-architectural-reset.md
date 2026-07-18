@@ -1,12 +1,14 @@
 ---
 id: 0013-v0-3-clean-architectural-reset
-status: accepted
+status: superseded
 owners: [hairness/cockpit]
 signals: [home, distribution, extension, overlay, scratch, delivery]
 paths: [src, schemas, distributions, assets/extensions/hairness, docs/architecture.md, docs/persistence.md]
 ---
 
 # 0013: Hairness v0.3 clean architectural reset
+
+Superseded by [ADR 0015](0015-agent-workspace-kernel-reset.md).
 
 Hairness is a lightweight, provider-agnostic harness for agentic assets. The npm
 runtime owns deterministic composition, validation and effects. A generated Home

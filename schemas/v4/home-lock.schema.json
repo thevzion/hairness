@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/schemas/v4/home-lock.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "kernel", "extensions"],
+  "properties": {
+    "apiVersion": { "const": "hairness.dev/home-lock/v1alpha2" },
+    "kind": { "const": "HomeLock" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" }
+      }
+    },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "source", "integrity"],
+      "properties": {
+        "version": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "integrity": { "type": "string", "minLength": 1 }
+      }
+    },
+    "extensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "version", "source", "sourceKind", "digest", "installedBaseDigest"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]{0,127}$" },
+          "version": { "type": "string", "minLength": 1 },
+          "source": { "type": "string", "minLength": 1 },
+          "sourceKind": { "enum": ["path", "git"] },
+          "requestedRef": { "type": ["string", "null"] },
+          "resolvedCommit": { "type": ["string", "null"] },
+          "path": { "type": ["string", "null"] },
+          "digest": { "type": "string", "pattern": "^sha256:" },
+          "installedBaseDigest": { "type": "string", "pattern": "^sha256:" }
+        }
+      }
+    }
+  }
+}

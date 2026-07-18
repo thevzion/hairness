@@ -15,6 +15,7 @@ for normative contracts.
 - [Releasing](releasing.md)
 - [ADR 0013 — v0.3 clean architectural reset](decisions/0013-v0-3-clean-architectural-reset.md)
 - [ADR 0014 — post-reset 80/20 vertical slice](decisions/0014-post-reset-80-20.md)
+- [ADR 0015 — Agent Workspace Kernel reset](decisions/0015-agent-workspace-kernel-reset.md)
 
 The legacy documentation tree was removed at cutover. Only the still-valid
 non-invasive authority decision and current ADRs remain; none is a compatibility
