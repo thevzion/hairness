@@ -1,29 +1,38 @@
 # Golden journeys
 
-## First useful session
+## Personal Home
 
-1. Pack `@hairness/cli` and create a Standard Home from that exact tarball.
-2. Confirm language, providers, repository/workspace access and optional Overlay Git.
-3. Launch Codex or Claude with the generated command.
-4. Complete provider onboarding in the selected language: select exact Target
-   bindings and Source accessors, then approve one configuration checkpoint.
-5. Observe onboarding as configured even when live Source health is partial.
-6. Create a Scratch, discuss and map the Target using live references.
-7. Render a recap without persistence, then save the exact accepted Markdown as
-   an Artifact.
+1. Pack Native, Starter and CLI.
+2. Create a Home from the exact tarballs.
+3. Confirm Home v1alpha3, direct dependencies and one npm lock.
+4. Run build check, doctor and prologue.
+5. Confirm Codex and Claude receive equivalent Native Skills.
 
-## Extension trust
+## Extension and Catalog
 
-1. Inspect a two-file chat extension without executing extension code.
-2. Resolve a Git ref to an immutable commit and subtree digest.
-3. Preview the exact composition diff and approve it.
-4. Rebuild both providers and verify unrelated native skills survive.
-5. Stop an update when installed files diverge from their recorded base digest.
+1. Add an exact static Extension.
+2. Confirm npm lifecycle scripts did not run.
+3. Update it to another exact package.
+4. Remove it and confirm owned outputs disappear.
+5. Resolve the same Extension through a thin Catalog.
+6. Force a failed Adapter build and confirm the package graph rolls back.
 
-## Delivery
+## Team Starter with GSD
 
-1. Accept a DeliveryBrief tied to the active Scratch and Target baseline.
-2. Reuse a clean compatible checkout or create an internal worktree.
-3. Run extension gates after implementation.
-4. Prepare the exact PR effect and revalidate target HEAD, inputs and policy.
-5. Stop at the PR checkpoint; merging and releasing remain later checkpoints.
+1. Pack the private team Extension and Starter.
+2. Pack `@hairness/adapter-gsd`.
+3. Create a Home with `--allow-build`.
+4. Confirm GSD's official installer produced the core Codex profile at 1.6.1.
+5. Confirm Hairness build check is deterministic after atomic Home creation.
+6. Confirm team Skills, declared Targets, Integrations and prologue facts.
+7. Keep private repository and business details outside public evidence.
+
+## Existing Homes
+
+1. Create one branch and worktree per Home.
+2. Store candidate tarballs under `vendor/`.
+3. Replace the Home document and npm lock without touching Target repositories
+   or unrelated Overlay memory.
+4. Bind the existing local Targets.
+5. Run build check, doctor and prologue.
+6. Confirm a second npm install changes no version.

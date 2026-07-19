@@ -5,8 +5,6 @@ export class HairnessError extends Error {
     this.code = code
     this.exitCode = options.exitCode ?? 2
     this.details = options.details ?? null
-    this.limits = options.limits ?? []
-    this.routes = options.routes ?? []
   }
 }
 
@@ -17,4 +15,3 @@ export function asHairnessError(error) {
     cause: error,
   })
 }
-

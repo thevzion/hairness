@@ -1,16 +1,35 @@
-# Releasing
+# Releasing 0.4
 
-The architectural reset and package publication are separate PRs.
+## Checkpoint 1: merge
 
-After the reset PR merges:
+Present the final diff, CI, tarball contents, two Home qualifications, GSD
+downstream proof and rendered README. Approval authorizes only merging the
+Hairness PR into `main`.
 
-1. open a release PR for `0.3.0-alpha.0` against the exact merge commit;
-2. run Node.js 22/24, tests, check, conformance, provider, package, README, and
-   fresh packed-tarball lab gates;
-3. approve npm publication as its own checkpoint;
-4. reconcile registry integrity with the packed artifact;
-5. create the exact Git tag as a separate checkpoint;
-6. create the GitHub prerelease as a separate checkpoint.
+## Checkpoint 2: release
 
-Do not publish from the architectural reset branch. npm publish, tag, and GitHub
-Release are distinct effects and must not inherit authority from one another.
+Present the exact main commit and `release/manifest.json` with package order,
+versions, SHA-256 values and npm integrities. Approval authorizes:
+
+1. npm publication under `next`;
+2. tag `v0.4.0-alpha.0`;
+3. GitHub prerelease creation.
+
+The workflow packs in this order:
+
+1. `@hairness/native`
+2. `@hairness/starter`
+3. `@hairness/cli`
+
+If a version already exists, the workflow compares registry integrity with the
+qualified artifact. A match is skipped; a mismatch fails. This makes the npm
+step resumable without republishing a version.
+
+## Checkpoint 3: communication
+
+Reinstall from npm in an empty Home. Replace proof Home tarballs with exact
+registry versions and requalify both. Present the final images and channel text.
+Approval authorizes external posts only.
+
+npm publication, Git tag creation, GitHub prerelease creation, Home migration
+merges and external posts remain separate effects.
