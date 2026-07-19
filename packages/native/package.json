@@ -1,0 +1,59 @@
+{
+  "name": "@hairness/native",
+  "version": "0.4.0-alpha.0",
+  "description": "The native Hairness orientation, onboarding and Scratch assets.",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "assets/"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "tag": "next"
+  },
+  "hairness": {
+    "apiVersion": "hairness.dev/package/v1alpha1",
+    "kind": "Extension",
+    "summary": "The native Hairness orientation, onboarding and Scratch assets.",
+    "subtype": "assets",
+    "contributes": {
+      "instructions": [
+        "assets/instructions.md"
+      ],
+      "skills": [
+        {
+          "id": "hairness",
+          "summary": "Orient the user and show the next useful route.",
+          "path": "assets/skills/hairness/skill.md"
+        },
+        {
+          "id": "hairness-onboarding",
+          "summary": "Configure the smallest useful Home through conversation.",
+          "path": "assets/skills/hairness-onboarding/skill.md"
+        },
+        {
+          "id": "hairness-scratch",
+          "summary": "Create or update explicit lightweight working memory.",
+          "path": "assets/skills/hairness-scratch/skill.md"
+        }
+      ],
+      "commands": [
+        {
+          "id": "hairness",
+          "skill": "hairness",
+          "summary": "Orient the user and show the next useful route."
+        },
+        {
+          "id": "hairness-onboarding",
+          "skill": "hairness-onboarding",
+          "summary": "Configure the smallest useful Home through conversation."
+        },
+        {
+          "id": "hairness-scratch",
+          "skill": "hairness-scratch",
+          "summary": "Create or update explicit lightweight working memory."
+        }
+      ]
+    }
+  }
+}

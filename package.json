@@ -1,7 +1,7 @@
 {
   "name": "@hairness/cli",
-  "version": "0.3.0-alpha.0",
-  "description": "A lightweight, provider-agnostic harness for typed agentic assets, explicit memory, and safe delivery.",
+  "version": "0.4.0-alpha.0",
+  "description": "A small provider-neutral kernel for composable agent Homes.",
   "keywords": [
     "ai-agents",
     "agentic-assets",
@@ -32,11 +32,12 @@
   "engines": {
     "node": ">=22"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "files": [
-    "assets/extensions/hairness/",
     "bin/",
-    "distributions/",
-    "schemas/v3/",
+    "schemas/v4/",
     "src/",
     "LICENSE",
     "README.md"
@@ -47,9 +48,12 @@
     "conformance": "node scripts/conformance.mjs",
     "test:node22": "npx -y node@22 scripts/run-tests.mjs",
     "test:node24": "npx -y node@24 scripts/run-tests.mjs",
-    "check:lab": "node scripts/lab-dogfood.mjs",
+    "check:providers": "node scripts/check-providers.mjs",
     "check:pack": "node scripts/check-pack.mjs",
-    "check:providers": "node scripts/check-providers.mjs"
+    "check:lab": "node scripts/lab-dogfood.mjs",
+    "launch:render": "node scripts/render-launch-assets.mjs",
+    "release:pack": "node scripts/release-packages.mjs",
+    "release:dry-run": "node scripts/release-publish.mjs --dry-run"
   },
   "dependencies": {
     "ajv": "8.20.0"

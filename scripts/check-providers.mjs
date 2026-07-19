@@ -2,21 +2,26 @@ import assert from 'node:assert/strict'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createHome } from '../src/home/create.mjs'
+import { createHome } from '../src/create.mjs'
+import { packHairness } from './lib/pack.mjs'
 
-const root = await mkdtemp(join(tmpdir(), 'hairness-provider-check-'))
-process.env.HAIRNESS_STATE_HOME = join(root, 'state')
+const root = new URL('../', import.meta.url).pathname
+const temporary = await mkdtemp(join(tmpdir(), 'hairness-providers-'))
 try {
-  const home = join(root, 'home')
-  const result = await createHome(home, { preset: 'standard', language: 'en', providers: ['codex', 'claude'], overlayGit: false, install: false })
-  assert.equal(result.status, 'created')
-  const commands = ['hairness', 'hairness-onboarding', 'hairness-scratch', 'hairness-discuss', 'hairness-map', 'hairness-ideate', 'hairness-propose', 'hairness-recap', 'hairness-plan', 'hairness-ship']
-  for (const command of commands) {
-    assert.match(await readFile(join(home, '.agents/skills', command, 'SKILL.md'), 'utf8'), new RegExp(`\\$${command}`))
-    assert.match(await readFile(join(home, '.claude/skills', command, 'SKILL.md'), 'utf8'), new RegExp(`/${command}`))
+  const packs = await packHairness(root, join(temporary, 'packs'))
+  const home = join(temporary, 'home')
+  await createHome(home, {
+    packageSpec: `file:${packs.cli}`,
+    starter: `file:${packs.starter}`,
+    starterName: '@hairness/starter',
+    packageOverrides: { '@hairness/native': `file:${packs.native}` },
+  })
+  for (const id of ['hairness', 'hairness-onboarding', 'hairness-scratch']) {
+    const codex = await readFile(join(home, '.agents/skills', id, 'SKILL.md'), 'utf8')
+    const claude = await readFile(join(home, '.claude/skills', id, 'SKILL.md'), 'utf8')
+    assert.equal(codex.replaceAll(`$${id}`, id).replaceAll('.agents', '.provider'), claude.replaceAll(`/${id}`, id).replaceAll('.claude', '.provider'))
   }
-  console.log('provider projection gate passed (10 commands, Codex/Claude)')
+  console.log('provider parity passed')
 } finally {
-  delete process.env.HAIRNESS_STATE_HOME
-  await rm(root, { recursive: true, force: true })
+  await rm(temporary, { recursive: true, force: true })
 }

@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/schemas/v4/package.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "summary"],
+  "properties": {
+    "apiVersion": {
+      "const": "hairness.dev/package/v1alpha1"
+    },
+    "kind": {
+      "enum": ["Extension", "Starter", "Catalog"]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
+    },
+    "subtype": {
+      "enum": ["assets", "adapter"]
+    },
+    "requires": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/packageName"
+      }
+    },
+    "contributes": {
+      "$ref": "#/$defs/contributes"
+    },
+    "configSchema": {
+      "$ref": "#/$defs/path"
+    },
+    "adapter": {
+      "$ref": "#/$defs/adapter"
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["codex", "claude"]
+      }
+    },
+    "extensions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/packageName"
+      }
+    },
+    "catalogs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/packageName"
+      }
+    },
+    "template": {
+      "$ref": "#/$defs/path"
+    },
+    "config": {
+      "type": "object"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/target"
+      }
+    },
+    "integrations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/integration"
+      }
+    },
+    "index": {
+      "$ref": "#/$defs/path"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Extension"
+          }
+        }
+      },
+      "then": {
+        "required": ["subtype", "contributes"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "subtype": {
+            "const": "adapter"
+          }
+        },
+        "required": ["subtype"]
+      },
+      "then": {
+        "required": ["adapter"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Starter"
+          }
+        }
+      },
+      "then": {
+        "required": ["providers", "extensions"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Catalog"
+          }
+        }
+      },
+      "then": {
+        "required": ["index"]
+      }
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._/-]{0,127}$"
+    },
+    "packageName": {
+      "type": "string",
+      "pattern": "^(?:@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "contributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "instructions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/path"
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "output"],
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/path"
+              },
+              "output": {
+                "$ref": "#/$defs/path"
+              }
+            }
+          }
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "summary", "path"],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "path": {
+                "$ref": "#/$defs/path"
+              }
+            }
+          }
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "skill"],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "skill": {
+                "$ref": "#/$defs/id"
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            }
+          }
+        },
+        "prologue": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path"],
+          "properties": {
+            "path": {
+              "$ref": "#/$defs/path"
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 50,
+              "maximum": 2000
+            }
+          }
+        }
+      }
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entry", "outputs"],
+      "properties": {
+        "entry": {
+          "$ref": "#/$defs/path"
+        },
+        "outputs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/path"
+          }
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "repository"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      }
+    },
+    "integration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "accessors"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "accessors": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind", "command"],
+                "properties": {
+                  "kind": {
+                    "const": "cli"
+                  },
+                  "command": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9._-]+$"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind", "provider", "id"],
+                "properties": {
+                  "kind": {
+                    "const": "provider"
+                  },
+                  "provider": {
+                    "enum": ["codex", "claude"]
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

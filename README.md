@@ -1,261 +1,175 @@
 # Hairness
 
-**A lightweight, provider-agnostic harness for agentic assets.**
+Hairness is a small, provider-neutral kernel for composable agent Homes.
 
-Hairness gives Codex and Claude the same small set of powerful ways to discuss,
-map, remember, and safely ship work—without replacing their UI, runtime, tools,
-threads, or native skills.
+A Home pins its agentic assets as npm dependencies, selects them in
+`hairness.json`, and builds native Codex and Claude projections. Product
+repositories stay independent Targets.
 
-> [!WARNING]
-> Hairness is an experimental alpha. v0.3 is a breaking reset with no in-place
-> upgrade from v0.2. Pin exact versions and review effect checkpoints.
+> Hairness 0.4 is an alpha. Pin exact versions and review every Adapter before
+> approving its build.
 
-Node.js **22+** · Providers **Codex and Claude** · License **MIT**
+Node.js 22 or 24 · Codex and Claude · MIT
 
-## From install to a useful agent session
-
-Create a Home. The CLI asks five questions: response language, Standard or
-Minimal setup, providers, a detected first Target, and whether the Overlay
-should have its own local Git history.
+## Create a personal Home
 
 ```bash
-npx --yes @hairness/cli@next create ~/Hairness
+npx --yes @hairness/cli@0.4.0-alpha.0 create "$HOME/Hairness"
+cd "$HOME/Hairness"
+npm run doctor
 ```
 
-Standard is recommended. The CLI previews every local effect, installs and pins
-`@hairness/cli`, builds provider assets, runs doctor, initializes the Home Git
-repository, optionally initializes a nested Overlay Git repository, and only
-then atomically moves the complete Home into place. It creates no remote and
-never pushes.
+Creation installs the exact CLI, Starter and required Extensions with npm
+lifecycle scripts disabled. It builds both providers, initializes Git, creates
+one initial commit, configures no remote, and moves the finished Home into place
+atomically.
 
-The final output gives the exact launch command:
-
-```bash
-codex -C "$HOME/Hairness" --add-dir "/path/to/your-project"
-```
-
-```bash
-cd "$HOME/Hairness" && claude --add-dir "/path/to/your-project"
-```
-
-Then invoke `$hairness-onboarding` in Codex or `/hairness-onboarding` in Claude.
-The agent speaks your selected language from its first reply, discovers the
-repositories and external Sources you want to use, explains concepts only when
-they become useful, and resumes after every answer.
-
-That is the complete setup flow.
-
-## What the Home changes
-
-```mermaid
-flowchart LR
-  human["Human"] --> provider["Native Codex or Claude session"]
-  home["Hairness Home\nagentic assets"] --> provider
-  provider --> target["Independent Target repositories"]
-  provider --> overlay["Explicit local memory\nScratch + Artifacts"]
-  checkpoint["Exact checkpoint"] -. "guards effects" .-> target
-```
-
-A **Home** is the agent's stable operating place. A **Target** is an independent
-repository it can inspect or change. A **Scratch** is optional, flexible memory
-for a real subject. An **Artifact** is an accepted outcome with a typed envelope
-and one canonical Markdown or JSON payload.
-
-Targets are declared by identity and expected Git remotes. Their local bindings
-are ordinary ignored symlinks under `targets/`; no absolute path enters tracked
-configuration. Sources describe external access such as a CLI or a provider
-tool. Hairness records only the selected accessor in local Runtime and checks
-its health live—never credentials or fetched data.
-
-Sessions start ephemeral. Without an active Scratch, Hairness writes nothing.
-With one attached, the agent records only semantic boundaries such as accepted
-decisions, changed constraints, handoffs, and next-step changes—never a
-transcript or hidden reasoning.
-
-## Ten human commands
-
-Standard guarantees exactly these commands:
-
-```text
-hairness
-hairness-onboarding
-hairness-scratch
-hairness-discuss
-hairness-map
-hairness-ideate
-hairness-propose
-hairness-recap
-hairness-plan
-hairness-ship
-```
-
-Codex projects them as `$hairness-…`; Claude projects `/hairness-…`.
-
-- Discuss, ideate, propose, recap, map, and plan render directly in chat.
-- A recap, map, or plan creates no file until you say “save this.”
-- `hairness-ship` creates no durable delivery state until you accept its
-  DeliveryBrief.
-- Worktrees are an internal adaptive detail: a clean compatible checkout is
-  reused; dirty, occupied, incompatible, or parallel work is isolated.
-- PR publication, merge, and release remain separate checkpoints.
-
-## Agentic assets are software
-
-Provider prompts are not the durable unit. An extension describes capability
-IDs, recipes, deterministic adapters, schemas, gates, onboarding questions, and
-tests. These assets are explicit, reviewable, versioned, and portable. Hairness
-supplies the common harness and native provider projections; the extension keeps
-the domain opinion.
-
-A chat extension can be only two files:
-
-```text
-acme/review/
-├── extension.json
-└── review.md
-```
-
-```json
-{
-  "apiVersion": "hairness.dev/extension/v1alpha1",
-  "kind": "Extension",
-  "metadata": {
-    "id": "acme/review",
-    "version": "1.0.0",
-    "summary": "Review one change in chat."
-  },
-  "spec": {
-    "provides": ["acme.review"],
-    "requires": ["hairness.cockpit"],
-    "recipes": [{
-      "id": "hairness-review",
-      "path": "review.md",
-      "summary": "Review one change.",
-      "capability": "acme.review"
-    }],
-    "adapters": [],
-    "schemas": [],
-    "gates": [],
-    "onboarding": [],
-    "tests": []
-  }
-}
-```
-
-```markdown
-Review the requested change. Cite live source paths, rank actionable findings,
-and render the result in chat. Persist nothing unless the user asks to save it.
-```
-
-Install it from a local path or a pinned Git source:
-
-```bash
-hairness extension add ./acme/review
-hairness extension add https://github.com/acme/review.git \
-  --ref v1.2.0 \
-  --path extensions/acme/review
-```
-
-Hairness inspects the manifest without importing code, resolves Git refs to
-immutable commits, stages and validates the source, then shows the exact
-composition change. The extension activates only after its checkpoint. An
-intact install updates mechanically; local divergence stops for a human merge.
-An extension may also publish a JSON Schema for its namespaced Home config.
-Missing config can limit that extension's adapters without preventing its
-onboarding recipe from helping the user repair it.
-
-## Source ownership without provider coupling
-
-The generated Home tracks only agentic source:
+The default `@hairness/starter` activates `@hairness/native`, which provides
+orientation, onboarding and explicit Scratch memory.
 
 ```text
 Hairness/
 ├── package.json
 ├── package-lock.json
 ├── hairness.json
-├── hairness.lock.json
-├── extensions/
-├── targets/                 # ignored local symlinks
 ├── AGENTS.md
 ├── CLAUDE.md
-├── .agents/skills/.gitkeep
-├── .claude/skills/.gitkeep
-└── .overlay/
+├── targets/
+└── .overlay/config.json
 ```
 
-Generated provider skills are reproducible local build output. Hairness records
-their exact paths in `~/.hairness/runtime/<home-id>/build.json` and adds only
-those paths to the Home repository's `.git/info/exclude`. It neither ignores nor
-clears whole provider directories, so user-authored native skills remain normal
-Git-visible files.
+`package-lock.json` is the only dependency lock. `.hairness/build.json` is local,
+ignored build state. There is no `hairness.lock.json`.
 
-Source bindings, provider bindings, checkout locks, build state, caches, and
-checkpoints stay under `~/.hairness/`. Target paths exist only as ignored
-`targets/<id>` symlinks. They never leak into tracked Home files.
+## Add an Extension
 
-## Minimal, Standard, and custom distributions
+An Extension is an npm package with a `package.json#hairness` manifest:
 
-- **Minimal:** `hairness/cockpit` + `hairness/work`.
-- **Standard:** adds live Sources and safe delivery; Target maps remain part of
-  the core work surface. This is the
-  default.
-- **Custom:** starts from an explicit Distribution path, then installs only its
-  selected extensions.
-
-A Distribution is only a bootstrap bundle of defaults, policies, onboarding,
-and extensions. It contains no copied kernel, runtime, Overlay, Target, or
-generic workflow engine.
-
-## Deterministic boundary
-
-The provider uses the CLI only when deterministic state or effects matter:
-
-```text
-hairness build|doctor
-hairness onboarding status|answer|plan|apply
-hairness extension list|init|adopt|add|update|remove|doctor
-hairness target list|discover|add|bind|unbind|remove|doctor
-hairness scratch list|show|create|use|note|park|close|import|snapshot
-hairness artifact list|show|save|validate
-hairness overlay status|snapshot|archive
-hairness operation run|prepare|apply
-hairness delivery brief|checkout|gate|prepare-pr|release-checkout
+```json
+{
+  "name": "@acme/review",
+  "version": "1.2.3",
+  "type": "module",
+  "files": ["assets/"],
+  "hairness": {
+    "apiVersion": "hairness.dev/package/v1alpha1",
+    "kind": "Extension",
+    "summary": "Review one change.",
+    "subtype": "assets",
+    "contributes": {
+      "skills": [{
+        "id": "review",
+        "summary": "Review one change.",
+        "path": "assets/review.md"
+      }],
+      "commands": [{
+        "id": "review",
+        "skill": "review"
+      }]
+    }
+  }
+}
 ```
 
-Human-readable output is the default. Add `--json` only at machine boundaries.
-`hairness doctor` is the single live macro view for Home configuration, profile,
-build, Targets, Sources, saved-map freshness, current Scratch and repair routes.
-
-Observe and derive adapters may run directly. Every effect uses `prepare`, which
-binds exact inputs, Target state, proof, and policy. `apply` revalidates all of
-them and refuses stale state. Successful or unknown effects produce immutable
-Receipts.
-
-## Upgrading from v0.2
-
-Create a new Home; do not migrate in place. A complete legacy Overlay may be
-archived opaquely under `~/.hairness/archives/`, and selected human notes can be
-imported into a new Scratch. v0.3 has no old command aliases, schema readers,
-runtime bridge, or automatic Overlay conversion.
-
-## Documentation and development
-
-- [Specification](SPEC.md)
-- [Architecture](docs/architecture.md)
-- [Persistence](docs/persistence.md)
-- [Extension contract](docs/extensions/README.md)
-- [Security model](docs/security-model.md)
-- [Current status](STATUS.md)
+Install directly from an exact npm version, Git tag or commit:
 
 ```bash
-npm install
+hairness extension add @acme/review@1.2.3
+hairness extension add 'git+https://github.com/acme/review.git#v1.2.3'
+hairness extension update @acme/review --to @acme/review@1.2.4
+hairness extension remove @acme/review
+```
+
+Local `file:` packages are supported for development and must be stored in the
+Home, usually under `vendor/`. Ranges, branches, `HEAD`, dist-tags and
+unversioned registry packages are rejected.
+
+## Use a Catalog
+
+A Catalog is a thin optional index. Direct installation remains available.
+
+```bash
+hairness catalog add acme @acme/hairness-catalog@1.0.0
+hairness catalog search review
+hairness extension add catalog:acme/review
+```
+
+The Catalog is an npm or exact Git package whose manifest points to a JSON index
+of entry IDs and exact package specs. A web marketplace is not required.
+
+## Compose a team Home with GSD
+
+The official `@hairness/adapter-gsd` package is kept in a separate repository and
+pins `@opengsd/gsd-core@1.6.1`. During this prerelease it is qualified from an
+exact local tarball:
+
+```bash
+hairness extension add file:vendor/hairness-adapter-gsd-0.4.0-alpha.0.tgz \
+  --allow-build
+```
+
+The Adapter calls GSD's official installer in staging. Hairness accepts only its
+declared `.codex` output, rejects symbolic links and owner collisions, records
+every digest, and keeps npm lifecycle scripts disabled.
+
+A private downstream Starter combines Native, the GSD Adapter, team skills,
+Target declarations and Integration choices. Its packed journey is tested
+without publishing private repositories, URLs, credentials or business data.
+The complete ticket loop remains downstream.
+
+## Ownership model
+
+```mermaid
+flowchart LR
+  starter["Starter"] --> home["Home composition"]
+  extension["Extension packages"] --> home
+  catalog["Optional Catalog"] --> extension
+  home --> build["hairness build"]
+  build --> codex["Codex assets"]
+  build --> claude["Claude assets"]
+  build --> adapter["Approved Adapter outputs"]
+  codex --> targets["Independent Targets"]
+  claude --> targets
+```
+
+- The Home owns package selection, provider projections and explicit human
+  memory.
+- Extensions own their source assets and declared build outputs.
+- npm owns dependency resolution and locking.
+- Targets own product source and Git history.
+- Integrations describe accessors only; Hairness installs no tool and stores no
+  credential.
+
+## CLI
+
+```text
+hairness create <home> [--starter <exact-spec>]
+hairness build [--check]
+hairness doctor [--json]
+hairness prologue [--json]
+hairness extension list|add|update|remove|doctor
+hairness catalog list|search|add|update|remove
+hairness target list|discover|add|bind|unbind|remove|doctor
+hairness integration list|add|bind|unbind|remove|doctor
+```
+
+`build --check` performs no write. `doctor` reports package, build, Target and
+Integration limits. Generated files are path-owned: divergence and unmanaged
+collisions stop the build.
+
+## Development
+
+```bash
+npm ci --ignore-scripts
 npm test
 npm run check
 npm run conformance
 npm run check:providers
 npm run check:pack
 npm run check:lab
+npm run test:node22
+npm run test:node24
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Hairness is
-licensed under the [MIT License](LICENSE).
+Read the [specification](SPEC.md), [architecture](docs/architecture.md),
+[security model](docs/security-model.md), and [release process](docs/releasing.md).

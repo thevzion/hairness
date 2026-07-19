@@ -1,24 +1,34 @@
 # Security model
 
-Hairness separates visibility, trust, and authority.
-
 ```mermaid
 flowchart LR
-  source["Extension source"] --> inspect["Manifest + file inspection"]
-  inspect --> checkpoint["Composition checkpoint"]
-  checkpoint --> active["Active extension"]
-  active --> observe["Observe / derive"]
-  active --> prepare["Prepare exact effect"]
-  prepare --> revalidate["Revalidate Target + inputs + proof + policy"]
-  revalidate --> effect["Apply effect"]
-  effect --> receipt["Immutable Receipt"]
+  source["Exact package source"] --> install["npm install --ignore-scripts"]
+  install --> inspect["Manifest + declared path validation"]
+  inspect --> select["hairness.json selection"]
+  select --> static["Static build"]
+  select --> approval["--allow-build"]
+  approval --> stage["Adapter staging"]
+  stage --> reconcile["Path + owner + digest validation"]
+  reconcile --> home["Home output"]
 ```
 
-Source inspection imports no adapter. Activation grants no effect authority.
-Target registration stores only a local binding and grants no authority. Effect
-checkpoints are single-use and stale on any relevant change.
+## Guarantees
 
-Home Git, Overlay Git, and Target Git are independent. Creation configures no
-remote. Generated provider paths are exact. Overlay snapshots reject obvious
-credential paths, symlinks, and oversized files. Unknown effects stop replay and
-leave an immutable Receipt for reconciliation.
+- Unknown manifest fields and escaping paths fail.
+- Package files, Starter templates and Adapter output symbolic links fail.
+- npm lifecycle scripts never run through Hairness.
+- Adapters without recorded build approval fail.
+- Undeclared Adapter files and ownership collisions fail before reconciliation.
+- Edited owned output fails rather than being overwritten.
+- `build --check` writes nothing.
+- Targets bind only after Git remote verification.
+- Integration bindings contain no credentials.
+
+## Limits
+
+An approved Adapter is executable package code. Node process permissions reduce
+the prologue contributor surface, but Adapter execution is not a hostile-code
+sandbox. Review the package and lockfile before approval.
+
+Provider sessions may use tools outside Hairness. Hairness composition does not
+grant authority to use them.

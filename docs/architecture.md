@@ -1,62 +1,51 @@
 # Architecture
 
-Hairness adds a small deterministic harness around native AI-agent sessions. It
-separates source-owned agentic assets from local runtime bindings and from the
-repositories an agent works on.
+Hairness has four owners:
 
-```mermaid
-flowchart LR
-  human["Human"] --> provider["Codex or Claude"]
-  home["Hairness Home\nagentic assets"] --> provider
-  provider --> recipe["Provider-neutral recipe"]
-  provider --> cli["@hairness/cli\ndeterministic boundary"]
-  cli --> target["Target repositories"]
-  cli --> runtime["~/.hairness/runtime"]
-  provider --> overlay[".overlay\nexplicit human memory"]
-  cli --> overlay
-```
-
-## Four ownership layers
-
-| Layer | Owns | Never owns |
-| --- | --- | --- |
-| npm runtime | CLI, schemas, registry, compiler, checkpoints, receipts and local Source bindings | provider sessions or team policy |
-| Home | selected extensions, provider-neutral recipes, tracked configuration and lock provenance | target checkout state or generated projections |
-| Overlay | explicit profile, Scratch, accepted Artifacts and Receipts | transcripts, secrets or runtime locks |
-| Target | product source, Git history and project conventions | Hairness configuration or memory |
-
-The Home may be a sibling of one Target or coordinate many independent Targets.
-Generated Codex and Claude projections are reproducible build output. Exact owned
-paths live in runtime `build.json` and are locally excluded from the Home Git
-repository; unmanaged native provider files remain untouched.
-
-Target identity is core (`hairness.targets`), not an extension. A Home declares
-expected remotes and binds a local checkout through an ignored `targets/<id>`
-symlink. `hairness/work` owns live mapping. `hairness/sources` owns declarations
-and local access bindings for external CLIs or provider tools.
-
-## Composition
+| Owner | Owns |
+| --- | --- |
+| npm | dependency resolution and `package-lock.json` |
+| Package | Starter, Extension or Catalog source |
+| Home | active composition, projections and explicit memory |
+| Target | product source and Git history |
 
 ```mermaid
 flowchart TD
-  distribution["Distribution\nbootstrap defaults"] --> selection["hairness.json\nactive selection"]
-  extension["Extension\ncapabilities + recipes + adapters"] --> selection
-  selection --> compiler["Provider compiler"]
-  compiler --> codex["$hairness-* skills"]
-  compiler --> claude["/hairness-* skills"]
+  npm["Exact npm, Git or file source"] --> packages["Starter + Extensions + Catalogs"]
+  packages --> manifest["package.json#hairness"]
+  manifest --> home["hairness.json"]
+  home --> build["Kernel build"]
+  build --> static["Static owned files"]
+  build --> providers["Codex + Claude projections"]
+  build --> adapters["Approved Adapter outputs"]
+  home -. "ignored local binding" .-> target["Independent Target"]
 ```
 
-A Distribution is a bootstrap bundle, not a runtime role. An Extension provides
-capability IDs. Recipes converse directly with the user. Adapters expose a
-deterministic `observe`, `derive` or `effect` operation. Only effect adapters pass
-through `prepare` and `apply` with an exact Checkpoint.
+## Kernel
 
-## Work and delivery
+`@hairness/cli` validates documents, calls npm with lifecycle scripts disabled,
+builds desired output, manages Targets and Integration bindings, and renders the
+prologue. It contains no team workflow.
 
-Scratch is the work identity. A delivery extension may choose a compatible clean
-checkout or create an isolated Git worktree internally. Checkout paths and locks
-remain runtime details. A typed DeliveryBrief is saved only after its delivery
-hypothesis is accepted. Publication, merge and release are separate effects.
+## Native and Starter
 
-See [Persistence](persistence.md), [Extension contract](extensions/README.md) and
-[ADR 0013](decisions/0013-v0-3-clean-architectural-reset.md).
+`@hairness/native` is an ordinary Extension containing the fundamental Hairness
+instructions and Skills. `@hairness/starter` is the default personal bootstrap.
+Neither has privileged access to the Kernel.
+
+## Build state
+
+`.hairness/build.json` records each generated path, provider, owner and digest.
+It is ignored and reproducible. Build compares desired content with the previous
+owner state and the current filesystem before writing. Unmanaged files remain
+untouched.
+
+## Adapters
+
+An Adapter receives typed Home context on stdin and writes only to
+`HAIRNESS_OUTPUT_DIR`. `HAIRNESS_HOME_DIR` names the final Home so atomic
+creation remains deterministic; `HAIRNESS_STAGE_DIR` exposes the physical
+staging checkout when an official installer needs a working directory.
+
+The process boundary limits accidental writes accepted by Hairness. It is not an
+OS sandbox for hostile code.
