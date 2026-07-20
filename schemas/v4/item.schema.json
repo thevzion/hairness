@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hairness.dev/schema/item.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "id", "name", "version", "type", "title", "description", "source", "mobile", "registryDependencies", "files"],
+  "properties": {
+    "$schema": { "const": "https://hairness.dev/schema/item.json" },
+    "id": { "$ref": "#/$defs/id" },
+    "name": { "$ref": "#/$defs/id" },
+    "version": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "type": { "enum": ["hairness:extension", "hairness:home"] },
+    "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "description": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "source": { "type": "string", "minLength": 1, "maxLength": 2048 },
+    "requestedRef": { "type": ["string", "null"], "maxLength": 240 },
+    "resolvedCommit": { "type": ["string", "null"], "maxLength": 64 },
+    "mobile": { "type": "boolean" },
+    "registryDependencies": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 2048 } },
+    "dependencies": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "entry", "outputs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "entry": { "$ref": "#/$defs/path" },
+        "outputs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/path" } }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "type", "baseDigest"],
+        "properties": {
+          "path": { "$ref": "#/$defs/path" },
+          "type": { "enum": ["hairness:skill", "hairness:instruction", "hairness:file", "hairness:adapter"] },
+          "id": { "$ref": "#/$defs/id" },
+          "description": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "output": { "$ref": "#/$defs/path" },
+          "baseDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]{0,127}$" },
+    "path": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$" }
+  }
+}

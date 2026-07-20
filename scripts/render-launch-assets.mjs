@@ -4,9 +4,9 @@ import { promisify } from 'node:util'
 
 const exec = promisify(execFile)
 const assets = new URL('../docs/assets/', import.meta.url).pathname
-const background = join(assets, 'hairness-0.4-background.png')
-const social = join(assets, 'hairness-0.4-social-card.png')
-const proof = join(assets, 'hairness-0.4-terminal-proof.png')
+const background = join(assets, 'hairness-0.4-source-owned-background.png')
+const social = join(assets, 'hairness-0.4-source-owned-social-card.png')
+const proof = join(assets, 'hairness-0.4-source-owned-terminal-proof.png')
 
 await exec('magick', [
   background,
@@ -34,7 +34,7 @@ await exec('magick', [
   '-fill', '#f1eee8',
   '-pointsize', '34',
   '-kerning', '0',
-  '-annotate', '+72+280', 'Composable agent Homes.',
+  '-annotate', '+72+280', 'Source-owned agentic assets.',
   '-stroke', '#d8996a',
   '-strokewidth', '3',
   '-draw', 'line 72,352 400,352',
@@ -43,13 +43,13 @@ await exec('magick', [
   '-fill', '#c7c8c7',
   '-pointsize', '18',
   '-kerning', '1.5',
-  '-annotate', '+72+385', 'KERNEL · NATIVE · STARTER',
-  '-annotate', '+72+420', 'EXTENSIONS',
+  '-annotate', '+72+385', 'GITHUB · HTTPS · LOCAL',
+  '-annotate', '+72+420', 'CODEX · CLAUDE',
   '-font', 'Arial',
   '-fill', '#9da3a5',
   '-pointsize', '19',
   '-kerning', '0',
-  '-annotate', '+72+518', 'Package-native. Provider-neutral.',
+  '-annotate', '+72+518', 'Git-owned. Provider-neutral.',
   '-depth', '8',
   social,
 ])
@@ -80,26 +80,26 @@ await exec('magick', [
   '-fill', '#d8996a',
   '-annotate', '+76+126', '$ npm run test:node22',
   '-fill', '#8fc49a',
-  '-annotate', '+76+166', '  tests 6  pass 6  fail 0',
+  '-annotate', '+76+166', '  tests 11  pass 11  fail 0',
   '-fill', '#d8996a',
   '-annotate', '+76+216', '$ npm run test:node24',
   '-fill', '#8fc49a',
-  '-annotate', '+76+256', '  tests 6  pass 6  fail 0',
+  '-annotate', '+76+256', '  tests 11  pass 11  fail 0',
   '-fill', '#d8996a',
   '-annotate', '+76+306', '$ npm run check:lab',
   '-fill', '#8fc49a',
-  '-annotate', '+76+346', '  lab passed',
+  '-annotate', '+76+346', '  packed lab passed',
   '-fill', '#d8996a',
-  '-annotate', '+76+396', '$ agentic-tools-home  npm run doctor',
+  '-annotate', '+76+396', '$ agentic-tools-home  hairness doctor',
   '-fill', '#8fc49a',
   '-annotate', '+76+436', '  ready  ·  Targets 4/4  ·  build ready',
   '-fill', '#d8996a',
-  '-annotate', '+76+486', '$ game-development-home  npm run doctor',
+  '-annotate', '+76+486', '$ game-development-home  hairness doctor',
   '-fill', '#8fc49a',
   '-annotate', '+76+526', '  ready  ·  Targets 2/2  ·  build ready',
   '-fill', '#768089',
   '-pointsize', '17',
-  '-annotate', '+76+570', 'candidate tarballs · no merge · no publish',
+  '-annotate', '+76+570', 'one CLI tarball · no merge · no publish',
   '-depth', '8',
   proof,
 ])

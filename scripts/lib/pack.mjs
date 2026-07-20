@@ -8,13 +8,7 @@ const exec = promisify(execFile)
 export async function packHairness(root, destination) {
   await mkdir(destination, { recursive: true })
   const cli = await pack(root, destination, [])
-  const native = await pack(root, destination, ['--workspace', '@hairness/native'])
-  const starter = await pack(root, destination, ['--workspace', '@hairness/starter'])
-  return {
-    cli: join(destination, cli.filename),
-    native: join(destination, native.filename),
-    starter: join(destination, starter.filename),
-  }
+  return { cli: join(destination, cli.filename) }
 }
 
 async function pack(root, destination, workspace) {

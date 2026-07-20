@@ -2,14 +2,18 @@
 
 ## 0.4.0-alpha.0
 
-- Rebuild Hairness as a small package-composition Kernel.
-- Add `@hairness/native` and `@hairness/starter`.
-- Replace the Hairness lock with direct dependencies and `package-lock.json`.
-- Add exact npm, Git and local Extension lifecycle with rollback.
-- Add optional package Catalogs.
-- Add static file contributions and controlled Adapter builds.
-- Track generated output owners and digests in local `.hairness/build.json`.
-- Keep Targets independent and Integration access credential-free.
-- Add a separate official GSD Adapter pinned to GSD Core 1.6.1.
+- Recenter Hairness on source-owned agentic assets.
+- Reduce publication to the single on-demand `@hairness/cli` Kernel.
+- Add local, HTTPS, namespace and GitHub registry resolution.
+- Copy Extensions into the Home with per-item provenance and base digests.
+- Add offline status, diff, cautious sync and source-aware remove.
+- Keep Git as history; remove Hairness packages, npm locks and global Home lock.
+- Project the same owned assets to Codex and Claude.
+- Require explicit staging approval for executable Adapters.
+- Preserve independent Targets, credential-free Integrations and explicit
+  `.overlay/` memory.
+- Qualify two real personal Homes and a source-registry GSD Adapter pinned to
+  GSD Core 1.6.1.
 
-This release has no in-place migration from the removed 0.3 architecture.
+This alpha intentionally has no in-place migration from the removed 0.3 or the
+superseded package-native 0.4 candidate.

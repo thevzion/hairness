@@ -1,27 +1,22 @@
 # Hairness 0.4.0-alpha.0
 
-Hairness 0.4 is a clean reconstruction around one concrete contract: an agent
-Home is an npm project that composes versioned packages.
+Hairness now treats agentic assets as source you own.
 
-The release contains:
+A registry manifest points at Skills, instructions, knowledge or an Adapter.
+`hairness add` copies those files into a Home, writes a small provenance receipt
+and leaves Git in charge of history. `status`, `diff` and `sync` can compare the
+source without a global lock, solver or background updater.
 
-- `@hairness/cli`, the local Kernel;
-- `@hairness/native`, the fundamental Hairness Extension;
-- `@hairness/starter`, the default personal Home Starter;
-- exact npm, Git and local Extension sources;
-- optional package Catalogs;
-- transactional add, update, remove and rollback;
-- controlled Adapter builds with declared output ownership;
-- Codex and Claude projections;
-- independent Targets and credential-free Integration bindings.
+The one published package is the on-demand `@hairness/cli` Kernel. A Home needs
+no Hairness dependency, `package.json`, `package-lock.json` or `node_modules`.
+The Kernel builds the owned assets into Codex and Claude projections while
+Targets remain independent repositories and `.overlay/` remains explicit human
+memory.
 
-`package-lock.json` is the only dependency lock. `hairness.json` owns
-composition. `.hairness/build.json` owns local generated-file digests.
+Executable Adapters are inert during add and sync. A named
+`build --allow-adapter` approval runs them in staging with declared output,
+symlink, ownership and digest checks. The GSD proof invokes exactly
+`@opengsd/gsd-core@1.6.1` through its official installer.
 
-The prerelease is qualified on Node.js 22 and 24, two real personal Homes, a
-private team Starter, and a separate GSD Adapter pinned to GSD Core 1.6.1.
-Private downstream packages and repository details are not part of the public
-release.
-
-This alpha has no in-place migration from the removed 0.3 architecture. Create
-a new Home or migrate an existing Home on an isolated branch.
+The alpha is qualified on Node.js 22 and 24, two real personal Homes and a fresh
+empty-directory bootstrap. It has no in-place migration from earlier models.

@@ -55,11 +55,12 @@ export function assertInside(root, candidate, label = 'path') {
 }
 
 export async function resolvePackageFile(root, path, label = 'package path') {
-  const target = assertInside(root, resolve(root, path), label)
-  const resolved = await realpath(target)
-  assertInside(root, resolved, label)
+  const base = await realpath(root)
+  const target = assertInside(base, resolve(base, path), label)
   const stat = await lstat(target)
   if (stat.isSymbolicLink()) throw new HairnessError('symlink_forbidden', `${label} must not be a symbolic link.`)
+  const resolved = await realpath(target)
+  assertInside(base, resolved, label)
   return resolved
 }
 

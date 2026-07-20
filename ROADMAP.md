@@ -2,18 +2,18 @@
 
 ## 0.4 alpha
 
-- qualify the clean Kernel and three core packages;
-- merge only after checkpoint 1;
-- publish the exact prerelease artifacts only after checkpoint 2;
-- migrate the two proof Homes from tarballs to registry versions;
-- publish approved launch material only after checkpoint 3.
+- prove the source-owned registry contract;
+- qualify the single CLI package on Node 22 and 24;
+- migrate two real Homes;
+- qualify one non-trivial Adapter through GSD.
 
-## Later
+## After the alpha
 
-- public Extension and Catalog ecosystem through npm and exact Git sources;
-- a web marketplace backed by the same package manifests;
-- additional team Starters and Adapters proven by real consumers;
-- optional collaboration features owned by Extensions.
+- publish personal and company Home items from proven use;
+- improve registry discovery and authoring ergonomics;
+- add more provider projections without changing the Home grammar;
+- evaluate three-way sync only from real customization evidence;
+- add a web registry when discoverability, not installation, becomes the limit.
 
-Hairness does not plan to become a provider runtime, hosted agent scheduler,
-Target repository owner or transcript store.
+Automatic updates, a daemon, a global package store and provider-specific Home
+models are not planned.

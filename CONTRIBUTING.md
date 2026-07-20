@@ -3,7 +3,7 @@
 Read [STATUS.md](STATUS.md), [SPEC.md](SPEC.md), and the relevant decision before
 changing public behavior.
 
-Change canonical source under `src/`, `schemas/` or `packages/`. Generated
+Change canonical source under `src/`, `schemas/` or `registry/`. Generated
 provider outputs are test evidence, not source.
 
 Keep the README, specification, schemas, CLI and tests aligned. Add a durable

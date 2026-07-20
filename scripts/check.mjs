@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { readFile, readdir } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 import { compileSchemas, validateDocument } from '../src/contracts.mjs'
+import { validateRegistry } from '../src/registry.mjs'
 
 const root = new URL('../', import.meta.url).pathname
 
@@ -17,13 +18,14 @@ async function files(directory) {
   return values
 }
 
-assert.deepEqual(await compileSchemas(), ['home', 'package', 'prologue'])
-for (const workspace of ['native', 'starter']) {
-  const document = JSON.parse(await readFile(join(root, 'packages', workspace, 'package.json'), 'utf8'))
-  await validateDocument(document.hairness, 'package')
-}
+assert.deepEqual(await compileSchemas(), ['home', 'registry', 'item', 'prologue'])
+await validateRegistry(JSON.parse(await readFile(join(root, 'registry/registry.json'), 'utf8')))
+await validateDocument({
+  $schema: 'https://hairness.dev/schema.json', runtime: '@hairness/cli@0.4.0-alpha.0', providers: ['codex'], registries: {}, targets: [], integrations: [], config: {},
+}, 'home')
 const all = await files(root)
 assert.equal(all.some((path) => path.endsWith('hairness.lock.json')), false)
+assert.equal(all.some((path) => /packages\/(?:native|starter)/.test(path)), false)
 for (const path of all.filter((path) => path.endsWith('.mjs'))) execFileSync(process.execPath, ['--check', path], { stdio: 'pipe' })
 for (const path of all) {
   const name = relative(root, path)
@@ -31,10 +33,6 @@ for (const path of all) {
   if (!/\.(?:md|mjs|json|yml|yaml)$/.test(name)) continue
   const body = await readFile(path, 'utf8')
   assert.ok(!/AKIA[0-9A-Z]{16}|-----BEGIN (?:RSA |EC )?PRIVATE KEY/.test(body), `${name} contains secret-like material`)
-  if (name.startsWith('src/')) {
-    for (const removed of ['HomeLock', 'Distribution', 'protocolVersion', 'schemaVersion', 'SessionOpening', 'Invocation', 'WorkerCapsule', 'fan-in']) {
-      assert.equal(body.includes(removed), false, `${name} contains removed model ${removed}`)
-    }
-  }
+  if (name.startsWith('src/')) for (const removed of ['HomeLock', 'Distribution', 'package-owned', '@hairness/native', '@hairness/starter']) assert.equal(body.includes(removed), false, `${name} contains removed model ${removed}`)
 }
 console.log(`check passed (${all.length} files)`)

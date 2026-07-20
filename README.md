@@ -1,175 +1,203 @@
 # Hairness
 
-Hairness is a small, provider-neutral kernel for composable agent Homes.
+**Own the agentic assets your agents work with.**
 
-A Home pins its agentic assets as npm dependencies, selects them in
-`hairness.json`, and builds native Codex and Claude projections. Product
-repositories stay independent Targets.
+![Hairness 0.4: source-owned agentic assets](docs/assets/hairness-0.4-source-owned-social-card.png)
 
-> Hairness 0.4 is an alpha. Pin exact versions and review every Adapter before
-> approving its build.
-
-Node.js 22 or 24 · Codex and Claude · MIT
-
-## Create a personal Home
-
-```bash
-npx --yes @hairness/cli@0.4.0-alpha.0 create "$HOME/Hairness"
-cd "$HOME/Hairness"
-npm run doctor
-```
-
-Creation installs the exact CLI, Starter and required Extensions with npm
-lifecycle scripts disabled. It builds both providers, initializes Git, creates
-one initial commit, configures no remote, and moves the finished Home into place
-atomically.
-
-The default `@hairness/starter` activates `@hairness/native`, which provides
-orientation, onboarding and explicit Scratch memory.
+Hairness copies Skills, instructions, knowledge and approved Adapters into a
+Git-owned Home, then projects them to Codex, Claude and future agent runtimes.
+The source stays yours: read it, edit it, review it and commit it.
 
 ```text
-Hairness/
-├── package.json
-├── package-lock.json
-├── hairness.json
-├── AGENTS.md
-├── CLAUDE.md
-├── targets/
-└── .overlay/config.json
+Registry manifest → hairness add → source-owned files → Git
+                                          ↓
+                                    hairness build
+                                          ↓
+                                  Codex · Claude · …
 ```
 
-`package-lock.json` is the only dependency lock. `.hairness/build.json` is local,
-ignored build state. There is no `hairness.lock.json`.
+Hairness is a small, provider-neutral arranger for an organization’s **agentic
+assets**: the useful material that helps agents understand people, work and
+domain context. Providers keep control of runtimes and sessions. Git keeps
+control of source history.
 
-## Add an Extension
+> `0.4.0-alpha.0` is a prerelease. Pin the exact runtime and review every
+> Adapter before allowing it to build.
 
-An Extension is an npm package with a `package.json#hairness` manifest:
+Node.js 22 or 24 · MIT
+
+## Start with a Home
+
+```bash
+npx --yes @hairness/cli@0.4.0-alpha.0 create "$HOME/my-home"
+cd "$HOME/my-home"
+npx --yes @hairness/cli@0.4.0-alpha.0 doctor
+```
+
+That creates a Git repository with no npm project, local dependency tree or
+Hairness lockfile:
+
+```text
+my-home/
+├── hairness.json                     # runtime, providers, registries, Targets
+├── extensions/
+│   └── hairness/core/                # readable, editable source
+│       ├── hairness.item.json        # provenance receipt
+│       ├── instructions/
+│       └── skills/
+├── .overlay/                         # explicit human memory and preferences
+├── targets/                          # ignored bindings to independent repos
+├── AGENTS.md                         # managed Codex contract
+└── CLAUDE.md                         # managed Claude contract
+```
+
+`hairness.json#runtime` fixes the exact CLI used by commands and provider hooks.
+`.hairness/build.json` is ignored, reproducible build state. Git is the history,
+rollback and collaboration layer.
+
+## Add an Extension as source
+
+A registry is a JSON manifest in any Git repository or HTTPS endpoint:
 
 ```json
 {
-  "name": "@acme/review",
-  "version": "1.2.3",
-  "type": "module",
-  "files": ["assets/"],
-  "hairness": {
-    "apiVersion": "hairness.dev/package/v1alpha1",
-    "kind": "Extension",
-    "summary": "Review one change.",
-    "subtype": "assets",
-    "contributes": {
-      "skills": [{
-        "id": "review",
-        "summary": "Review one change.",
-        "path": "assets/review.md"
-      }],
-      "commands": [{
-        "id": "review",
-        "skill": "review"
-      }]
+  "$schema": "https://hairness.dev/schema/registry.json",
+  "name": "acme-agentic-assets",
+  "items": [
+    {
+      "name": "tech",
+      "version": "1.2.0",
+      "type": "hairness:extension",
+      "title": "Acme Tech",
+      "description": "Shared engineering context and practices.",
+      "registryDependencies": ["@company/security"],
+      "files": [
+        {
+          "path": "tech/skills/review/SKILL.md",
+          "type": "hairness:skill",
+          "id": "review",
+          "description": "Review a change in Acme context."
+        },
+        {
+          "path": "tech/knowledge/architecture.md",
+          "type": "hairness:file"
+        }
+      ]
     }
-  }
+  ]
 }
 ```
 
-Install directly from an exact npm version, Git tag or commit:
+Install from a namespace, GitHub, HTTPS or a local manifest:
 
 ```bash
-hairness extension add @acme/review@1.2.3
-hairness extension add 'git+https://github.com/acme/review.git#v1.2.3'
-hairness extension update @acme/review --to @acme/review@1.2.4
-hairness extension remove @acme/review
+hairness add @company/tech -y
+hairness add acme/agentic-assets/tech#v1.2.0 -y
+hairness add https://assets.acme.test/tech.json -y
+hairness add ./registry.json -y
 ```
 
-Local `file:` packages are supported for development and must be stored in the
-Home, usually under `vendor/`. Ranges, branches, `HEAD`, dist-tags and
-unversioned registry packages are rejected.
+Git tags and commits make a bootstrap reproducible. Unpinned Git, URL and local
+sources are allowed for exploration and shown as mobile by `hairness status`.
+Private registry headers may interpolate environment variables; resolved secrets
+are never written to receipts or output.
 
-## Use a Catalog
+## Customize and synchronize
 
-A Catalog is a thin optional index. Direct installation remains available.
+Installed files are deliberately editable. Hairness records the digest it
+originally copied for each declared file:
 
 ```bash
-hairness catalog add acme @acme/hairness-catalog@1.0.0
-hairness catalog search review
-hairness extension add catalog:acme/review
+hairness status tech
+hairness diff tech
+hairness sync tech --check
+hairness sync tech
 ```
 
-The Catalog is an npm or exact Git package whose manifest points to a JSON index
-of entry IDs and exact package specs. A web marketplace is not required.
+- An intact Extension updates atomically.
+- A changed or missing declared file stops sync and shows the divergence.
+- `--overwrite` explicitly lets upstream replace local customizations.
+- Undeclared local files are always preserved.
+- No automatic update, merge daemon or global dependency solver exists.
 
-## Compose a team Home with GSD
+This follows the source-owned model used by shadcn. Distribution supplies a
+starting point. Hairness adds provenance and cautious synchronization, while Git
+handles history.
 
-The official `@hairness/adapter-gsd` package is kept in a separate repository and
-pins `@opengsd/gsd-core@1.6.1`. During this prerelease it is qualified from an
-exact local tarball:
+## Build for any provider
 
 ```bash
-hairness extension add file:vendor/hairness-adapter-gsd-0.4.0-alpha.0.tgz \
-  --allow-build
+hairness build
+hairness build --check
+hairness doctor --json
+hairness prologue
 ```
 
-The Adapter calls GSD's official installer in staging. Hairness accepts only its
-declared `.codex` output, rejects symbolic links and owner collisions, records
-every digest, and keeps npm lifecycle scripts disabled.
+The Kernel discovers installed receipts, composes instructions and Skills, and
+generates native provider files. The same Home remains stable when the active
+agent runtime changes.
 
-A private downstream Starter combines Native, the GSD Adapter, team skills,
-Target declarations and Integration choices. Its packed journey is tested
-without publishing private repositories, URLs, credentials or business data.
-The complete ticket loop remains downstream.
+Adapters are source files too, but `add` and `sync` never execute them:
 
-## Ownership model
+```bash
+hairness build --allow-adapter hairness-gsd
+```
+
+An allowed Adapter runs in staging. Undeclared outputs, symbolic links, owner
+collisions and divergent generated files fail the build. The official GSD proof
+invokes exactly `@opengsd/gsd-core@1.6.1` through its installer.
+
+## Homes, Targets and Overlay
 
 ```mermaid
 flowchart LR
-  starter["Starter"] --> home["Home composition"]
-  extension["Extension packages"] --> home
-  catalog["Optional Catalog"] --> extension
-  home --> build["hairness build"]
-  build --> codex["Codex assets"]
-  build --> claude["Claude assets"]
-  build --> adapter["Approved Adapter outputs"]
-  codex --> targets["Independent Targets"]
-  claude --> targets
+  registry["GitHub · HTTPS · private registry"] --> home["Home · agentic assets"]
+  home --> codex["Codex"]
+  home --> claude["Claude"]
+  home -. "ignored local binding" .-> targets["Independent Targets"]
+  overlay[".overlay · explicit memory"] --> home
 ```
 
-- The Home owns package selection, provider projections and explicit human
-  memory.
-- Extensions own their source assets and declared build outputs.
-- npm owns dependency resolution and locking.
-- Targets own product source and Git history.
-- Integrations describe accessors only; Hairness installs no tool and stores no
-  credential.
+A personal Home can group a subject such as game development. A team Home can
+give every collaborator the same domain assets while each clone keeps its local
+bindings and Overlay. A company can publish broader Extensions that team Homes
+compose. Personal, team and company Homes use the same registry model.
+
+Targets remain independent Git repositories. Integrations describe allowed
+access paths but store no credentials and install no tools.
 
 ## CLI
 
 ```text
-hairness create <home> [--starter <exact-spec>]
-hairness build [--check]
+hairness init [items...]
+hairness create <home> [base-item]
+hairness add <items...> [--dry-run] [--diff] [--view] [--overwrite] [-y]
+hairness view <items...>
+hairness list <registry>
+hairness search <registry> [--query <text>]
+hairness status [item]
+hairness diff <item>
+hairness sync [item|--all] [--check] [--to <address>] [--overwrite]
+hairness remove <item>
+hairness registry validate <registry.json>
+hairness build [--check] [--allow-adapter <id>]
 hairness doctor [--json]
 hairness prologue [--json]
-hairness extension list|add|update|remove|doctor
-hairness catalog list|search|add|update|remove
 hairness target list|discover|add|bind|unbind|remove|doctor
 hairness integration list|add|bind|unbind|remove|doctor
 ```
 
-`build --check` performs no write. `doctor` reports package, build, Target and
-Integration limits. Generated files are path-owned: divergence and unmanaged
-collisions stop the build.
-
-## Development
+## Develop
 
 ```bash
 npm ci --ignore-scripts
-npm test
 npm run check
+npm test
 npm run conformance
 npm run check:providers
 npm run check:pack
 npm run check:lab
-npm run test:node22
-npm run test:node24
 ```
 
 Read the [specification](SPEC.md), [architecture](docs/architecture.md),
-[security model](docs/security-model.md), and [release process](docs/releasing.md).
+[security model](docs/security-model.md) and [release process](docs/releasing.md).

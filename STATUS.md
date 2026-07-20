@@ -2,33 +2,32 @@
 
 Target: `0.4.0-alpha.0`
 
-## Implemented
+## Implemented on the candidate branch
 
-- clean branch from `origin/main` without history rewrite;
-- `@hairness/cli`, `@hairness/native` and `@hairness/starter`;
-- Home v1alpha3 with `package-lock.json` as the only dependency lock;
-- exact npm, Git and local package sources;
-- transactional Extension and Catalog lifecycle;
-- static Extension assets and approved Adapter builds with path ownership;
+- one CLI package and bundled official source registry;
+- Home without a local npm project or Hairness lock;
+- local, HTTPS, namespace and GitHub source resolvers;
+- per-Extension receipts, offline status, diff, sync and remove;
+- recursive dependencies, transaction rollback, collision and symlink checks;
+- inert installation and explicitly approved Adapter staging;
 - Codex and Claude projections, Targets, Integrations, doctor and prologue;
-- official GSD Adapter package pinned to `@opengsd/gsd-core@1.6.1`;
-- private downstream team Extension and Starter proof;
-- two real Homes qualified from candidate tarballs.
+- source-registry GSD Adapter pinned to GSD Core 1.6.1;
+- two real Homes migrated without changing their Target declarations,
+  Integration declarations or Overlay contents.
 
 ## Current gate
 
-Checkpoint 1 is the next effect boundary. It requires the final diff, full CI
-matrix, tarball contents, both Home qualifications, downstream GSD proof and
-rendered README.
+Checkpoint 1 is next. It must present the final diff, Node 22/24 qualification,
+single tarball contents, official registry, both Home qualifications, GSD proof
+and rendered README.
 
-No merge, npm publication, tag, GitHub prerelease or external communication is
-authorized before its matching checkpoint.
+No merge, npm publication, tag, GitHub prerelease, downstream migration merge or
+external communication is authorized yet.
 
 ## Deferred
 
 - web marketplace;
-- friend-specific Homes;
-- public downstream team packages;
-- complete downstream ticket loop;
-- Product Hunt and marketing site;
-- broader brand system.
+- friend-specific personal and company Homes;
+- public Hupso assets;
+- automatic merging or updating;
+- marketing site, Product Hunt and a broader brand system.

@@ -7,7 +7,7 @@ import { promisify } from 'node:util'
 const exec = promisify(execFile)
 const projectRoot = new URL('../', import.meta.url).pathname
 const outputRoot = resolve(process.argv[2] ?? join(projectRoot, 'release'))
-const sources = ['packages/native', 'packages/starter', '.']
+const sources = ['.']
 const packages = []
 
 const { stdout: status } = await exec('git', ['status', '--porcelain', '--untracked-files=all'], { cwd: projectRoot })

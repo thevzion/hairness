@@ -1,8 +1,12 @@
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { API, validateDocument, validateLocalConfig } from './contracts.mjs'
 import { HairnessError } from './lib/errors.mjs'
 import { assertId, digest, readJson } from './lib/io.mjs'
+
+const packageDocument = JSON.parse(await readFile(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'))
+export const RUNTIME = `@hairness/cli@${packageDocument.version}`
 
 export async function findHome(start = process.env.HAIRNESS_HOME_PATH ?? process.cwd()) {
   let current = resolve(start)
@@ -22,13 +26,16 @@ export async function findHome(start = process.env.HAIRNESS_HOME_PATH ?? process
 export async function loadHome(root) {
   root ??= await findHome()
   const home = await validateDocument(await readJson(join(root, 'hairness.json')), 'home')
-  unique(home.spec.extensions.map((entry) => entry.package), 'Extension packages')
-  unique(home.spec.catalogs.map((entry) => entry.id), 'Catalog ids')
-  unique(home.spec.targets.map((entry) => entry.id), 'Target ids')
-  unique(home.spec.integrations.map((entry) => entry.id), 'Integration ids')
-  const active = new Set(home.spec.extensions.map((entry) => entry.package))
-  const stale = Object.keys(home.spec.config).filter((name) => !active.has(name))
-  if (stale.length) throw new HairnessError('config_owner_inactive', `Config belongs to inactive extensions: ${stale.join(', ')}.`)
+  unique(home.targets.map((entry) => entry.id), 'Target ids')
+  unique(home.integrations.map((entry) => entry.id), 'Integration ids')
+  return home
+}
+
+export async function assertRuntime(root) {
+  const home = await loadHome(root)
+  if (home.runtime !== RUNTIME) {
+    throw new HairnessError('runtime_mismatch', `This Home requires ${home.runtime}; run npx --yes ${home.runtime} instead.`, { exitCode: 3 })
+  }
   return home
 }
 
@@ -41,20 +48,15 @@ export function homeId(destination) {
   return assertId(name || `home-${digest(resolve(destination)).slice(7, 15)}`, 'Home id')
 }
 
-export function homeDocument(id, starter, providers, extensions, catalogs = [], config = {}, targets = [], integrations = []) {
+export function homeDocument(options = {}) {
   return {
-    apiVersion: API.home,
-    kind: 'Home',
-    metadata: { id: assertId(id, 'Home id') },
-    spec: {
-      starter,
-      providers: [...new Set(providers)],
-      extensions,
-      catalogs,
-      targets,
-      integrations,
-      config,
-    },
+    $schema: API.home,
+    runtime: RUNTIME,
+    providers: [...new Set(options.providers ?? ['codex', 'claude'])],
+    registries: options.registries ?? {},
+    targets: options.targets ?? [],
+    integrations: options.integrations ?? [],
+    config: options.config ?? {},
   }
 }
 

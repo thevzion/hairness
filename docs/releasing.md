@@ -2,34 +2,27 @@
 
 ## Checkpoint 1: merge
 
-Present the final diff, CI, tarball contents, two Home qualifications, GSD
-downstream proof and rendered README. Approval authorizes only merging the
-Hairness PR into `main`.
+Present the final diff, CI-equivalent Node 22/24 runs, the single CLI tarball,
+official registry validation, two Home qualifications, GSD 1.6.1 proof and the
+rendered README. Approval authorizes only merging Hairness into `main`.
 
 ## Checkpoint 2: release
 
-Present the exact main commit and `release/manifest.json` with package order,
-versions, SHA-256 values and npm integrities. Approval authorizes:
+Present the exact main commit and `release/manifest.json` containing
+`@hairness/cli@0.4.0-alpha.0`, SHA-256 and npm integrity. Approval authorizes:
 
 1. npm publication under `next`;
 2. tag `v0.4.0-alpha.0`;
 3. GitHub prerelease creation.
 
-The workflow packs in this order:
-
-1. `@hairness/native`
-2. `@hairness/starter`
-3. `@hairness/cli`
-
-If a version already exists, the workflow compares registry integrity with the
-qualified artifact. A match is skipped; a mismatch fails. This makes the npm
-step resumable without republishing a version.
+If that npm version exists, the workflow compares its integrity with the
+qualified artifact. An identical version is skipped; a mismatch stops. Nothing
+is republished.
 
 ## Checkpoint 3: communication
 
-Reinstall from npm in an empty Home. Replace proof Home tarballs with exact
-registry versions and requalify both. Present the final images and channel text.
-Approval authorizes external posts only.
+Create a fresh Home through npm, requalify the two real Homes with the registry
+runtime, then present final commands, image and channel copy. Approval authorizes
+downstream Home merges and external posts.
 
-npm publication, Git tag creation, GitHub prerelease creation, Home migration
-merges and external posts remain separate effects.
+These effects remain separate even when their evidence is prepared together.

@@ -1,182 +1,130 @@
 # Hairness 0.4 specification
 
 Status: alpha
-Packages: `@hairness/cli`, `@hairness/native`, `@hairness/starter`
+
+Public npm package: `@hairness/cli`
 
 The terms MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are normative.
 
-## 1. Product boundary
+## 1. Boundary
 
-Hairness is a local kernel for agent Homes. It composes package-owned agentic
-assets into native provider files. It does not replace provider runtimes,
-models, sessions, tools or user interfaces.
+Hairness is a local arranger and build Kernel for source-owned agentic assets.
+It MUST NOT own the provider runtime, model, session, product source, credential
+or user interface. A Home owns its installed assets and explicit memory. A
+Target remains an independent Git repository.
 
-A Home MUST own its composition and generated assets. A Target MUST remain an
-independent Git repository. Binding a Target or Integration MUST NOT grant
-authority to mutate it.
+## 2. Home
 
-## 2. Public documents
+`hairness.json` MUST validate against `https://hairness.dev/schema.json` and
+declare an exact `@hairness/cli` runtime, active providers, registry mappings,
+Targets, Integrations and config. Unknown fields MUST fail.
 
-| Document | API |
-| --- | --- |
-| Home | `hairness.dev/home/v1alpha3` |
-| Package manifest | `hairness.dev/package/v1alpha1` |
-| Catalog index | `hairness.dev/catalog/v1alpha1` |
-| Prologue model | `hairness.dev/prologue/v1alpha1` |
+A Home MUST NOT require `package.json`, `package-lock.json`, `node_modules` or
+`hairness.lock.json`. `.hairness/build.json` MUST be ignored build state. Git is
+the canonical history and restoration mechanism.
 
-Public documents MUST reject unknown fields. Package versions MUST use SemVer.
+Every Home command MUST verify that the executing CLI matches the exact runtime.
+Provider hooks MUST invoke that version through `npx --yes`.
 
-## 3. Home
+## 3. Registry and addresses
 
-A Home MUST contain:
+A registry MUST validate against
+`https://hairness.dev/schema/registry.json`. An item MUST declare its name,
+version, type, title, description, dependencies and files. Declared source and
+destination paths MUST be relative, remain inside their roots and contain no
+symbolic link.
 
-- `package.json` with direct dependencies for the CLI, Starter, active
-  Extensions and active Catalogs;
-- `package-lock.json` as its only dependency lock;
-- `hairness.json` for provider, package, Target, Integration and namespaced
-  Extension configuration;
-- `.overlay/config.json` for bounded personal preferences and local Integration
-  bindings;
-- ignored `.hairness/build.json` for generated output owners and digests.
+The CLI MUST accept:
 
-`hairness.lock.json` MUST NOT exist.
+- `@namespace/item` through a Home registry mapping;
+- `owner/repository/item` with an optional Git tag or commit;
+- HTTPS item or registry JSON;
+- a local JSON path.
 
-Tracked configuration MUST NOT contain local Target paths. A local Target binding
-MUST be an ignored `targets/<id>` symbolic link whose Git remote matches the
-declared repository identity.
+Registry header values MAY reference environment variables. Expanded values
+MUST NOT appear in errors, receipts, logs or generated files. HTTP is forbidden.
 
-## 4. Package kinds
+## 4. Installed item and provenance
 
-`package.json#hairness` is canonical.
+An item MUST be copied under `extensions/<namespace>/<item>/`. Its tracked
+`hairness.item.json` MUST validate against
+`https://hairness.dev/schema/item.json` and record source, requested ref,
+resolved commit when available, mobility, dependencies and the initial digest
+of each declared file. The receipt MUST NOT include itself in those digests.
 
-### Starter
+No global resolution ledger, version solver, store or lifecycle script exists.
 
-A Starter declares providers, required Extensions, optional Catalogs, template
-files, Extension config, Targets and Integrations. Creation MUST promote every
-required package to a direct Home dependency. A Starter has no runtime role
-after creation.
+## 5. Add and remove
 
-### Extension
+`add` MUST resolve the full dependency graph, reject cycles and destination
+collisions, display planned writes, require confirmation unless `-y`, and apply
+all source writes transactionally. It MUST execute no source code.
 
-An Extension declares a summary, subtype and contributions. Static contributions
-MAY include instructions, Skills, command projections, explicit files and a
-bounded prologue contributor.
+`remove` MUST refuse an item required by another installed item. It MUST refuse
+customized, missing or invalid declared files unless overwrite is explicit. It
+MUST remove only declared files and the receipt; unknown local files survive.
 
-Composition MUST reject missing required Extensions, duplicate Skill IDs,
-duplicate command outputs, invalid config and output owner collisions. Installed
-package presence MUST NOT activate an Extension; only `hairness.json` does.
+## 6. Status, diff and sync
 
-### Adapter
+`status` MUST remain offline and classify each declared file as `clean`,
+`customized`, `missing` or `invalid` against its base digest.
 
-An Adapter is an executable Extension subtype. Its manifest MUST declare one
-Node entry and one or more output roots.
+`sync` MUST fetch the recorded source or `--to` address and MUST execute no code.
+`--check` MUST write nothing. If all old declared files are clean, sync applies
+the new source atomically. A local change or deletion MUST block all writes
+unless `--overwrite` is explicit. Unknown local files always survive. A file
+removed upstream is deleted only when its local copy was intact. New
+dependencies are installed; old ones require explicit removal.
 
-An Adapter MUST run only during `hairness build`, only when its Home selection
-contains `execution: "build"`, and only after the user supplied
-`--allow-build` during add, update or creation.
+Hairness performs no automatic merge and no automatic update.
 
-Hairness MUST run it in staging with a bounded environment, time and output
-size. Symbolic links, undeclared paths, owner collisions and writes over
-unmanaged files MUST fail before partial output is accepted. Adapter output is
-trusted package code, not an operating-system sandbox.
+## 7. Build
 
-### Catalog
+`build` MUST discover installed receipts, validate declared assets, compose
+instructions and Skills and produce native provider projections. It MUST reject
+duplicate output owners, unmanaged collisions and divergence from recorded
+generated output digests. `build --check` MUST write nothing.
 
-A Catalog points to a JSON object whose entry IDs map to exact package specs.
-Catalog installation is optional. Direct Extension installation MUST remain
-available.
+Generated owners and digests MUST be recorded in ignored
+`.hairness/build.json`. Unmanaged provider files MUST survive.
 
-## 5. Package sources
+## 8. Adapters
 
-Accepted package specs are:
+An Adapter is an executable file declared by an installed item. `add` and `sync`
+MUST NOT run it. Only `build --allow-adapter <id>` may execute it.
 
-- exact npm versions such as `@acme/review@1.2.3`;
-- Git URLs ending in an exact SemVer tag or 40-character commit SHA;
-- local `file:` packages, normally tracked under the Home.
+The Kernel MUST give an Adapter a staging output root, bounded environment,
+time and output size. It MUST reject symbolic links, undeclared output paths,
+owner collisions and partial promotion. Approval grants trusted executable
+source local process access; the process boundary supplies no OS sandbox.
 
-SemVer ranges, branches, `HEAD`, dist-tags and unversioned registry names MUST be
-rejected.
+## 9. Creation
 
-Every npm install, update, removal, recovery and creation MUST disable lifecycle
-scripts. A failed lifecycle operation MUST restore `package.json`,
-`package-lock.json`, `hairness.json` and the last valid build.
+`create` MUST work in a sibling temporary directory, initialize Git, install the
+base item or `@hairness/core`, build, doctor, create one initial commit, configure
+no remote and atomically rename the qualified Home. Failure MUST leave the final
+destination absent.
 
-## 6. Build
+A `hairness:home` item MAY seed providers, Targets, Integrations and config. It
+uses the same registry and provenance model as any Extension.
 
-`hairness build` MUST:
+## 10. Targets, Integrations, Overlay and prologue
 
-1. validate Home and package manifests;
-2. validate Extension composition and namespaced config;
-3. load static and provider contributions;
-4. run approved Adapters in staging;
-5. validate every desired output and owner before writing;
-6. refuse divergence from previously recorded digests;
-7. update exact Git-local exclude entries;
-8. write `.hairness/build.json` atomically.
+A Target binding MUST be an ignored local symlink whose Git remote matches the
+declared repository. Discovery MUST be read-only and avoid symlink traversal.
 
-`hairness build --check` MUST perform no write and MUST fail when the desired
-composition, managed regions, hook configuration, excludes or output digests
-differ.
+An Integration selects a declared CLI or provider accessor. Hairness MUST NOT
+install or authenticate it and MUST NOT persist credentials.
 
-Hairness MUST preserve unmanaged files in provider directories.
+`.overlay/` contains explicit human-owned preferences and memory. Hairness MUST
+NOT persist transcripts or hidden reasoning. The prologue contains bounded
+preferences, observed facts and repair signals, never registry secrets.
 
-## 7. Creation
+## 11. Release
 
-`hairness create` MUST build in a sibling temporary directory and atomically
-rename a qualified Home to the requested destination. The destination MUST
-remain absent on failure.
+Only `@hairness/cli@0.4.0-alpha.0` is published, under `next`. A resumed release
+MUST compare an existing npm version with the qualified integrity and skip an
+identical artifact. An integrity mismatch MUST stop.
 
-Creation MUST install exact packages with lifecycle scripts disabled, copy the
-Starter template without symbolic links, build provider and Adapter outputs,
-run structural doctor checks, initialize Git and create one initial commit. It
-MUST configure no remote and perform no push.
-
-Unbound Starter Targets and Integrations MAY leave a new Home operational but
-partial until onboarding binds local access.
-
-## 8. Targets and Integrations
-
-Target discovery MUST be read-only, ignore symbolic-link traversal and common
-dependency caches, inspect Git remotes, and return all candidates without
-choosing between clones.
-
-Target bind MUST verify remote identity before creating a local symbolic link.
-Target removal MUST remove only the Home binding and declaration.
-
-An Integration declares allowed CLI or provider accessors. A local binding MUST
-select one declared accessor for one active provider. Hairness MUST NOT install,
-authenticate or persist credentials for an Integration.
-
-## 9. Prologue and memory
-
-The prologue MUST separate preferences, observed facts and repair signals. An
-Extension contributor MUST execute in a separate bounded Node process and return
-only typed facts and signals. Secret-like output MUST be rejected.
-
-Sessions are ephemeral. Hairness Native MAY persist an explicit Scratch only
-when the user requests it. It MUST NOT persist transcripts or hidden reasoning.
-
-## 10. Release
-
-Core packages MUST be qualified and published in this order:
-
-1. `@hairness/native@0.4.0-alpha.0`
-2. `@hairness/starter@0.4.0-alpha.0`
-3. `@hairness/cli@0.4.0-alpha.0`
-
-They MUST use the `next` dist-tag. A resumed release MUST compare an existing
-registry version with the qualified artifact integrity and MUST NOT republish a
-matching version. A mismatch MUST stop the release.
-
-npm publication, Git tag creation and GitHub prerelease creation are separate
-approved effects.
-
-## 11. Compatibility
-
-Hairness 0.4 is a clean reconstruction. It has no reader, migration engine or
-compatibility shim for the removed 0.3 source model, schemas, lockfile,
-Distributions, extension registry or operation framework.
-
-Existing consumers migrate on independent branches by replacing the package
-graph and Home document. Target repositories and explicit human memory remain
-independent of the Kernel reset.
+npm publication, Git tag, GitHub prerelease, downstream Home merges and external
+communication remain separate approved effects.
