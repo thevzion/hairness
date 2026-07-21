@@ -1,11 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://hairness.dev/schema.json",
+  "$id": "https://hairness.dev/schema/home.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "runtime", "providers", "registries", "targets", "integrations", "config"],
+  "required": ["$schema", "name", "runtime", "providers"],
   "properties": {
-    "$schema": { "const": "https://hairness.dev/schema.json" },
+    "$schema": { "const": "https://hairness.dev/schema/home.json" },
+    "name": { "$ref": "#/$defs/id" },
     "runtime": { "type": "string", "pattern": "^@hairness/cli@[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$" },
     "providers": {
       "type": "array",
@@ -13,40 +14,12 @@
       "uniqueItems": true,
       "items": { "enum": ["codex", "claude"] }
     },
-    "registries": {
-      "type": "object",
-      "propertyNames": { "pattern": "^@[a-z0-9][a-z0-9._-]*$" },
-      "additionalProperties": {
-        "oneOf": [
-          { "$ref": "#/$defs/registryUrl" },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["url"],
-            "properties": {
-              "url": { "$ref": "#/$defs/registryUrl" },
-              "headers": {
-                "type": "object",
-                "additionalProperties": { "type": "string", "maxLength": 2048 }
-              }
-            }
-          }
-        ]
-      }
-    },
-    "targets": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/target" }
-    },
-    "integrations": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/integration" }
-    },
+    "targets": { "type": "array", "items": { "$ref": "#/$defs/target" } },
+    "integrations": { "type": "array", "items": { "$ref": "#/$defs/integration" } },
     "config": { "type": "object" }
   },
   "$defs": {
     "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]{0,127}$" },
-    "registryUrl": { "type": "string", "minLength": 1, "maxLength": 2048, "pattern": "^(?:https://|\\./|\\../|/).+\\{name\\}.*$" },
     "target": {
       "type": "object",
       "additionalProperties": false,
@@ -64,11 +37,7 @@
       "properties": {
         "id": { "$ref": "#/$defs/id" },
         "summary": { "type": "string", "minLength": 1, "maxLength": 240 },
-        "accessors": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "$ref": "#/$defs/accessor" }
-        }
+        "accessors": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/accessor" } }
       }
     },
     "accessor": {
@@ -77,10 +46,7 @@
           "type": "object",
           "additionalProperties": false,
           "required": ["kind", "command"],
-          "properties": {
-            "kind": { "const": "cli" },
-            "command": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" }
-          }
+          "properties": { "kind": { "const": "cli" }, "command": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" } }
         },
         {
           "type": "object",

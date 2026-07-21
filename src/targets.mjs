@@ -1,9 +1,9 @@
 import { lstat, mkdir, readdir, readlink, realpath, symlink, unlink } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import { loadHome } from './home.mjs'
+import { loadHome, saveHome } from './home.mjs'
 import { inspectRepository, normalizeRepository } from './git.mjs'
 import { HairnessError } from './lib/errors.mjs'
-import { assertId, exists, writeJsonAtomic } from './lib/io.mjs'
+import { assertId, exists } from './lib/io.mjs'
 
 export async function targetBinding(root, id) {
   const link = join(root, 'targets', id)
@@ -46,7 +46,7 @@ export async function addTarget(root, repository, options = {}) {
   const id = assertId(options.id ?? slug(path ? basename(path) : normalized.split('/').at(-1)), 'Target id')
   if (home.targets.some((target) => target.id === id)) throw new HairnessError('target_exists', `Target ${id} already exists.`)
   home.targets.push({ id, repository: normalized, ...(options.summary ? { summary: options.summary } : {}) })
-  await writeJsonAtomic(join(root, 'hairness.json'), home, 0o644)
+  await saveHome(root, home)
   if (path) await bindTarget(root, id, path)
   return (await listTargets(root)).find((target) => target.id === id)
 }
@@ -80,7 +80,7 @@ export async function removeTarget(root, id) {
   if (!home.targets.some((target) => target.id === id)) throw new HairnessError('target_missing', `Target ${id} is not declared.`)
   await unbindTarget(root, id)
   home.targets = home.targets.filter((target) => target.id !== id)
-  await writeJsonAtomic(join(root, 'hairness.json'), home, 0o644)
+  await saveHome(root, home)
   return { id, status: 'removed' }
 }
 

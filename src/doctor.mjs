@@ -1,8 +1,8 @@
 import { join } from 'node:path'
 import { buildHome } from './build.mjs'
+import { extensionStatus, installedExtensions } from './extensions.mjs'
 import { RUNTIME, loadHome, loadLocalConfig } from './home.mjs'
 import { doctorIntegrations } from './integrations.mjs'
-import { installedItems, itemStatus } from './items.mjs'
 import { exists } from './lib/io.mjs'
 import { doctorTargets } from './targets.mjs'
 
@@ -12,13 +12,13 @@ export async function doctorHome(root, options = {}) {
     loadLocalConfig(root),
     doctorTargets(root),
     doctorIntegrations(root),
-    installedItems(root),
+    installedExtensions(root),
   ])
-  const extensions = await Promise.all(installed.map(itemStatus))
+  const extensions = await Promise.all(installed.map(extensionStatus))
   const limits = [...targets.limits, ...integrations.limits]
   if (home.runtime !== RUNTIME) limits.push(`runtime-mismatch:${home.runtime}`)
   if (await exists(join(root, 'hairness.lock.json'))) limits.push('legacy-home-lock-present')
-  for (const extension of extensions) if (extension.state !== 'clean') limits.push(`extension-${extension.state}:${extension.id}`)
+  for (const extension of extensions) if (['missing', 'invalid'].includes(extension.state)) limits.push(`extension-${extension.state}:${extension.name}`)
   let build = 'ready'
   try {
     await buildHome(root, { check: true, adapterHomeRoot: options.adapterHomeRoot })
@@ -28,7 +28,7 @@ export async function doctorHome(root, options = {}) {
   }
   return {
     status: limits.length ? 'partial' : 'ready',
-    home: { id: root.split('/').at(-1), providers: home.providers },
+    home: { name: home.name, providers: home.providers },
     profile: local.preferences,
     kernel: { runtime: home.runtime, current: RUNTIME },
     extensions,

@@ -1,7 +1,7 @@
 import { API, validateDocument } from './contracts.mjs'
+import { installedExtensions } from './extensions.mjs'
 import { loadHome, loadLocalConfig } from './home.mjs'
 import { listIntegrations } from './integrations.mjs'
-import { installedItems } from './items.mjs'
 import { listTargets } from './targets.mjs'
 
 export async function prologueModel(root) {
@@ -10,17 +10,25 @@ export async function prologueModel(root) {
     loadLocalConfig(root),
     listTargets(root),
     listIntegrations(root),
-    installedItems(root),
+    installedExtensions(root),
   ])
-  const facts = [{ id: 'home.id', value: root.split('/').at(-1) }, { id: 'home.runtime', value: home.runtime }]
+  const facts = [{ id: 'home.name', value: home.name }, { id: 'home.runtime', value: home.runtime }]
   const signals = []
   for (const extension of extensions) {
-    facts.push({ id: `extension.${namespace(extension.receipt.id)}.version`, value: extension.receipt.version })
-    if (extension.receipt.mobile) signals.push({ id: `extension.${namespace(extension.receipt.id)}.mobile`, level: 'info', message: 'Extension source is mobile; pin a Git tag or commit for reproducible bootstrap.' })
+    if (extension.invalid) {
+      signals.push({ id: `extension.${namespace(extension.id)}.invalid`, level: 'error', message: 'Extension manifest is invalid.' })
+      continue
+    }
+    facts.push({ id: `extension.${namespace(extension.manifest.name)}.version`, value: extension.manifest.version })
+    if (extension.manifest.installation.mobile) signals.push({ id: `extension.${namespace(extension.manifest.name)}.mobile`, level: 'info', message: 'Extension source is mobile; pin a Git tag or commit for reproducible bootstrap.' })
   }
   for (const target of targets) {
     facts.push({ id: `target.${target.id}.repository`, value: target.repository })
     facts.push({ id: `target.${target.id}.binding`, value: target.binding })
+    if (target.evidence && !target.evidence.error) {
+      facts.push({ id: `target.${target.id}.branch`, value: target.evidence.branch })
+      facts.push({ id: `target.${target.id}.clean`, value: target.evidence.clean })
+    }
     if (!target.binding) signals.push({ id: `target.${target.id}.unbound`, level: 'warning', message: 'Target is declared but not bound on this machine.' })
     else if (!target.matches) signals.push({ id: `target.${target.id}.mismatch`, level: 'error', message: 'Bound repository does not match the declared remote.' })
   }

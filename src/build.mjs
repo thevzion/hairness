@@ -1,19 +1,19 @@
 import { spawn } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, unlink } from 'node:fs/promises'
-import { dirname, join, relative, resolve } from 'node:path'
-import { git } from './git.mjs'
-import { homeId, loadHome, loadLocalConfig } from './home.mjs'
-import { installedItems } from './items.mjs'
+import { dirname, join, relative } from 'node:path'
+import { installedExtensions } from './extensions.mjs'
+import { loadHome, loadLocalConfig } from './home.mjs'
 import { HairnessError } from './lib/errors.mjs'
 import { digest, exists, readJson, resolvePackageFile, treeFiles, writeFileAtomic, writeJsonAtomic } from './lib/io.mjs'
 
 const managedRegion = /<!-- hairness:begin id="agent-contract" -->[\s\S]*?<!-- hairness:end id="agent-contract" -->/
 
 export async function buildHome(root, options = {}) {
-  const [home, local, extensions] = await Promise.all([loadHome(root), loadLocalConfig(root), installedItems(root)])
+  const [home, local, extensions] = await Promise.all([loadHome(root), loadLocalConfig(root), installedExtensions(root)])
   const statePath = join(root, '.hairness', 'build.json')
   const previous = await readJson(statePath, null)
-  if (options.check && !previous) throw stale('Local build state is missing.')
+  const invalid = extensions.find((extension) => extension.invalid)
+  if (invalid) throw new HairnessError('extension_invalid', `${invalid.id} is invalid: ${invalid.invalid.message}`)
   const assets = await loadAssets(extensions)
   const adapterBuild = await adapterOutputs(root, options.adapterHomeRoot ?? root, home, extensions, options.allowAdapters ?? [], options.check, previous)
   const wanted = [...providerOutputs(home, local, assets), ...adapterBuild.outputs].sort((left, right) => left.path.localeCompare(right.path))
@@ -27,10 +27,9 @@ export async function buildHome(root, options = {}) {
     const hookPath = join(root, provider === 'codex' ? '.codex/hooks.json' : '.claude/settings.json')
     managed.push(relativeManaged(root, await updateHookConfig(hookPath, active, home.runtime, options.check)))
   }
-  await updateLocalExcludes(root, outputs.map((entry) => entry.path), options.check)
   const state = { version: 1, outputs, managed: managed.filter(Boolean), adapters: adapterBuild.adapters }
   if (options.check) {
-    if (JSON.stringify(previous) !== JSON.stringify(state)) throw stale('Local build state does not match generated assets.')
+    if (previous && JSON.stringify(previous) !== JSON.stringify(state)) throw stale('Local build state does not match generated assets.')
   } else await writeJsonAtomic(statePath, state)
   return state
 }
@@ -39,8 +38,8 @@ async function loadAssets(extensions) {
   const instructions = []
   const skills = []
   for (const extension of extensions) {
-    const owner = extension.receipt.id
-    for (const file of extension.receipt.files) {
+    const owner = extension.manifest.name
+    for (const file of extension.manifest.files) {
       if (!['hairness:instruction', 'hairness:skill'].includes(file.type)) continue
       const content = await readFile(await resolvePackageFile(extension.root, file.path, `${owner} asset`), 'utf8')
       if (file.type === 'hairness:instruction') instructions.push({ owner, content })
@@ -72,13 +71,13 @@ async function adapterOutputs(root, adapterHomeRoot, home, extensions, allowed, 
   const values = []
   const built = []
   const approvals = new Set(Array.isArray(allowed) ? allowed : allowed ? [allowed] : [])
-  for (const extension of extensions.filter((entry) => entry.receipt.adapter)) {
-    const adapter = extension.receipt.adapter
-    if (!approvals.has(adapter.id) && !approvals.has(extension.receipt.id)) {
+  for (const extension of extensions.filter((entry) => entry.manifest.adapter)) {
+    const adapter = extension.manifest.adapter
+    if (!approvals.has(adapter.id) && !approvals.has(extension.manifest.name)) {
       if (check) {
-        if (!(previous?.adapters ?? []).includes(extension.receipt.id)) throw stale(`${adapter.id} has not completed an approved build.`)
-        values.push(...(previous?.outputs ?? []).filter((entry) => entry.provider === 'adapter' && entry.owner === extension.receipt.id).map((entry) => ({ ...entry, content: null })))
-        built.push(extension.receipt.id)
+        if (!(previous?.adapters ?? []).includes(extension.manifest.name)) throw stale(`${adapter.id} has not completed an approved build.`)
+        values.push(...(previous?.outputs ?? []).filter((entry) => entry.provider === 'adapter' && entry.owner === extension.manifest.name).map((entry) => ({ ...entry, content: null })))
+        built.push(extension.manifest.name)
         continue
       }
       throw new HairnessError('adapter_approval_required', `${adapter.id} requires --allow-adapter ${adapter.id}.`)
@@ -88,16 +87,16 @@ async function adapterOutputs(root, adapterHomeRoot, home, extensions, allowed, 
     try {
       const entry = await resolvePackageFile(extension.root, adapter.entry, `${adapter.id} adapter entry`)
       await runAdapter(entry, outputRoot, {
-        home: { id: homeId(adapterHomeRoot), root: adapterHomeRoot, providers: home.providers },
-        config: home.config[extension.receipt.id] ?? {},
+        home: { id: home.name, root: adapterHomeRoot, providers: home.providers },
+        config: home.config[extension.manifest.name] ?? {},
       }, root)
       const declared = adapter.outputs.map((path) => path.replaceAll('\\', '/').replace(/\/+$/, ''))
       for (const file of await treeFiles(outputRoot)) {
         if (!declared.some((path) => file.path === path || file.path.startsWith(`${path}/`))) throw new HairnessError('adapter_output_undeclared', `${adapter.id} wrote undeclared output ${file.path}.`)
         if (['AGENTS.md', 'CLAUDE.md', '.codex/hooks.json', '.claude/settings.json'].includes(file.path)) throw new HairnessError('adapter_output_reserved', `${adapter.id} wrote reserved managed output ${file.path}.`)
-        values.push({ path: file.path, provider: 'adapter', owner: extension.receipt.id, content: file.content })
+        values.push({ path: file.path, provider: 'adapter', owner: extension.manifest.name, content: file.content })
       }
-      built.push(extension.receipt.id)
+      built.push(extension.manifest.name)
     } finally {
       await rm(outputRoot, { recursive: true, force: true })
     }
@@ -201,18 +200,6 @@ async function updateHookConfig(path, active, runtime, check) {
   if (check && currentText !== next) throw stale(`${path} needs a SessionStart hook rebuild.`)
   if (!check && currentText !== next) await writeFileAtomic(path, next, 0o644)
   return active ? { path, digest: digest(next) } : null
-}
-
-async function updateLocalExcludes(root, paths, check) {
-  const raw = await git(['rev-parse', '--git-path', 'info/exclude'], { cwd: root }).catch(() => null)
-  if (!raw) return
-  const path = resolve(root, raw)
-  const current = await readFile(path, 'utf8').catch((error) => error.code === 'ENOENT' ? '' : Promise.reject(error))
-  const pattern = /# hairness:begin generated-provider-outputs\n[\s\S]*?# hairness:end generated-provider-outputs\n?/
-  const block = `# hairness:begin generated-provider-outputs\n${[...paths].sort().join('\n')}\n# hairness:end generated-provider-outputs\n`
-  const next = pattern.test(current) ? current.replace(pattern, block) : `${current.trimEnd()}${current.trim() ? '\n\n' : ''}${block}`
-  if (check && current !== next) throw stale('.git/info/exclude needs a generated-output refresh.')
-  if (!check && current !== next) await writeFileAtomic(path, next, 0o644)
 }
 
 function relativeManaged(root, entry) { return entry ? { ...entry, path: relative(root, entry.path) } : null }

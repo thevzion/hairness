@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
-import { loadHome, loadLocalConfig } from './home.mjs'
+import { loadHome, loadLocalConfig, saveHome } from './home.mjs'
 import { HairnessError } from './lib/errors.mjs'
 import { assertId, writeJsonAtomic } from './lib/io.mjs'
 
@@ -22,7 +22,7 @@ export async function addIntegration(root, id, accessors, summary) {
   if (home.integrations.some((entry) => entry.id === id)) throw new HairnessError('integration_exists', `Integration ${id} already exists.`)
   if (!accessors.length) throw new HairnessError('usage', 'At least one Integration accessor is required.')
   home.integrations.push({ id, ...(summary ? { summary } : {}), accessors })
-  await writeJsonAtomic(join(root, 'hairness.json'), home, 0o644)
+  await saveHome(root, home)
   return { id, accessors, bindings: {} }
 }
 
@@ -56,7 +56,7 @@ export async function removeIntegration(root, id) {
   const home = await loadHome(root)
   if (!home.integrations.some((entry) => entry.id === id)) throw new HairnessError('integration_missing', `Integration ${id} is not declared.`)
   home.integrations = home.integrations.filter((entry) => entry.id !== id)
-  await writeJsonAtomic(join(root, 'hairness.json'), home, 0o644)
+  await saveHome(root, home)
   const config = await loadLocalConfig(root)
   delete config.integrationBindings[id]
   await writeJsonAtomic(join(root, '.overlay', 'config.json'), config)

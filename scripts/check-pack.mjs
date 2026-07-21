@@ -8,6 +8,7 @@ const { stdout } = await exec('npm', ['pack', '--dry-run', '--json', '--ignore-s
 const [pack] = JSON.parse(stdout)
 const paths = pack.files.map((entry) => entry.path)
 assert.equal(paths.some((path) => /(?:^|\/)(?:node_modules|tests|\.overlay|packages)(?:\/|$)/.test(path)), false)
-for (const required of ['bin/hairness.mjs', 'schemas/v4/home.schema.json', 'schemas/v4/registry.schema.json', 'schemas/v4/item.schema.json', 'registry/registry.json']) assert.ok(paths.includes(required), `${required} missing from tarball`)
+for (const required of ['bin/hairness.mjs', 'schemas/v4/home.schema.json', 'schemas/v4/extension.schema.json', 'extensions/onboarding/hairness.json', 'extensions/scratch/hairness.json']) assert.ok(paths.includes(required), `${required} missing from tarball`)
+assert.equal(paths.some((path) => path.startsWith('extensions/project/')), false)
 assert.equal(pack.name, '@hairness/cli')
 console.log(`package contents passed (${paths.length} files)`)

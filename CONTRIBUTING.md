@@ -1,24 +1,22 @@
 # Contributing
 
-Read [STATUS.md](STATUS.md), [SPEC.md](SPEC.md), and the relevant decision before
-changing public behavior.
+Read the [technical reference](docs/reference.md) and [security policy](SECURITY.md)
+before changing public behavior.
 
-Change canonical source under `src/`, `schemas/` or `registry/`. Generated
-provider outputs are test evidence, not source.
-
-Keep the README, specification, schemas, CLI and tests aligned. Add a durable
-test for every recurring correction.
+Change canonical source under `src/`, `schemas/` or `extensions/`. Keep the
+README, reference, schemas, CLI and tests aligned. Add a durable test for a
+recurring correction.
 
 ```bash
 npm ci --ignore-scripts
-npm test
 npm run check
+npm test
 npm run conformance
 npm run check:providers
 npm run check:pack
 npm run check:lab
 ```
 
-Use Conventional Commits. Keep changes focused. New dependencies, executable
-Adapters and public contract changes require a concrete consumer and an
-accepted decision.
+Use Conventional Commits and keep changes focused. A new dependency, executable
+Adapter or public contract change needs a concrete consumer and maintainer
+agreement.

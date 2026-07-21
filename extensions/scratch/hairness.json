@@ -1,0 +1,14 @@
+{
+  "$schema": "https://hairness.dev/schema/extension.json",
+  "name": "hairness/scratch",
+  "version": "0.4.0-alpha.0",
+  "description": "Explicit, lightweight working memory owned by the Home instance.",
+  "files": [
+    {
+      "path": "skills/hairness-scratch/SKILL.md",
+      "type": "hairness:skill",
+      "id": "hairness-scratch",
+      "description": "Create or update explicit lightweight working memory."
+    }
+  ]
+}

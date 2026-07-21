@@ -34,8 +34,9 @@
   },
   "files": [
     "bin/",
-    "docs/assets/hairness-0.4-source-owned-social-card.png",
-    "registry/",
+    "docs/reference.md",
+    "extensions/onboarding/",
+    "extensions/scratch/",
     "schemas/v4/",
     "src/",
     "LICENSE",

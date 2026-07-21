@@ -1,15 +1,13 @@
 #!/usr/bin/env node
 import { pathToFileURL } from 'node:url'
-import { addItems, diffItem, removeItem, statusItems, syncItems } from './arranger.mjs'
 import { buildHome } from './build.mjs'
 import { createHome, initHome } from './create.mjs'
 import { doctorHome } from './doctor.mjs'
+import { addExtensions, diffExtension, removeExtension, statusExtensions, syncExtensions } from './extensions.mjs'
 import { assertRuntime, findHome } from './home.mjs'
 import { addIntegration, bindIntegration, doctorIntegrations, listIntegrations, parseAccessors, removeIntegration, unbindIntegration } from './integrations.mjs'
 import { asHairnessError, HairnessError } from './lib/errors.mjs'
 import { prologueModel, renderPrologue } from './prologue.mjs'
-import { listRegistry, searchRegistry, validateRegistry, viewItems } from './registry.mjs'
-import { readJson } from './lib/io.mjs'
 import { addTarget, bindTarget, discoverTargets, doctorTargets, listTargets, removeTarget, unbindTarget } from './targets.mjs'
 
 export async function runCli(argv = process.argv.slice(2), io = process) {
@@ -29,38 +27,30 @@ export async function runCli(argv = process.argv.slice(2), io = process) {
 async function route(command, action, rest, flags, io) {
   if (!command) return help()
   if (command === 'create') return createHome(required(action, 'destination'), {
-    baseItem: rest[0], providers: csv(flags.providers), language: flags.language, name: flags.name, addressAs: flags['address-as'], note: flags.note,
+    baseItem: rest[0], providers: csv(flags.providers), name: flags.name,
   })
-  if (command === 'init') return initHome(flags.home ?? process.cwd(), {
-    items: [action, ...rest].filter(Boolean), providers: csv(flags.providers), language: flags.language, name: flags.name, addressAs: flags['address-as'], note: flags.note,
-  })
-  if (command === 'registry' && action === 'validate') return validateRegistry(await readJson(required(rest[0], 'registry.json')))
+  if (command === 'init') {
+    if (action || rest.length) throw usage('hairness init creates a bare Home; add Extensions after initialization.')
+    return initHome(flags.home ?? process.cwd(), { providers: csv(flags.providers), name: flags.name })
+  }
   const root = await findHome(flags.home ?? process.cwd())
   await assertRuntime(root)
   if (command === 'add') {
     const addresses = [action, ...rest].filter(Boolean)
-    if (!addresses.length) throw usage('At least one item is required.')
-    if (booleanFlag(flags.view)) return viewItems(root, addresses)
+    if (!addresses.length) throw usage('At least one Extension is required.')
     const overwrite = booleanFlag(flags.overwrite)
-    const preview = await addItems(root, addresses, { dryRun: true, overwrite })
+    const preview = await addExtensions(root, addresses, { dryRun: true, overwrite })
     if (booleanFlag(flags['dry-run']) || booleanFlag(flags.diff)) return preview
     if (!booleanFlag(flags.yes) && !await confirm(io, preview)) throw new HairnessError('confirmation_required', 'Installation cancelled. Pass -y for non-interactive use.')
-    return addItems(root, addresses, { overwrite })
+    return addExtensions(root, addresses, { overwrite })
   }
-  if (command === 'view') {
-    const addresses = [action, ...rest].filter(Boolean)
-    if (!addresses.length) throw usage('At least one item is required.')
-    return viewItems(root, addresses)
-  }
-  if (command === 'list') return listRegistry(root, required(action, 'registry'))
-  if (command === 'search') return searchRegistry(root, required(action, 'registry'), flags.query ?? '')
-  if (command === 'status') return statusItems(root, action)
-  if (command === 'diff') return diffItem(root, required(action, 'item'), { to: flags.to })
+  if (command === 'status') return statusExtensions(root, action)
+  if (command === 'diff') return diffExtension(root, required(action, 'Extension'), { to: flags.to })
   if (command === 'sync') {
-    if (!action && !booleanFlag(flags.all)) throw usage('An item or --all is required.')
-    return syncItems(root, action, { all: booleanFlag(flags.all), check: booleanFlag(flags.check), to: flags.to, overwrite: booleanFlag(flags.overwrite) })
+    if (!action && !booleanFlag(flags.all)) throw usage('An Extension or --all is required.')
+    return syncExtensions(root, action, { all: booleanFlag(flags.all), check: booleanFlag(flags.check), to: flags.to, overwrite: booleanFlag(flags.overwrite) })
   }
-  if (command === 'remove') return removeItem(root, required(action, 'item'), { overwrite: booleanFlag(flags.overwrite) })
+  if (command === 'remove') return removeExtension(root, required(action, 'Extension'), { overwrite: booleanFlag(flags.overwrite) })
   if (command === 'build') return buildHome(root, { check: booleanFlag(flags.check), allowAdapters: values(flags['allow-adapter']) })
   if (command === 'doctor') return doctorHome(root)
   if (command === 'prologue') return prologueModel(root)
@@ -92,11 +82,10 @@ async function integrationRoute(root, action, rest, flags) {
 
 function help() {
   return {
-    summary: 'Hairness arranges source-owned agentic assets for any agent runtime.',
-    next: ['hairness create <home>', 'hairness add <item>', 'hairness doctor'],
+    summary: 'Hairness gives agents a provider-agnostic Home you own.',
+    next: ['hairness create <home>', 'open an agent in <home>', 'invoke hairness-onboarding'],
     commands: [
-      'init [items...]', 'create <home> [base-item]', 'add <items...>', 'view <items...>', 'list <registry>', 'search <registry> [--query <text>]',
-      'status [item]', 'diff <item>', 'sync [item|--all]', 'remove <item>', 'registry validate <registry.json>', 'build [--check] [--allow-adapter <id>]',
+      'init', 'create <home> [base-extension]', 'add <extensions...>', 'status [extension]', 'diff <extension>', 'sync [extension|--all]', 'remove <extension>', 'build [--check] [--allow-adapter <id>]',
       'doctor [--json]', 'prologue [--json]', 'target list|discover|add|bind|unbind|remove|doctor', 'integration list|add|bind|unbind|remove|doctor',
     ],
   }
@@ -119,8 +108,8 @@ function parseArguments(argv) {
 
 function renderHuman(value, command) {
   if (value?.summary && value?.commands) return [value.summary, '', 'Next:', ...value.next.map((item) => `  ${item}`), '', 'Commands:', ...value.commands.map((item) => `  hairness ${item}`)].join('\n')
-  if (value?.status === 'created') return ['Hairness Home created', value.home, `Extensions: ${value.items.join(', ')}`, '', ...value.launch.flatMap((entry) => [`${entry.provider}: ${entry.command}`, `Then invoke ${entry.onboarding}.`])].join('\n')
-  if (value?.home?.id && value?.limits) return [`Hairness doctor — ${value.status}`, `Home: ${value.home.id}`, `Providers: ${value.home.providers.join(', ')}`, `Extensions: ${value.extensions.length}`, `Targets: ${value.targets.filter((entry) => entry.binding).length}/${value.targets.length} bound`, `Build: ${value.build}`, ...(value.limits.length ? ['', 'Limits:', ...value.limits.map((item) => `  - ${item}`)] : [])].join('\n')
+  if (value?.status === 'created') return ['Hairness Home created', value.home, `Extensions: ${value.extensions.join(', ')}`, '', ...value.launch.flatMap((entry) => [`${entry.provider}: ${entry.command}`, `Then invoke ${entry.onboarding}.`])].join('\n')
+  if (value?.home?.name && value?.limits) return [`Hairness doctor — ${value.status}`, `Home: ${value.home.name}`, `Providers: ${value.home.providers.join(', ')}`, `Extensions: ${value.extensions.length}`, `Targets: ${value.targets.filter((entry) => entry.binding).length}/${value.targets.length} bound`, `Build: ${value.build}`, ...(value.limits.length ? ['', 'Limits:', ...value.limits.map((item) => `  - ${item}`)] : [])].join('\n')
   if (Array.isArray(value)) return value.length ? value.map((entry) => `- ${entry.id ?? entry.name ?? JSON.stringify(entry)}${entry.state ? `: ${entry.state}` : ''}`).join('\n') : 'No entries.'
   if (command[0] === 'build' && value?.outputs) return `Build ready — ${value.outputs.length} generated outputs.`
   return Object.entries(value ?? {}).map(([key, entry]) => `${key}: ${typeof entry === 'object' ? JSON.stringify(entry) : entry}`).join('\n')
@@ -128,7 +117,7 @@ function renderHuman(value, command) {
 
 async function confirm(io, preview) {
   if (!io.stdin?.isTTY || !io.stdout?.isTTY) return false
-  io.stdout.write(`Install ${preview.items.join(', ')} and write ${preview.writes.length} files? [y/N] `)
+  io.stdout.write(`Install ${preview.extensions.join(', ')} and write ${preview.writes.length} files? [y/N] `)
   return new Promise((resolvePromise) => {
     io.stdin.once('data', (chunk) => resolvePromise(/^y(?:es)?\s*$/i.test(String(chunk))))
     io.stdin.resume?.()
