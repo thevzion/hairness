@@ -1,0 +1,28 @@
+name: Bug report
+description: Report a reproducible Hairness problem.
+title: "[bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include secrets or private Home content. Use Security Advisories for vulnerabilities.
+  - type: input
+    id: version
+    attributes:
+      label: Hairness version
+      placeholder: 0.4.0-alpha.0
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include the smallest Home or Asset manifest and exact commands.
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed and expected behavior
+    validations:
+      required: true

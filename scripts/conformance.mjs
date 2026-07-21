@@ -1,17 +1,32 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { validateDocument } from '../src/contracts.mjs'
-import { validateExactSpec } from '../src/packages.mjs'
+import { addAssets, statusAssets, syncAssets } from '../src/assets.mjs'
+import { createHome } from '../src/create.mjs'
 
-const root = new URL('../', import.meta.url).pathname
-const native = JSON.parse(await readFile(join(root, 'packages/native/package.json'), 'utf8'))
-const starter = JSON.parse(await readFile(join(root, 'packages/starter/package.json'), 'utf8'))
-await validateDocument(native.hairness, 'package')
-await validateDocument(starter.hairness, 'package')
-assert.deepEqual(starter.hairness.extensions, ['@hairness/native'])
-assert.equal(starter.dependencies['@hairness/native'], native.version)
-validateExactSpec(`@hairness/native@${starter.dependencies['@hairness/native']}`)
-assert.equal(native.hairness.kind, 'Extension')
-assert.equal(starter.hairness.kind, 'Starter')
-console.log('conformance passed')
+const temporary = await mkdtemp(join(tmpdir(), 'hairness-conformance-'))
+try {
+  const home = join(temporary, 'home')
+  const source = join(temporary, 'asset')
+  await createHome(home)
+  await mkdir(source)
+  const manifest = {
+    $schema: 'https://hairness.dev/schema/asset.json',
+    name: 'conformance/proof', version: '1.0.0', description: 'Conformance proof.',
+    files: [{ path: 'proof.md', type: 'hairness:file' }],
+  }
+  await writeFile(join(source, 'hairness.json'), `${JSON.stringify(manifest, null, 2)}\n`)
+  await writeFile(join(source, 'proof.md'), 'one\n')
+  await addAssets(home, [join(source, 'hairness.json')])
+  assert.equal((await statusAssets(home, 'proof'))[0].state, 'clean')
+  manifest.version = '2.0.0'
+  await writeFile(join(source, 'hairness.json'), `${JSON.stringify(manifest, null, 2)}\n`)
+  await writeFile(join(source, 'proof.md'), 'two\n')
+  assert.equal((await syncAssets(home, 'proof', { check: true }))[0].status, 'available')
+  await syncAssets(home, 'proof')
+  assert.equal(await readFile(join(home, 'assets/conformance/proof/proof.md'), 'utf8'), 'two\n')
+  console.log('conformance passed')
+} finally {
+  await rm(temporary, { recursive: true, force: true })
+}

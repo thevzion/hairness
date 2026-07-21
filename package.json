@@ -1,7 +1,7 @@
 {
   "name": "@hairness/cli",
   "version": "0.4.0-alpha.0",
-  "description": "A small provider-neutral kernel for composable agent Homes.",
+  "description": "Source-owned agentic assets for any agent runtime.",
   "keywords": [
     "ai-agents",
     "agentic-assets",
@@ -32,11 +32,11 @@
   "engines": {
     "node": ">=22"
   },
-  "workspaces": [
-    "packages/*"
-  ],
   "files": [
     "bin/",
+    "docs/reference.md",
+    "assets/onboarding/",
+    "assets/scratch/",
     "schemas/v4/",
     "src/",
     "LICENSE",

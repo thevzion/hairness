@@ -1,9 +1,9 @@
 import { lstat, mkdir, readdir, readlink, realpath, symlink, unlink } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import { loadHome } from './home.mjs'
+import { loadHome, saveHome } from './home.mjs'
 import { inspectRepository, normalizeRepository } from './git.mjs'
 import { HairnessError } from './lib/errors.mjs'
-import { assertId, exists, writeJsonAtomic } from './lib/io.mjs'
+import { assertId, exists } from './lib/io.mjs'
 
 export async function targetBinding(root, id) {
   const link = join(root, 'targets', id)
@@ -25,7 +25,7 @@ export async function targetBinding(root, id) {
 
 export async function listTargets(root) {
   const home = await loadHome(root)
-  return Promise.all(home.spec.targets.map(async (target) => {
+  return Promise.all(home.targets.map(async (target) => {
     const binding = await targetBinding(root, target.id)
     const evidence = binding?.path ? await inspectRepository(binding.path).catch((error) => ({ error: error.message })) : null
     const matches = evidence?.remotes?.some((remote) => remote.repository === normalizeRepository(target.repository)) ?? false
@@ -44,16 +44,16 @@ export async function addTarget(root, repository, options = {}) {
     normalized = evidence.remotes[0].repository
   }
   const id = assertId(options.id ?? slug(path ? basename(path) : normalized.split('/').at(-1)), 'Target id')
-  if (home.spec.targets.some((target) => target.id === id)) throw new HairnessError('target_exists', `Target ${id} already exists.`)
-  home.spec.targets.push({ id, repository: normalized, ...(options.summary ? { summary: options.summary } : {}) })
-  await writeJsonAtomic(join(root, 'hairness.json'), home, 0o644)
+  if (home.targets.some((target) => target.id === id)) throw new HairnessError('target_exists', `Target ${id} already exists.`)
+  home.targets.push({ id, repository: normalized, ...(options.summary ? { summary: options.summary } : {}) })
+  await saveHome(root, home)
   if (path) await bindTarget(root, id, path)
   return (await listTargets(root)).find((target) => target.id === id)
 }
 
 export async function bindTarget(root, id, repositoryPath) {
   const home = await loadHome(root)
-  const target = home.spec.targets.find((entry) => entry.id === id)
+  const target = home.targets.find((entry) => entry.id === id)
   if (!target) throw new HairnessError('target_missing', `Target ${id} is not declared.`)
   const evidence = await inspectRepository(repositoryPath)
   if (!evidence.remotes.some((remote) => remote.repository === normalizeRepository(target.repository))) {
@@ -77,10 +77,10 @@ export async function unbindTarget(root, id) {
 
 export async function removeTarget(root, id) {
   const home = await loadHome(root)
-  if (!home.spec.targets.some((target) => target.id === id)) throw new HairnessError('target_missing', `Target ${id} is not declared.`)
+  if (!home.targets.some((target) => target.id === id)) throw new HairnessError('target_missing', `Target ${id} is not declared.`)
   await unbindTarget(root, id)
-  home.spec.targets = home.spec.targets.filter((target) => target.id !== id)
-  await writeJsonAtomic(join(root, 'hairness.json'), home, 0o644)
+  home.targets = home.targets.filter((target) => target.id !== id)
+  await saveHome(root, home)
   return { id, status: 'removed' }
 }
 

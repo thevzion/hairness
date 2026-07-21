@@ -1,38 +1,25 @@
-import { execFile } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
-import { promisify } from 'node:util'
+import { dirname, join } from 'node:path'
 
-const exec = promisify(execFile)
-
-export function packedHomeOptions(packs, extra = {}) {
-  return {
-    packageSpec: `file:${packs.cli}`,
-    starter: `file:${packs.starter}`,
-    starterName: '@hairness/starter',
-    packageOverrides: {
-      '@hairness/native': `file:${packs.native}`,
-      ...(extra.packageOverrides ?? {}),
-    },
-    ...extra,
-  }
-}
-
-export async function writePackage(root, document, files = {}) {
+export async function writeAsset(root, manifest = asset(), files = {}) {
   await mkdir(root, { recursive: true })
-  await writeFile(join(root, 'package.json'), `${JSON.stringify(document, null, 2)}\n`)
-  for (const [path, content] of Object.entries(files)) {
-    await mkdir(join(root, path, '..'), { recursive: true })
-    await writeFile(join(root, path), content)
+  const path = join(root, 'hairness.json')
+  await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
+  for (const [name, content] of Object.entries(files)) {
+    const destination = join(root, name)
+    await mkdir(dirname(destination), { recursive: true })
+    await writeFile(destination, content)
   }
+  return path
 }
 
-export async function packPackage(root, destination) {
-  await mkdir(destination, { recursive: true })
-  const { stdout } = await exec('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', destination], {
-    cwd: root,
-    maxBuffer: 20 * 1024 * 1024,
-  })
-  const [{ filename }] = JSON.parse(stdout)
-  return join(destination, filename)
+export function asset(overrides = {}) {
+  return {
+    $schema: 'https://hairness.dev/schema/asset.json',
+    name: 'fixture/review',
+    version: '1.0.0',
+    description: 'Review agentic assets.',
+    files: [{ path: 'skills/review/SKILL.md', type: 'hairness:skill', id: 'review', description: 'Review a subject.' }],
+    ...overrides,
+  }
 }

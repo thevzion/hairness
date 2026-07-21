@@ -4,12 +4,12 @@ import { fileURLToPath } from 'node:url'
 import { HairnessError } from './lib/errors.mjs'
 
 export const API = Object.freeze({
-  home: 'hairness.dev/home/v1alpha3',
-  package: 'hairness.dev/package/v1alpha1',
+  home: 'https://hairness.dev/schema/home.json',
+  asset: 'https://hairness.dev/schema/asset.json',
   prologue: 'hairness.dev/prologue/v1alpha1',
 })
 
-const schemaFiles = ['home.schema.json', 'package.schema.json', 'prologue.schema.json']
+const schemaFiles = ['home.schema.json', 'asset.schema.json', 'prologue.schema.json']
 let validatorsPromise
 
 async function validators() {

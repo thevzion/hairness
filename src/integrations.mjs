@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
-import { loadHome, loadLocalConfig } from './home.mjs'
+import { loadHome, loadLocalConfig, saveHome } from './home.mjs'
 import { HairnessError } from './lib/errors.mjs'
 import { assertId, writeJsonAtomic } from './lib/io.mjs'
 
@@ -10,7 +10,7 @@ const exec = promisify(execFile)
 export async function listIntegrations(root) {
   const home = await loadHome(root)
   const config = await loadLocalConfig(root)
-  return home.spec.integrations.map((integration) => ({
+  return home.integrations.map((integration) => ({
     ...integration,
     bindings: config.integrationBindings[integration.id] ?? {},
   }))
@@ -19,17 +19,17 @@ export async function listIntegrations(root) {
 export async function addIntegration(root, id, accessors, summary) {
   const home = await loadHome(root)
   assertId(id, 'Integration id')
-  if (home.spec.integrations.some((entry) => entry.id === id)) throw new HairnessError('integration_exists', `Integration ${id} already exists.`)
+  if (home.integrations.some((entry) => entry.id === id)) throw new HairnessError('integration_exists', `Integration ${id} already exists.`)
   if (!accessors.length) throw new HairnessError('usage', 'At least one Integration accessor is required.')
-  home.spec.integrations.push({ id, ...(summary ? { summary } : {}), accessors })
-  await writeJsonAtomic(join(root, 'hairness.json'), home, 0o644)
+  home.integrations.push({ id, ...(summary ? { summary } : {}), accessors })
+  await saveHome(root, home)
   return { id, accessors, bindings: {} }
 }
 
 export async function bindIntegration(root, id, provider, descriptor) {
   const home = await loadHome(root)
-  if (!home.spec.providers.includes(provider)) throw new HairnessError('provider_inactive', `Provider ${provider} is not active.`)
-  const integration = home.spec.integrations.find((entry) => entry.id === id)
+  if (!home.providers.includes(provider)) throw new HairnessError('provider_inactive', `Provider ${provider} is not active.`)
+  const integration = home.integrations.find((entry) => entry.id === id)
   if (!integration) throw new HairnessError('integration_missing', `Integration ${id} is not declared.`)
   const binding = parseBinding(descriptor)
   if (binding.kind !== 'none' && !integration.accessors.some((accessor) => sameAccessor(accessor, binding, provider))) {
@@ -54,9 +54,9 @@ export async function unbindIntegration(root, id, provider) {
 
 export async function removeIntegration(root, id) {
   const home = await loadHome(root)
-  if (!home.spec.integrations.some((entry) => entry.id === id)) throw new HairnessError('integration_missing', `Integration ${id} is not declared.`)
-  home.spec.integrations = home.spec.integrations.filter((entry) => entry.id !== id)
-  await writeJsonAtomic(join(root, 'hairness.json'), home, 0o644)
+  if (!home.integrations.some((entry) => entry.id === id)) throw new HairnessError('integration_missing', `Integration ${id} is not declared.`)
+  home.integrations = home.integrations.filter((entry) => entry.id !== id)
+  await saveHome(root, home)
   const config = await loadLocalConfig(root)
   delete config.integrationBindings[id]
   await writeJsonAtomic(join(root, '.overlay', 'config.json'), config)
@@ -70,7 +70,7 @@ export async function doctorIntegrations(root) {
   const checked = []
   for (const integration of integrations) {
     const bindings = {}
-    for (const provider of home.spec.providers) {
+    for (const provider of home.providers) {
       const binding = integration.bindings[provider]
       if (!binding) {
         limits.push(`integration-unbound:${integration.id}:${provider}`)
