@@ -34,7 +34,7 @@ try {
   assert.equal(doctor.assets[0].name, 'hairness/onboarding')
   assert.equal(doctor.assets[1].name, 'hairness/scratch')
   assert.equal(doctor.targets[0].binding, await realpath(target))
-  assert.equal(JSON.parse(await readFile(join(home, 'hairness.json'), 'utf8')).runtime, '@hairness/cli@0.4.0-alpha.0')
+  assert.equal(JSON.parse(await readFile(join(home, 'hairness.json'), 'utf8')).runtime, '@hairness/cli@0.4.0-alpha.1')
   console.log(`packed lab passed (${home})`)
 } finally {
   await rm(temporary, { recursive: true, force: true })

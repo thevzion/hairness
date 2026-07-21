@@ -12,7 +12,7 @@ Hairness omits empty optional fields.
 {
   "$schema": "https://hairness.dev/schema/home.json",
   "name": "my-home",
-  "runtime": "@hairness/cli@0.4.0-alpha.0",
+  "runtime": "@hairness/cli@0.4.0-alpha.1",
   "providers": ["codex", "claude"]
 }
 ```

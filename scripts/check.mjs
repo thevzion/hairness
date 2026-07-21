@@ -22,7 +22,7 @@ for (const name of ['onboarding', 'scratch', 'project']) {
   await validateDocument(JSON.parse(await readFile(join(root, 'assets', name, 'hairness.json'), 'utf8')), 'asset')
 }
 await validateDocument({
-  $schema: 'https://hairness.dev/schema/home.json', name: 'check', runtime: '@hairness/cli@0.4.0-alpha.0', providers: ['codex'],
+  $schema: 'https://hairness.dev/schema/home.json', name: 'check', runtime: '@hairness/cli@0.4.0-alpha.1', providers: ['codex'],
 }, 'home')
 const all = await files(root)
 assert.equal(all.some((path) => path.endsWith('hairness.lock.json')), false)

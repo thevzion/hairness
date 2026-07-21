@@ -1,6 +1,6 @@
 {
   "name": "@hairness/cli",
-  "version": "0.4.0-alpha.0",
+  "version": "0.4.0-alpha.1",
   "description": "Source-owned agentic assets for any agent runtime.",
   "keywords": [
     "ai-agents",

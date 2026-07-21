@@ -41,7 +41,7 @@ it for whichever provider hosts the agent.
 Create it once:
 
 ```bash
-npx --yes @hairness/cli@0.4.0-alpha.0 create ness-home
+npx --yes @hairness/cli@0.4.0-alpha.1 create ness-home
 ```
 
 Open an agent there:
@@ -79,10 +79,10 @@ The onboarding Skill asked for consent, edited the accepted local preferences,
 then invoked the exact runtime owned by the Home:
 
 ```bash
-npx --yes @hairness/cli@0.4.0-alpha.0 target add ~/Projects/my-game
-npx --yes @hairness/cli@0.4.0-alpha.0 add @hairness/scratch -y
-npx --yes @hairness/cli@0.4.0-alpha.0 build
-npx --yes @hairness/cli@0.4.0-alpha.0 doctor
+npx --yes @hairness/cli@0.4.0-alpha.1 target add ~/Projects/my-game
+npx --yes @hairness/cli@0.4.0-alpha.1 add @hairness/scratch -y
+npx --yes @hairness/cli@0.4.0-alpha.1 build
+npx --yes @hairness/cli@0.4.0-alpha.1 doctor
 ```
 
 Hairness did not install a background service, authenticate another tool or
@@ -128,7 +128,7 @@ Your existing Home may track its Overlay. Hairness keeps that decision yours.
 A Home holds the context. A Target holds the work.
 
 ```bash
-npx --yes @hairness/cli@0.4.0-alpha.0 target add ~/Projects/payments-api
+npx --yes @hairness/cli@0.4.0-alpha.1 target add ~/Projects/payments-api
 ```
 
 Hairness records the Target’s normalized Git remote in `hairness.json` and adds

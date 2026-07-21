@@ -188,7 +188,7 @@ async function loadGithub(source, match) {
     const tag = requestedRef ? await git(['ls-remote', '--tags', 'origin', `refs/tags/${requestedRef}`], { cwd: stage }).then(Boolean, () => false) : false
     const pinned = Boolean(requestedRef && (/^[a-f0-9]{40}$/i.test(requestedRef) || tag))
     const manifestPath = assetPath.endsWith('.json') ? assetPath : join(assetPath, 'hairness.json')
-    return loadManifest(join(stage, manifestPath), { source, requestedRef: requestedRef ?? null, resolvedCommit, mobile: !pinned })
+    return await loadManifest(join(stage, manifestPath), { source, requestedRef: requestedRef ?? null, resolvedCommit, mobile: !pinned })
   } finally {
     await rm(stage, { recursive: true, force: true })
   }
