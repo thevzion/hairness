@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rename, rm } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { buildHome } from './build.mjs'
 import { doctorHome } from './doctor.mjs'
-import { addExtensions } from './extensions.mjs'
+import { addAssets } from './assets.mjs'
 import { git } from './git.mjs'
 import { homeDocument, homeId } from './home.mjs'
 import { HairnessError } from './lib/errors.mjs'
@@ -17,7 +17,7 @@ export async function createHome(destination, options = {}) {
     await git(['init', '--quiet', '--initial-branch=main'], { cwd: stage })
     await initHome(stage, { ...options, name: options.name ?? homeId(target) })
     const addresses = ['@hairness/onboarding', ...(options.baseItem ? [options.baseItem] : [])]
-    const result = await addExtensions(stage, addresses)
+    const result = await addAssets(stage, addresses)
     await buildHome(stage)
     const doctor = await doctorHome(stage)
     const blocking = doctor.limits.filter((limit) => !isExpectedLocalLimit(limit))
@@ -26,7 +26,7 @@ export async function createHome(destination, options = {}) {
     await git(['-c', 'user.name=Hairness', '-c', 'user.email=local@hairness.dev', 'commit', '--quiet', '-m', 'chore: initialize Hairness Home'], { cwd: stage })
     if (await git(['remote'], { cwd: stage })) throw new HairnessError('home_remote_forbidden', 'Home creation must not configure a remote.')
     await rename(stage, target)
-    return { status: 'created', home: target, extensions: result.extensions, launch: launchInstructions(target, options.providers ?? ['codex', 'claude']) }
+    return { status: 'created', home: target, assets: result.assets, launch: launchInstructions(target, options.providers ?? ['codex', 'claude']) }
   } catch (error) {
     await rm(stage, { recursive: true, force: true })
     throw error
@@ -45,7 +45,7 @@ export async function initHome(root = process.cwd(), options = {}) {
     const required = ['.hairness/', '.overlay/', 'targets/', '.DS_Store']
     const missing = required.filter((line) => !currentIgnore.split(/\r?\n/).includes(line))
     if (missing.length) await writeFileAtomic(ignorePath, `${currentIgnore.trimEnd()}${currentIgnore.trim() ? '\n' : ''}${missing.join('\n')}\n`, 0o644)
-    return { status: 'initialized', home: root, providers: options.providers ?? ['codex', 'claude'], extensions: [] }
+    return { status: 'initialized', home: root, providers: options.providers ?? ['codex', 'claude'], assets: [] }
   } catch (error) {
     await rm(join(root, 'hairness.json'), { force: true })
     if (ignoreExisted) await writeFileAtomic(ignorePath, currentIgnore, 0o644)

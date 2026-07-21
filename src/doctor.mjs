@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { buildHome } from './build.mjs'
-import { extensionStatus, installedExtensions } from './extensions.mjs'
+import { assetStatus, installedAssets } from './assets.mjs'
 import { RUNTIME, loadHome, loadLocalConfig } from './home.mjs'
 import { doctorIntegrations } from './integrations.mjs'
 import { exists } from './lib/io.mjs'
@@ -12,13 +12,13 @@ export async function doctorHome(root, options = {}) {
     loadLocalConfig(root),
     doctorTargets(root),
     doctorIntegrations(root),
-    installedExtensions(root),
+    installedAssets(root),
   ])
-  const extensions = await Promise.all(installed.map(extensionStatus))
+  const assets = await Promise.all(installed.map(assetStatus))
   const limits = [...targets.limits, ...integrations.limits]
   if (home.runtime !== RUNTIME) limits.push(`runtime-mismatch:${home.runtime}`)
   if (await exists(join(root, 'hairness.lock.json'))) limits.push('legacy-home-lock-present')
-  for (const extension of extensions) if (['missing', 'invalid'].includes(extension.state)) limits.push(`extension-${extension.state}:${extension.name}`)
+  for (const asset of assets) if (['missing', 'invalid'].includes(asset.state)) limits.push(`asset-${asset.state}:${asset.name}`)
   let build = 'ready'
   try {
     await buildHome(root, { check: true, adapterHomeRoot: options.adapterHomeRoot })
@@ -31,7 +31,7 @@ export async function doctorHome(root, options = {}) {
     home: { name: home.name, providers: home.providers },
     profile: local.preferences,
     kernel: { runtime: home.runtime, current: RUNTIME },
-    extensions,
+    assets,
     targets: targets.targets,
     integrations: integrations.integrations,
     build,
@@ -45,7 +45,7 @@ function repairRoutes(limits) {
   if (limits.some((limit) => limit.startsWith('build:'))) routes.push('hairness build')
   if (limits.some((limit) => limit.startsWith('target-'))) routes.push('hairness target doctor')
   if (limits.some((limit) => limit.startsWith('integration-'))) routes.push('hairness integration doctor')
-  if (limits.some((limit) => limit.startsWith('extension-'))) routes.push('hairness status')
+  if (limits.some((limit) => limit.startsWith('asset-'))) routes.push('hairness status')
   if (limits.some((limit) => limit.startsWith('runtime-'))) routes.push('use hairness.json#runtime')
   return [...new Set(routes)]
 }

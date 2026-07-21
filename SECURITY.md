@@ -9,7 +9,7 @@ public issue.
 
 ```mermaid
 flowchart LR
-  source["Untrusted Extension source"] --> validate["Schema, path and symlink checks"]
+  source["Untrusted Asset source"] --> validate["Schema, path and symlink checks"]
   validate --> copy["Inert transactional copy"]
   copy --> home["Source-owned Home"]
   home --> consent["Named Adapter approval"]
@@ -31,7 +31,7 @@ Home does not authorize an agent to change a Target or use an Integration.
   and symbolic links.
 - HTTPS sources reject credentials and query strings in URLs. Redirects must
   remain on HTTPS.
-- `add`, `status`, `diff`, `sync` and `remove` execute no Extension code.
+- `add`, `status`, `diff`, `sync` and `remove` execute no Asset code.
 - Transactions stage all writes, back up touched paths and restore them after a
   failed promotion.
 - Sync and remove stop on local divergence unless the user passes
@@ -46,7 +46,7 @@ Home does not authorize an agent to change a Target or use an Integration.
 
 ## User responsibilities
 
-Commit a Home before changing Extensions. Pin Git sources with a tag or full
+Commit a Home before changing Assets. Pin Git sources with a tag or full
 commit when reproducibility matters. Review source diffs and Adapter code.
 Protect the Home repository according to the sensitivity of its agentic assets.
 

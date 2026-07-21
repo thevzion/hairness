@@ -1,5 +1,5 @@
 {
-  "$schema": "https://hairness.dev/schema/extension.json",
+  "$schema": "https://hairness.dev/schema/asset.json",
   "name": "hairness/scratch",
   "version": "0.4.0-alpha.0",
   "description": "Explicit, lightweight working memory owned by the Home instance.",

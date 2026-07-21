@@ -1,5 +1,5 @@
 {
-  "$schema": "https://hairness.dev/schema/extension.json",
+  "$schema": "https://hairness.dev/schema/asset.json",
   "name": "hairness/onboarding",
   "version": "0.4.0-alpha.0",
   "description": "The minimal operating contract, orientation and consensual onboarding for a Hairness Home.",

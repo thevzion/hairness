@@ -17,9 +17,9 @@ async function files(directory) {
   return values
 }
 
-assert.deepEqual(await compileSchemas(), ['home', 'extension', 'prologue'])
+assert.deepEqual(await compileSchemas(), ['home', 'asset', 'prologue'])
 for (const name of ['onboarding', 'scratch', 'project']) {
-  await validateDocument(JSON.parse(await readFile(join(root, 'extensions', name, 'hairness.json'), 'utf8')), 'extension')
+  await validateDocument(JSON.parse(await readFile(join(root, 'assets', name, 'hairness.json'), 'utf8')), 'asset')
 }
 await validateDocument({
   $schema: 'https://hairness.dev/schema/home.json', name: 'check', runtime: '@hairness/cli@0.4.0-alpha.0', providers: ['codex'],

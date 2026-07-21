@@ -17,7 +17,7 @@ import { addTarget, listTargets } from '../src/targets.mjs'
 const exec = promisify(execFile)
 
 test('create produces a Git-ready Home with onboarding and tracked projections', async () => {
-  assert.deepEqual(await compileSchemas(), ['home', 'extension', 'prologue'])
+  assert.deepEqual(await compileSchemas(), ['home', 'asset', 'prologue'])
   const help = captureIo()
   assert.equal(await runCli([], help.io), 0)
   assert.doesNotMatch(help.stdout(), /\b(?:registry|catalog|view|search)\b/i)
@@ -38,7 +38,7 @@ test('create produces a Git-ready Home with onboarding and tracked projections',
     }
     const tracked = (await exec('git', ['ls-files'], { cwd: home })).stdout
     for (const path of [
-      'extensions/hairness/onboarding/hairness.json',
+      'assets/hairness/onboarding/hairness.json',
       '.agents/skills/hairness/SKILL.md',
       '.agents/skills/hairness-onboarding/SKILL.md',
       '.claude/skills/hairness/SKILL.md',
@@ -48,7 +48,7 @@ test('create produces a Git-ready Home with onboarding and tracked projections',
     assert.doesNotMatch(tracked, /^\.hairness\//m)
     assert.equal((await doctorHome(home)).status, 'ready')
     await buildHome(home, { check: true })
-    const onboarding = JSON.parse(await readFile(join(home, 'extensions/hairness/onboarding/hairness.json'), 'utf8'))
+    const onboarding = JSON.parse(await readFile(join(home, 'assets/hairness/onboarding/hairness.json'), 'utf8'))
     assert.equal(onboarding.name, 'hairness/onboarding')
     assert.equal(onboarding.installation.source, '@hairness/onboarding')
     assert.match(onboarding.installation.baseManifestDigest, /^sha256:[a-f0-9]{64}$/)
@@ -74,7 +74,7 @@ test('init creates a bare Home and preserves an existing Overlay byte-for-byte',
     assert.match(rejected.stderr(), /bare Home/)
     await initHome(root, { name: 'bare-home', providers: ['codex'] })
     assert.equal(await readFile(join(root, '.overlay/config.json'), 'utf8'), config)
-    await assert.rejects(readFile(join(root, 'extensions/hairness/onboarding/hairness.json')), (error) => error.code === 'ENOENT')
+    await assert.rejects(readFile(join(root, 'assets/hairness/onboarding/hairness.json')), (error) => error.code === 'ENOENT')
     await buildHome(root)
     assert.equal((await doctorHome(root)).status, 'ready')
   } finally {

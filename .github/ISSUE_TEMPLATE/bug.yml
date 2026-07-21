@@ -17,7 +17,7 @@ body:
     id: reproduction
     attributes:
       label: Reproduction
-      description: Include the smallest Home or Extension manifest and exact commands.
+      description: Include the smallest Home or Asset manifest and exact commands.
     validations:
       required: true
   - type: textarea

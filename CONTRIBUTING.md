@@ -3,7 +3,7 @@
 Read the [technical reference](docs/reference.md) and [security policy](SECURITY.md)
 before changing public behavior.
 
-Change canonical source under `src/`, `schemas/` or `extensions/`. Keep the
+Change canonical source under `src/`, `schemas/` or `assets/`. Keep the
 README, reference, schemas, CLI and tests aligned. Add a durable test for a
 recurring correction.
 

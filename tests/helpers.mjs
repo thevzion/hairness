@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
-export async function writeExtension(root, manifest = extension(), files = {}) {
+export async function writeAsset(root, manifest = asset(), files = {}) {
   await mkdir(root, { recursive: true })
   const path = join(root, 'hairness.json')
   await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`)
@@ -13,9 +13,9 @@ export async function writeExtension(root, manifest = extension(), files = {}) {
   return path
 }
 
-export function extension(overrides = {}) {
+export function asset(overrides = {}) {
   return {
-    $schema: 'https://hairness.dev/schema/extension.json',
+    $schema: 'https://hairness.dev/schema/asset.json',
     name: 'fixture/review',
     version: '1.0.0',
     description: 'Review agentic assets.',

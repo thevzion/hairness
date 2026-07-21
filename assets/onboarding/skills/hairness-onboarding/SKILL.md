@@ -7,5 +7,6 @@ Configure the smallest useful Home through conversation.
 5. Present the exact file and binding changes, then wait for explicit consent before mutating.
 6. Run `npx --yes @hairness/cli@0.4.0-alpha.0 build` and `npx --yes @hairness/cli@0.4.0-alpha.0 doctor` after accepted changes.
 7. Explain that Scratch is optional, explicit working memory. Add `@hairness/scratch` only when the user accepts it, then build again.
+8. Keep private or uncertain work in the Overlay. Promote accepted knowledge only to an Asset or selected Target, after explicit consent.
 
 Do not create a transcript, onboarding journal, hidden memory or generic Artifact.

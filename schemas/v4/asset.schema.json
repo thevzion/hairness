@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://hairness.dev/schema/extension.json",
+  "$id": "https://hairness.dev/schema/asset.json",
   "type": "object",
   "additionalProperties": false,
   "required": ["$schema", "name", "version", "description", "files"],
   "properties": {
-    "$schema": { "const": "https://hairness.dev/schema/extension.json" },
+    "$schema": { "const": "https://hairness.dev/schema/asset.json" },
     "name": { "$ref": "#/$defs/name" },
     "version": { "type": "string", "minLength": 1, "maxLength": 120 },
     "description": { "type": "string", "minLength": 1, "maxLength": 500 },

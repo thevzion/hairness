@@ -7,55 +7,58 @@ import { git } from './git.mjs'
 import { HairnessError } from './lib/errors.mjs'
 import { assertInside, digest, exists, resolvePackageFile } from './lib/io.mjs'
 
-const builtinRoot = fileURLToPath(new URL('../extensions', import.meta.url))
+const builtinRoot = fileURLToPath(new URL('../assets', import.meta.url))
 const MAX_FILE_BYTES = 5 * 1024 * 1024
 const githubAddress = /^([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\/(.+?)(?:#([^#]+))?$/
 
-export async function resolveExtension(root, address) {
+export async function resolveAsset(root, address) {
   const source = String(address)
   const official = source.match(/^@hairness\/([a-z0-9][a-z0-9._-]*)$/)
   if (official) return loadManifest(join(builtinRoot, official[1], 'hairness.json'), { root, source, mobile: false })
-  if (source.startsWith('@')) throw new HairnessError('source_invalid', `Unsupported Extension namespace ${source}; use a GitHub, HTTPS or local manifest address.`)
+  if (source.startsWith('@')) throw new HairnessError('source_invalid', `Unsupported Asset namespace ${source}; use a GitHub, HTTPS or local manifest address.`)
   if (/^https:\/\//.test(source)) return loadManifest(assertSafeUrl(source), { root, source, mobile: true })
-  if (/^http:\/\//.test(source)) throw new HairnessError('source_insecure', 'Extension URLs must use HTTPS.')
+  if (/^http:\/\//.test(source)) throw new HairnessError('source_insecure', 'Asset URLs must use HTTPS.')
   if (source.startsWith('.') || source.startsWith('/')) return loadManifest(source, { root, source, mobile: true })
   const github = source.match(githubAddress)
   if (github) return loadGithub(source, github)
-  throw new HairnessError('source_invalid', `Unsupported Extension address ${source}.`)
+  throw new HairnessError('source_invalid', `Unsupported Asset address ${source}.`)
 }
 
-export async function addExtensions(root, addresses, options = {}) {
-  const resolved = await Promise.all(addresses.map((address) => resolveExtension(root, address)))
+export async function addAssets(root, addresses, options = {}) {
+  const resolved = await Promise.all(addresses.map((address) => resolveAsset(root, address)))
   const ids = resolved.map((entry) => entry.manifest.name)
-  if (new Set(ids).size !== ids.length) throw new HairnessError('extension_collision', 'Each Extension may be selected only once per add transaction.')
-  const installed = (await installedExtensions(root)).filter((entry) => !entry.invalid)
+  if (new Set(ids).size !== ids.length) throw new HairnessError('asset_collision', 'Each Asset may be selected only once per add transaction.')
+  const installed = (await installedAssets(root)).filter((entry) => !entry.invalid)
   assertCapabilityCollisions([
     ...installed.filter((entry) => !options.overwrite || !ids.includes(entry.manifest.name)).map((entry) => entry.manifest),
     ...resolved.map((entry) => entry.manifest),
   ])
   const current = new Set(installed.map((entry) => entry.manifest.name))
   const writes = []
-  for (const extension of resolved) {
-    const id = extension.manifest.name
-    if (current.has(id) && !options.overwrite) throw new HairnessError('extension_exists', `${id} is already installed.`)
-    const extensionRoot = join(root, 'extensions', id)
-    for (const file of extension.files) {
-      const path = assertInside(extensionRoot, join(extensionRoot, file.path), 'Extension destination')
+  for (const asset of resolved) {
+    const id = asset.manifest.name
+    if (current.has(id) && !options.overwrite) throw new HairnessError('asset_exists', `${id} is already installed.`)
+    const assetRoot = join(root, 'assets', id)
+    for (const file of asset.files) {
+      const path = assertInside(assetRoot, join(assetRoot, file.path), 'Asset destination')
       if (await exists(path) && !options.overwrite) throw new HairnessError('file_collision', `${relative(root, path)} already exists.`)
       writes.push({ path, content: file.content })
     }
-    const manifestPath = join(extensionRoot, 'hairness.json')
+    const manifestPath = join(assetRoot, 'hairness.json')
     if (await exists(manifestPath) && !options.overwrite) throw new HairnessError('file_collision', `${relative(root, manifestPath)} already exists.`)
-    writes.push({ path: manifestPath, content: manifestBytes(installedManifest(extension)) })
+    writes.push({ path: manifestPath, content: manifestBytes(installedManifest(asset)) })
   }
   const preview = plan(root, writes, [])
-  if (options.dryRun) return { status: 'planned', extensions: ids, ...preview }
+  if (options.dryRun) return { status: 'planned', assets: ids, ...preview }
   await applyTransaction(root, writes, [])
-  return { status: 'added', extensions: ids, ...preview }
+  return { status: 'added', assets: ids, ...preview }
 }
 
-export async function installedExtensions(root) {
-  const base = join(root, 'extensions')
+export async function installedAssets(root) {
+  if (await exists(join(root, 'extensions'))) {
+    throw new HairnessError('legacy_asset_layout', 'The legacy extensions/ layout is unsupported; move managed sources under assets/.')
+  }
+  const base = join(root, 'assets')
   if (!await exists(base)) return []
   const values = []
   for (const namespace of await directories(base, root)) {
@@ -66,20 +69,20 @@ export async function installedExtensions(root) {
     }
   }
   const ids = values.filter((entry) => !entry.invalid).map((entry) => entry.manifest.name)
-  if (new Set(ids).size !== ids.length) throw new HairnessError('extension_invalid', 'Installed Extension names must be unique.')
+  if (new Set(ids).size !== ids.length) throw new HairnessError('asset_invalid', 'Installed Asset names must be unique.')
   return values.sort((left, right) => left.id.localeCompare(right.id))
 }
 
-export async function statusExtensions(root, selector) {
-  const entries = selector ? [await findInstalled(root, selector)] : await installedExtensions(root)
-  return Promise.all(entries.map(extensionStatus))
+export async function statusAssets(root, selector) {
+  const entries = selector ? [await findInstalled(root, selector)] : await installedAssets(root)
+  return Promise.all(entries.map(assetStatus))
 }
 
-export async function diffExtension(root, selector, options = {}) {
+export async function diffAsset(root, selector, options = {}) {
   const installed = await requireValid(await findInstalled(root, selector))
-  const local = await extensionStatus(installed)
-  const upstream = await resolveExtension(root, options.to ?? installed.manifest.installation.source)
-  assertSameExtension(installed, upstream)
+  const local = await assetStatus(installed)
+  const upstream = await resolveAsset(root, options.to ?? installed.manifest.installation.source)
+  assertSameAsset(installed, upstream)
   const base = installed.manifest.installation.baseDigests
   const next = new Map(upstream.files.map((file) => [file.path, digest(file.content)]))
   const paths = [...new Set([...Object.keys(base), ...next.keys()])].sort()
@@ -96,26 +99,26 @@ export async function diffExtension(root, selector, options = {}) {
   }
 }
 
-export async function syncExtensions(root, selector, options = {}) {
-  const selected = options.all ? await installedExtensions(root) : [await findInstalled(root, selector)]
+export async function syncAssets(root, selector, options = {}) {
+  const selected = options.all ? await installedAssets(root) : [await findInstalled(root, selector)]
   const results = []
   for (const installed of selected) results.push(await syncOne(root, await requireValid(installed), options))
   return results
 }
 
-export async function removeExtension(root, selector, options = {}) {
+export async function removeAsset(root, selector, options = {}) {
   const installed = await requireValid(await findInstalled(root, selector))
-  const current = await extensionStatus(installed)
+  const current = await assetStatus(installed)
   if (current.state !== 'clean' && !options.overwrite) {
-    throw new HairnessError('extension_customized', `${installed.id} has customized, missing or invalid source-owned files.`, { details: current })
+    throw new HairnessError('asset_customized', `${installed.id} has customized, missing or invalid source-owned files.`, { details: current })
   }
   const deletes = [...Object.keys(installed.manifest.installation.baseDigests).map((path) => join(installed.root, path)), installed.path]
   await applyTransaction(root, [], deletes)
-  await removeEmptyParents(installed.root, join(root, 'extensions'))
+  await removeEmptyParents(installed.root, join(root, 'assets'))
   return { status: 'removed', name: installed.id, files: Object.keys(installed.manifest.installation.baseDigests) }
 }
 
-export async function extensionStatus(entry) {
+export async function assetStatus(entry) {
   if (entry.invalid) return { name: entry.id, state: 'invalid', manifest: 'invalid', files: [], error: entry.invalid.message }
   const installation = entry.manifest.installation
   const expectedManifest = installation.baseManifestDigest
@@ -152,13 +155,13 @@ export async function extensionStatus(entry) {
 }
 
 async function syncOne(root, installed, options) {
-  const status = await extensionStatus(installed)
-  const upstream = await resolveExtension(root, options.to ?? installed.manifest.installation.source)
-  assertSameExtension(installed, upstream)
-  const others = (await installedExtensions(root)).filter((entry) => !entry.invalid && entry.id !== installed.id).map((entry) => entry.manifest)
+  const status = await assetStatus(installed)
+  const upstream = await resolveAsset(root, options.to ?? installed.manifest.installation.source)
+  assertSameAsset(installed, upstream)
+  const others = (await installedAssets(root)).filter((entry) => !entry.invalid && entry.id !== installed.id).map((entry) => entry.manifest)
   assertCapabilityCollisions([...others, upstream.manifest])
   if (status.state !== 'clean' && !options.overwrite) {
-    const result = await diffExtension(root, installed.id, { to: options.to })
+    const result = await diffAsset(root, installed.id, { to: options.to })
     if (options.check) return { status: 'blocked', reason: 'customized', ...result }
     throw new HairnessError('sync_customized', `${installed.id} has local changes; inspect hairness diff or pass --overwrite.`, { details: result })
   }
@@ -173,9 +176,9 @@ async function syncOne(root, installed, options) {
 }
 
 async function loadGithub(source, match) {
-  const [, owner, repository, extensionPath, requestedRef] = match
-  if (!extensionPath || extensionPath.startsWith('/') || extensionPath.includes('..') || extensionPath.includes('\\')) throw new HairnessError('source_invalid', `Invalid GitHub Extension path ${extensionPath}.`)
-  const stage = await mkdtemp(join(tmpdir(), 'hairness-extension-'))
+  const [, owner, repository, assetPath, requestedRef] = match
+  if (!assetPath || assetPath.startsWith('/') || assetPath.includes('..') || assetPath.includes('\\')) throw new HairnessError('source_invalid', `Invalid GitHub Asset path ${assetPath}.`)
+  const stage = await mkdtemp(join(tmpdir(), 'hairness-asset-'))
   try {
     await git(['init', '--quiet'], { cwd: stage })
     await git(['remote', 'add', 'origin', `https://github.com/${owner}/${repository}.git`], { cwd: stage })
@@ -184,7 +187,7 @@ async function loadGithub(source, match) {
     const resolvedCommit = await git(['rev-parse', 'HEAD'], { cwd: stage })
     const tag = requestedRef ? await git(['ls-remote', '--tags', 'origin', `refs/tags/${requestedRef}`], { cwd: stage }).then(Boolean, () => false) : false
     const pinned = Boolean(requestedRef && (/^[a-f0-9]{40}$/i.test(requestedRef) || tag))
-    const manifestPath = extensionPath.endsWith('.json') ? extensionPath : join(extensionPath, 'hairness.json')
+    const manifestPath = assetPath.endsWith('.json') ? assetPath : join(assetPath, 'hairness.json')
     return loadManifest(join(stage, manifestPath), { source, requestedRef: requestedRef ?? null, resolvedCommit, mobile: !pinned })
   } finally {
     await rm(stage, { recursive: true, force: true })
@@ -201,18 +204,18 @@ async function loadManifest(location, context) {
   } else {
     const candidate = resolve(context.root ?? process.cwd(), location)
     const stat = await lstat(candidate)
-    if (stat.isSymbolicLink()) throw new HairnessError('symlink_forbidden', `Extension manifest ${location} must not be a symbolic link.`)
+    if (stat.isSymbolicLink()) throw new HairnessError('symlink_forbidden', `Asset manifest ${location} must not be a symbolic link.`)
     const path = await realpath(candidate)
     document = JSON.parse(await readFile(path, 'utf8'))
     base = path
   }
-  const manifest = sourceManifest(await validateDocument(document, 'extension'))
+  const manifest = sourceManifest(await validateDocument(document, 'asset'))
   validateManifest(manifest)
   const files = []
   for (const file of manifest.files) {
     const content = /^https:\/\//.test(base)
       ? await fetchBytes(new URL(file.path, base).href)
-      : await readFile(await resolvePackageFile(dirname(base), file.path, 'Extension file'))
+      : await readFile(await resolvePackageFile(dirname(base), file.path, 'Asset file'))
     if (content.length > MAX_FILE_BYTES) throw new HairnessError('source_too_large', `${file.path} exceeds 5 MiB.`)
     files.push({ ...file, content })
   }
@@ -229,10 +232,10 @@ async function loadManifest(location, context) {
 async function loadInstalled(root, path, id) {
   try {
     const info = await lstat(path)
-    if (info.isSymbolicLink()) throw new HairnessError('symlink_forbidden', `Extension manifest ${relative(root, path)} must not be a symbolic link.`)
-    const manifest = await validateDocument(JSON.parse(await readFile(path, 'utf8')), 'extension')
-    if (!manifest.installation) throw new HairnessError('extension_invalid', `${relative(root, path)} has no installation provenance.`)
-    if (manifest.name !== id) throw new HairnessError('extension_invalid', `${relative(root, path)} declares ${manifest.name}, expected ${id}.`)
+    if (info.isSymbolicLink()) throw new HairnessError('symlink_forbidden', `Asset manifest ${relative(root, path)} must not be a symbolic link.`)
+    const manifest = await validateDocument(JSON.parse(await readFile(path, 'utf8')), 'asset')
+    if (!manifest.installation) throw new HairnessError('asset_invalid', `${relative(root, path)} has no installation provenance.`)
+    if (manifest.name !== id) throw new HairnessError('asset_invalid', `${relative(root, path)} declares ${manifest.name}, expected ${id}.`)
     validateManifest(sourceManifest(manifest))
     return { id, root: dirname(path), path, manifest }
   } catch (error) {
@@ -241,22 +244,22 @@ async function loadInstalled(root, path, id) {
 }
 
 async function findInstalled(root, selector) {
-  const matches = (await installedExtensions(root)).filter((entry) => entry.id === selector || entry.id.split('/').at(-1) === selector)
-  if (!matches.length) throw new HairnessError('extension_not_installed', `${selector} is not installed.`)
-  if (matches.length > 1) throw new HairnessError('extension_ambiguous', `${selector} matches multiple Extensions; use the full name.`)
+  const matches = (await installedAssets(root)).filter((entry) => entry.id === selector || entry.id.split('/').at(-1) === selector)
+  if (!matches.length) throw new HairnessError('asset_not_installed', `${selector} is not installed.`)
+  if (matches.length > 1) throw new HairnessError('asset_ambiguous', `${selector} matches multiple Assets; use the full name.`)
   return matches[0]
 }
 
-function installedManifest(extension) {
+function installedManifest(asset) {
   return {
-    ...extension.manifest,
+    ...asset.manifest,
     installation: {
-      source: extension.source,
-      requestedRef: extension.requestedRef,
-      resolvedCommit: extension.resolvedCommit,
-      mobile: extension.mobile,
-      baseManifestDigest: manifestDigest(extension.manifest),
-      baseDigests: Object.fromEntries(extension.files.map((file) => [file.path, digest(file.content)])),
+      source: asset.source,
+      requestedRef: asset.requestedRef,
+      resolvedCommit: asset.resolvedCommit,
+      mobile: asset.mobile,
+      baseManifestDigest: manifestDigest(asset.manifest),
+      baseDigests: Object.fromEntries(asset.files.map((file) => [file.path, digest(file.content)])),
     },
   }
 }
@@ -279,13 +282,13 @@ function stable(value) {
 function validateManifest(manifest) {
   const paths = new Set()
   for (const file of manifest.files) {
-    if (file.path === 'hairness.json') throw new HairnessError('extension_invalid', 'hairness.json is reserved for the Extension manifest.')
-    if (paths.has(file.path)) throw new HairnessError('extension_invalid', `${manifest.name} declares ${file.path} more than once.`)
+    if (file.path === 'hairness.json') throw new HairnessError('asset_invalid', 'hairness.json is reserved for the Asset manifest.')
+    if (paths.has(file.path)) throw new HairnessError('asset_invalid', `${manifest.name} declares ${file.path} more than once.`)
     paths.add(file.path)
-    if (file.type === 'hairness:skill' && (!file.id || !file.description)) throw new HairnessError('extension_invalid', `Skill ${file.path} requires id and description.`)
-    if (file.type !== 'hairness:skill' && (file.id || file.description)) throw new HairnessError('extension_invalid', `${file.path} may declare id and description only when it is a Skill.`)
+    if (file.type === 'hairness:skill' && (!file.id || !file.description)) throw new HairnessError('asset_invalid', `Skill ${file.path} requires id and description.`)
+    if (file.type !== 'hairness:skill' && (file.id || file.description)) throw new HairnessError('asset_invalid', `${file.path} may declare id and description only when it is a Skill.`)
   }
-  if (manifest.adapter && !paths.has(manifest.adapter.entry)) throw new HairnessError('extension_invalid', `Adapter entry ${manifest.adapter.entry} must be a declared file.`)
+  if (manifest.adapter && !paths.has(manifest.adapter.entry)) throw new HairnessError('asset_invalid', `Adapter entry ${manifest.adapter.entry} must be a declared file.`)
 }
 
 function assertCapabilityCollisions(manifests) {
@@ -304,23 +307,23 @@ function assertCapabilityCollisions(manifests) {
 async function fetchDocument(url) {
   const response = await fetch(assertSafeUrl(url), { redirect: 'follow' })
   assertSafeResponse(response)
-  if (!response.ok) throw new HairnessError('source_fetch_failed', `Extension request failed with HTTP ${response.status}.`, { exitCode: 4 })
+  if (!response.ok) throw new HairnessError('source_fetch_failed', `Asset request failed with HTTP ${response.status}.`, { exitCode: 4 })
   const bytes = Buffer.from(await response.arrayBuffer())
-  if (bytes.length > MAX_FILE_BYTES) throw new HairnessError('source_too_large', 'Extension manifest exceeds 5 MiB.')
+  if (bytes.length > MAX_FILE_BYTES) throw new HairnessError('source_too_large', 'Asset manifest exceeds 5 MiB.')
   try { return { document: JSON.parse(bytes.toString('utf8')), url: response.url || url } }
-  catch (error) { throw new HairnessError('invalid_json', 'Extension returned invalid JSON.', { cause: error }) }
+  catch (error) { throw new HairnessError('invalid_json', 'Asset returned invalid JSON.', { cause: error }) }
 }
 
 async function fetchBytes(url) {
   const response = await fetch(assertSafeUrl(url), { redirect: 'follow' })
   assertSafeResponse(response)
-  if (!response.ok) throw new HairnessError('source_fetch_failed', `Extension file request failed with HTTP ${response.status}.`, { exitCode: 4 })
+  if (!response.ok) throw new HairnessError('source_fetch_failed', `Asset file request failed with HTTP ${response.status}.`, { exitCode: 4 })
   return Buffer.from(await response.arrayBuffer())
 }
 
 function assertSafeUrl(value) {
   const url = new URL(value)
-  if (url.protocol !== 'https:' || url.username || url.password || url.search) throw new HairnessError('source_insecure', 'Extension URLs must use HTTPS without credentials or query secrets.')
+  if (url.protocol !== 'https:' || url.username || url.password || url.search) throw new HairnessError('source_insecure', 'Asset URLs must use HTTPS without credentials or query secrets.')
   return url.href
 }
 
@@ -331,19 +334,19 @@ function assertSafeResponse(response) {
 async function directories(root, home) {
   const values = []
   for (const entry of await readdir(root, { withFileTypes: true })) {
-    if (entry.isSymbolicLink()) throw new HairnessError('symlink_forbidden', `Installed Extension contains symbolic link ${relative(home, join(root, entry.name))}.`)
+    if (entry.isSymbolicLink()) throw new HairnessError('symlink_forbidden', `Installed Asset contains symbolic link ${relative(home, join(root, entry.name))}.`)
     if (entry.isDirectory()) values.push(entry.name)
   }
   return values.sort()
 }
 
 async function requireValid(entry) {
-  if (entry.invalid) throw new HairnessError('extension_invalid', `${entry.id} is invalid: ${entry.invalid.message}`)
+  if (entry.invalid) throw new HairnessError('asset_invalid', `${entry.id} is invalid: ${entry.invalid.message}`)
   return entry
 }
 
-function assertSameExtension(installed, upstream) {
-  if (installed.id !== upstream.manifest.name) throw new HairnessError('extension_identity_changed', `${upstream.manifest.name} cannot replace ${installed.id}.`)
+function assertSameAsset(installed, upstream) {
+  if (installed.id !== upstream.manifest.name) throw new HairnessError('asset_identity_changed', `${upstream.manifest.name} cannot replace ${installed.id}.`)
 }
 
 async function anyWriteChanged(writes) {

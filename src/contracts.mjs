@@ -5,11 +5,11 @@ import { HairnessError } from './lib/errors.mjs'
 
 export const API = Object.freeze({
   home: 'https://hairness.dev/schema/home.json',
-  extension: 'https://hairness.dev/schema/extension.json',
+  asset: 'https://hairness.dev/schema/asset.json',
   prologue: 'hairness.dev/prologue/v1alpha1',
 })
 
-const schemaFiles = ['home.schema.json', 'extension.schema.json', 'prologue.schema.json']
+const schemaFiles = ['home.schema.json', 'asset.schema.json', 'prologue.schema.json']
 let validatorsPromise
 
 async function validators() {

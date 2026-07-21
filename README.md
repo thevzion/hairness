@@ -28,9 +28,13 @@ Hairness gives Ness one place to live:
 - a Git repository that owns the agentic assets;
 - provider projections that work after a clone;
 - local rooms for private memory and repository bindings;
-- Extensions you can read, edit and keep.
+- Assets you can read, edit and keep.
 
 The Kernel stays small. Your Home carries the value.
+
+Hairness handles the logistics behind that Home: getting the right source-owned
+agentic material into the right place, preserving who owns it, and projecting
+it for whichever provider hosts the agent.
 
 ## Give your agent a Home
 
@@ -91,7 +95,7 @@ execute code during `add`.
 ```text
 ness-home/
 ├── hairness.json                         # Home identity and composition
-├── extensions/
+├── assets/
 │   └── hairness/
 │       ├── onboarding/
 │       │   ├── hairness.json             # source + installation provenance
@@ -113,7 +117,7 @@ ness-home/
 └── .hairness/build.json                   # local output ownership and digests
 ```
 
-Git tracks the Home definition, installed Extension sources and provider
+Git tracks the Home definition, installed Asset sources and provider
 projections. A clone can start an agent without a build step. Git ignores the
 Overlay, Target bindings and Kernel build state in a new Home.
 
@@ -135,12 +139,12 @@ repository.
 One personal Home can connect several projects. A team Home can connect the
 repositories that implement one business domain.
 
-## Extensions add rooms you own
+## Assets add rooms you own
 
-An Extension is a folder with one manifest and source files:
+An Asset is a folder with one manifest and source files:
 
 ```text
-extensions/company/security/
+assets/company/security/
 ├── hairness.json
 ├── instructions/policy.md
 ├── skills/security-review/SKILL.md
@@ -149,7 +153,7 @@ extensions/company/security/
 
 ```json
 {
-  "$schema": "https://hairness.dev/schema/extension.json",
+  "$schema": "https://hairness.dev/schema/asset.json",
   "name": "company/security",
   "version": "1.2.0",
   "description": "Security policy, knowledge and review capability.",
@@ -172,8 +176,8 @@ Install from the source you trust:
 
 ```bash
 hairness add @hairness/scratch
-hairness add company/agentic-assets/extensions/security#v1.2.0
-hairness add company/agentic-assets/extensions/security#8d31f3c7f05f4c6fd4a15ad31f4d23ff9d472312
+hairness add company/agentic-assets/assets/security#v1.2.0
+hairness add company/agentic-assets/assets/security#8d31f3c7f05f4c6fd4a15ad31f4d23ff9d472312
 hairness add https://assets.example.com/security/hairness.json
 hairness add ./local/security/hairness.json
 ```
@@ -182,12 +186,16 @@ Hairness copies the files into your Home. It adds source, requested reference,
 resolved commit and base digests to the same `hairness.json`. No separate lock or
 receipt hides the relationship.
 
+An installed Asset is also a valid Git source for another Home. Hairness ignores
+the previous installation provenance and records the new source and digests for
+the receiving Home.
+
 ### Change the source
 
 The installed files belong to you:
 
 ```bash
-$EDITOR extensions/company/security/skills/security-review/SKILL.md
+$EDITOR assets/company/security/skills/security-review/SKILL.md
 git diff
 hairness status company/security
 ```
@@ -212,12 +220,27 @@ You can keep the edit, commit it, inspect `hairness diff`, or choose
 
 ### Build for the provider
 
-Skills stay provider-neutral inside the Extension. `hairness build` projects
+Skills stay provider-neutral inside the Asset. `hairness build` projects
 them into Codex and Claude conventions. A provider command remains a projection
-of a Skill, so the Extension does not carry two versions of the same capability.
+of a Skill, so the Asset does not carry two versions of the same capability.
 
 Instructions shape behavior. Skills give the agent a callable capability.
-Files carry knowledge, templates, examples or any other agentic asset.
+Files carry knowledge, templates, examples or other agentic material.
+
+## Knowledge stays with its owner
+
+A Home does not collect every document under one root `docs/` directory.
+Knowledge stays close to what owns it:
+
+| Material | Owner | Canonical place |
+|---|---|---|
+| private, incomplete or uncertain work | this Home instance | `.overlay/` |
+| knowledge required by a reusable capability or domain | an Asset | `assets/<namespace>/<name>/knowledge/` |
+| product or repository knowledge | its Target | the Target's own convention, often `docs/` |
+| documentation about the Home itself | the Home | `README.md`, and `docs/` only when needed |
+
+Promotion from the Overlay to an Asset or Target is explicit. Provider
+projections consume this material but never become its canonical source.
 
 ## Homes at different scales
 
@@ -232,11 +255,11 @@ You can start with one room and keep the same grammar as your needs grow.
 | Company | shared policies, brand voice, domain map | cross-team references |
 
 An individual can clone a team Home, keep `.overlay/` local, and add a personal
-Extension. A company can publish Extensions from ordinary Git repositories.
+Asset. A company can publish Assets from ordinary Git repositories.
 Each team composes its own Home from the assets it needs.
 
 One Home is a house for an agent. Teams connect houses through shared
-Extensions. Over time, the organization builds a city: a source-owned body of
+Assets. Over time, the organization builds a city: a source-owned body of
 instructions, capabilities, knowledge and explicit memory that helps agents
 understand the business. That city is agentic capital because the organization
 can inspect it, improve it and carry it to another provider.
@@ -254,7 +277,7 @@ target ... · integration ...
 
 The CLI validates paths and schemas, applies file changes as transactions,
 tracks output ownership and projects assets. `add` and `sync` copy data only.
-An Extension may contain an Adapter, but Hairness runs it during `build` only
+An Asset may contain an Adapter, but Hairness runs it during `build` only
 after named approval:
 
 ```bash

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://hairness.dev/schema/extension.json",
+  "$schema": "https://hairness.dev/schema/asset.json",
   "name": "hairness/project",
   "version": "0.4.0-alpha.0",
   "description": "Maintainer instructions, architecture knowledge and delivery Skills for the Hairness Target.",

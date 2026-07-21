@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, unlink } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'
-import { installedExtensions } from './extensions.mjs'
+import { installedAssets } from './assets.mjs'
 import { loadHome, loadLocalConfig } from './home.mjs'
 import { HairnessError } from './lib/errors.mjs'
 import { digest, exists, readJson, resolvePackageFile, treeFiles, writeFileAtomic, writeJsonAtomic } from './lib/io.mjs'
@@ -9,21 +9,21 @@ import { digest, exists, readJson, resolvePackageFile, treeFiles, writeFileAtomi
 const managedRegion = /<!-- hairness:begin id="agent-contract" -->[\s\S]*?<!-- hairness:end id="agent-contract" -->/
 
 export async function buildHome(root, options = {}) {
-  const [home, local, extensions] = await Promise.all([loadHome(root), loadLocalConfig(root), installedExtensions(root)])
+  const [home, local, installed] = await Promise.all([loadHome(root), loadLocalConfig(root), installedAssets(root)])
   const statePath = join(root, '.hairness', 'build.json')
   const previous = await readJson(statePath, null)
-  const invalid = extensions.find((extension) => extension.invalid)
-  if (invalid) throw new HairnessError('extension_invalid', `${invalid.id} is invalid: ${invalid.invalid.message}`)
-  const assets = await loadAssets(extensions)
-  const adapterBuild = await adapterOutputs(root, options.adapterHomeRoot ?? root, home, extensions, options.allowAdapters ?? [], options.check, previous)
-  const wanted = [...providerOutputs(home, local, assets), ...adapterBuild.outputs].sort((left, right) => left.path.localeCompare(right.path))
+  const invalid = installed.find((asset) => asset.invalid)
+  if (invalid) throw new HairnessError('asset_invalid', `${invalid.id} is invalid: ${invalid.invalid.message}`)
+  const materials = await loadMaterials(installed)
+  const adapterBuild = await adapterOutputs(root, options.adapterHomeRoot ?? root, home, installed, options.allowAdapters ?? [], options.check, previous)
+  const wanted = [...providerOutputs(home, local, materials), ...adapterBuild.outputs].sort((left, right) => left.path.localeCompare(right.path))
   assertNoOutputCollisions(wanted)
   const outputs = await reconcileOutputs(root, previous?.outputs ?? [], wanted, Boolean(options.check))
   const managed = []
   for (const provider of ['codex', 'claude']) {
     const active = home.providers.includes(provider)
     const instructionPath = join(root, provider === 'codex' ? 'AGENTS.md' : 'CLAUDE.md')
-    managed.push(relativeManaged(root, await updateManagedText(instructionPath, active ? renderAgentContract(home, local.preferences, assets.instructions) : null, options.check)))
+    managed.push(relativeManaged(root, await updateManagedText(instructionPath, active ? renderAgentContract(home, local.preferences, materials.instructions) : null, options.check)))
     const hookPath = join(root, provider === 'codex' ? '.codex/hooks.json' : '.claude/settings.json')
     managed.push(relativeManaged(root, await updateHookConfig(hookPath, active, home.runtime, options.check)))
   }
@@ -34,14 +34,14 @@ export async function buildHome(root, options = {}) {
   return state
 }
 
-async function loadAssets(extensions) {
+async function loadMaterials(assets) {
   const instructions = []
   const skills = []
-  for (const extension of extensions) {
-    const owner = extension.manifest.name
-    for (const file of extension.manifest.files) {
+  for (const asset of assets) {
+    const owner = asset.manifest.name
+    for (const file of asset.manifest.files) {
       if (!['hairness:instruction', 'hairness:skill'].includes(file.type)) continue
-      const content = await readFile(await resolvePackageFile(extension.root, file.path, `${owner} asset`), 'utf8')
+      const content = await readFile(await resolvePackageFile(asset.root, file.path, `${owner} asset`), 'utf8')
       if (file.type === 'hairness:instruction') instructions.push({ owner, content })
       else skills.push({ id: file.id, summary: file.description, owner, content: skillBody(content) })
     }
@@ -53,9 +53,9 @@ function skillBody(content) {
   return content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '').trimStart()
 }
 
-function providerOutputs(home, local, assets) {
+function providerOutputs(home, local, materials) {
   const values = []
-  for (const provider of home.providers) for (const skill of assets.skills) values.push(providerOutput(provider, skill, local))
+  for (const provider of home.providers) for (const skill of materials.skills) values.push(providerOutput(provider, skill, local))
   return values
 }
 
@@ -67,17 +67,17 @@ function providerOutput(provider, skill, local) {
   return { path: join(providerRoot, skill.id, 'SKILL.md'), provider, owner: skill.owner, content }
 }
 
-async function adapterOutputs(root, adapterHomeRoot, home, extensions, allowed, check, previous) {
+async function adapterOutputs(root, adapterHomeRoot, home, assets, allowed, check, previous) {
   const values = []
   const built = []
   const approvals = new Set(Array.isArray(allowed) ? allowed : allowed ? [allowed] : [])
-  for (const extension of extensions.filter((entry) => entry.manifest.adapter)) {
-    const adapter = extension.manifest.adapter
-    if (!approvals.has(adapter.id) && !approvals.has(extension.manifest.name)) {
+  for (const asset of assets.filter((entry) => entry.manifest.adapter)) {
+    const adapter = asset.manifest.adapter
+    if (!approvals.has(adapter.id) && !approvals.has(asset.manifest.name)) {
       if (check) {
-        if (!(previous?.adapters ?? []).includes(extension.manifest.name)) throw stale(`${adapter.id} has not completed an approved build.`)
-        values.push(...(previous?.outputs ?? []).filter((entry) => entry.provider === 'adapter' && entry.owner === extension.manifest.name).map((entry) => ({ ...entry, content: null })))
-        built.push(extension.manifest.name)
+        if (!(previous?.adapters ?? []).includes(asset.manifest.name)) throw stale(`${adapter.id} has not completed an approved build.`)
+        values.push(...(previous?.outputs ?? []).filter((entry) => entry.provider === 'adapter' && entry.owner === asset.manifest.name).map((entry) => ({ ...entry, content: null })))
+        built.push(asset.manifest.name)
         continue
       }
       throw new HairnessError('adapter_approval_required', `${adapter.id} requires --allow-adapter ${adapter.id}.`)
@@ -85,18 +85,18 @@ async function adapterOutputs(root, adapterHomeRoot, home, extensions, allowed, 
     await mkdir(join(root, '.hairness'), { recursive: true })
     const outputRoot = await mkdtemp(join(root, '.hairness', 'adapter-'))
     try {
-      const entry = await resolvePackageFile(extension.root, adapter.entry, `${adapter.id} adapter entry`)
+      const entry = await resolvePackageFile(asset.root, adapter.entry, `${adapter.id} adapter entry`)
       await runAdapter(entry, outputRoot, {
         home: { id: home.name, root: adapterHomeRoot, providers: home.providers },
-        config: home.config[extension.manifest.name] ?? {},
+        config: home.config[asset.manifest.name] ?? {},
       }, root)
       const declared = adapter.outputs.map((path) => path.replaceAll('\\', '/').replace(/\/+$/, ''))
       for (const file of await treeFiles(outputRoot)) {
         if (!declared.some((path) => file.path === path || file.path.startsWith(`${path}/`))) throw new HairnessError('adapter_output_undeclared', `${adapter.id} wrote undeclared output ${file.path}.`)
         if (['AGENTS.md', 'CLAUDE.md', '.codex/hooks.json', '.claude/settings.json'].includes(file.path)) throw new HairnessError('adapter_output_reserved', `${adapter.id} wrote reserved managed output ${file.path}.`)
-        values.push({ path: file.path, provider: 'adapter', owner: extension.manifest.name, content: file.content })
+        values.push({ path: file.path, provider: 'adapter', owner: asset.manifest.name, content: file.content })
       }
-      built.push(extension.manifest.name)
+      built.push(asset.manifest.name)
     } finally {
       await rm(outputRoot, { recursive: true, force: true })
     }

@@ -1,7 +1,7 @@
 Hairness is maintained as an independent Target linked to a Home. Never turn the
 product repository into a colocated Home.
 
-Change canonical sources, schemas and bundled Extensions; do not edit generated
+Change canonical sources, schemas and bundled Assets; do not edit generated
 provider projections as source. Keep README, `docs/reference.md`, schemas, CLI
 and tests aligned. Targets remain independent Git repositories.
 

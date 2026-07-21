@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url'
 import { buildHome } from './build.mjs'
 import { createHome, initHome } from './create.mjs'
 import { doctorHome } from './doctor.mjs'
-import { addExtensions, diffExtension, removeExtension, statusExtensions, syncExtensions } from './extensions.mjs'
+import { addAssets, diffAsset, removeAsset, statusAssets, syncAssets } from './assets.mjs'
 import { assertRuntime, findHome } from './home.mjs'
 import { addIntegration, bindIntegration, doctorIntegrations, listIntegrations, parseAccessors, removeIntegration, unbindIntegration } from './integrations.mjs'
 import { asHairnessError, HairnessError } from './lib/errors.mjs'
@@ -30,27 +30,27 @@ async function route(command, action, rest, flags, io) {
     baseItem: rest[0], providers: csv(flags.providers), name: flags.name,
   })
   if (command === 'init') {
-    if (action || rest.length) throw usage('hairness init creates a bare Home; add Extensions after initialization.')
+    if (action || rest.length) throw usage('hairness init creates a bare Home; add Assets after initialization.')
     return initHome(flags.home ?? process.cwd(), { providers: csv(flags.providers), name: flags.name })
   }
   const root = await findHome(flags.home ?? process.cwd())
   await assertRuntime(root)
   if (command === 'add') {
     const addresses = [action, ...rest].filter(Boolean)
-    if (!addresses.length) throw usage('At least one Extension is required.')
+    if (!addresses.length) throw usage('At least one Asset is required.')
     const overwrite = booleanFlag(flags.overwrite)
-    const preview = await addExtensions(root, addresses, { dryRun: true, overwrite })
+    const preview = await addAssets(root, addresses, { dryRun: true, overwrite })
     if (booleanFlag(flags['dry-run']) || booleanFlag(flags.diff)) return preview
     if (!booleanFlag(flags.yes) && !await confirm(io, preview)) throw new HairnessError('confirmation_required', 'Installation cancelled. Pass -y for non-interactive use.')
-    return addExtensions(root, addresses, { overwrite })
+    return addAssets(root, addresses, { overwrite })
   }
-  if (command === 'status') return statusExtensions(root, action)
-  if (command === 'diff') return diffExtension(root, required(action, 'Extension'), { to: flags.to })
+  if (command === 'status') return statusAssets(root, action)
+  if (command === 'diff') return diffAsset(root, required(action, 'Asset'), { to: flags.to })
   if (command === 'sync') {
-    if (!action && !booleanFlag(flags.all)) throw usage('An Extension or --all is required.')
-    return syncExtensions(root, action, { all: booleanFlag(flags.all), check: booleanFlag(flags.check), to: flags.to, overwrite: booleanFlag(flags.overwrite) })
+    if (!action && !booleanFlag(flags.all)) throw usage('An Asset or --all is required.')
+    return syncAssets(root, action, { all: booleanFlag(flags.all), check: booleanFlag(flags.check), to: flags.to, overwrite: booleanFlag(flags.overwrite) })
   }
-  if (command === 'remove') return removeExtension(root, required(action, 'Extension'), { overwrite: booleanFlag(flags.overwrite) })
+  if (command === 'remove') return removeAsset(root, required(action, 'Asset'), { overwrite: booleanFlag(flags.overwrite) })
   if (command === 'build') return buildHome(root, { check: booleanFlag(flags.check), allowAdapters: values(flags['allow-adapter']) })
   if (command === 'doctor') return doctorHome(root)
   if (command === 'prologue') return prologueModel(root)
@@ -85,7 +85,7 @@ function help() {
     summary: 'Hairness gives agents a provider-agnostic Home you own.',
     next: ['hairness create <home>', 'open an agent in <home>', 'invoke hairness-onboarding'],
     commands: [
-      'init', 'create <home> [base-extension]', 'add <extensions...>', 'status [extension]', 'diff <extension>', 'sync [extension|--all]', 'remove <extension>', 'build [--check] [--allow-adapter <id>]',
+      'init', 'create <home> [base-asset]', 'add <assets...>', 'status [asset]', 'diff <asset>', 'sync [asset|--all]', 'remove <asset>', 'build [--check] [--allow-adapter <id>]',
       'doctor [--json]', 'prologue [--json]', 'target list|discover|add|bind|unbind|remove|doctor', 'integration list|add|bind|unbind|remove|doctor',
     ],
   }
@@ -108,8 +108,8 @@ function parseArguments(argv) {
 
 function renderHuman(value, command) {
   if (value?.summary && value?.commands) return [value.summary, '', 'Next:', ...value.next.map((item) => `  ${item}`), '', 'Commands:', ...value.commands.map((item) => `  hairness ${item}`)].join('\n')
-  if (value?.status === 'created') return ['Hairness Home created', value.home, `Extensions: ${value.extensions.join(', ')}`, '', ...value.launch.flatMap((entry) => [`${entry.provider}: ${entry.command}`, `Then invoke ${entry.onboarding}.`])].join('\n')
-  if (value?.home?.name && value?.limits) return [`Hairness doctor — ${value.status}`, `Home: ${value.home.name}`, `Providers: ${value.home.providers.join(', ')}`, `Extensions: ${value.extensions.length}`, `Targets: ${value.targets.filter((entry) => entry.binding).length}/${value.targets.length} bound`, `Build: ${value.build}`, ...(value.limits.length ? ['', 'Limits:', ...value.limits.map((item) => `  - ${item}`)] : [])].join('\n')
+  if (value?.status === 'created') return ['Hairness Home created', value.home, `Assets: ${value.assets.join(', ')}`, '', ...value.launch.flatMap((entry) => [`${entry.provider}: ${entry.command}`, `Then invoke ${entry.onboarding}.`])].join('\n')
+  if (value?.home?.name && value?.limits) return [`Hairness doctor — ${value.status}`, `Home: ${value.home.name}`, `Providers: ${value.home.providers.join(', ')}`, `Assets: ${value.assets.length}`, `Targets: ${value.targets.filter((entry) => entry.binding).length}/${value.targets.length} bound`, `Build: ${value.build}`, ...(value.limits.length ? ['', 'Limits:', ...value.limits.map((item) => `  - ${item}`)] : [])].join('\n')
   if (Array.isArray(value)) return value.length ? value.map((entry) => `- ${entry.id ?? entry.name ?? JSON.stringify(entry)}${entry.state ? `: ${entry.state}` : ''}`).join('\n') : 'No entries.'
   if (command[0] === 'build' && value?.outputs) return `Build ready — ${value.outputs.length} generated outputs.`
   return Object.entries(value ?? {}).map(([key, entry]) => `${key}: ${typeof entry === 'object' ? JSON.stringify(entry) : entry}`).join('\n')
@@ -117,7 +117,7 @@ function renderHuman(value, command) {
 
 async function confirm(io, preview) {
   if (!io.stdin?.isTTY || !io.stdout?.isTTY) return false
-  io.stdout.write(`Install ${preview.extensions.join(', ')} and write ${preview.writes.length} files? [y/N] `)
+  io.stdout.write(`Install ${preview.assets.join(', ')} and write ${preview.writes.length} files? [y/N] `)
   return new Promise((resolvePromise) => {
     io.stdin.once('data', (chunk) => resolvePromise(/^y(?:es)?\s*$/i.test(String(chunk))))
     io.stdin.resume?.()

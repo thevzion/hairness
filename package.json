@@ -35,8 +35,8 @@
   "files": [
     "bin/",
     "docs/reference.md",
-    "extensions/onboarding/",
-    "extensions/scratch/",
+    "assets/onboarding/",
+    "assets/scratch/",
     "schemas/v4/",
     "src/",
     "LICENSE",

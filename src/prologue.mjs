@@ -1,26 +1,26 @@
 import { API, validateDocument } from './contracts.mjs'
-import { installedExtensions } from './extensions.mjs'
+import { installedAssets } from './assets.mjs'
 import { loadHome, loadLocalConfig } from './home.mjs'
 import { listIntegrations } from './integrations.mjs'
 import { listTargets } from './targets.mjs'
 
 export async function prologueModel(root) {
-  const [home, local, targets, integrations, extensions] = await Promise.all([
+  const [home, local, targets, integrations, assets] = await Promise.all([
     loadHome(root),
     loadLocalConfig(root),
     listTargets(root),
     listIntegrations(root),
-    installedExtensions(root),
+    installedAssets(root),
   ])
   const facts = [{ id: 'home.name', value: home.name }, { id: 'home.runtime', value: home.runtime }]
   const signals = []
-  for (const extension of extensions) {
-    if (extension.invalid) {
-      signals.push({ id: `extension.${namespace(extension.id)}.invalid`, level: 'error', message: 'Extension manifest is invalid.' })
+  for (const asset of assets) {
+    if (asset.invalid) {
+      signals.push({ id: `asset.${namespace(asset.id)}.invalid`, level: 'error', message: 'Asset manifest is invalid.' })
       continue
     }
-    facts.push({ id: `extension.${namespace(extension.manifest.name)}.version`, value: extension.manifest.version })
-    if (extension.manifest.installation.mobile) signals.push({ id: `extension.${namespace(extension.manifest.name)}.mobile`, level: 'info', message: 'Extension source is mobile; pin a Git tag or commit for reproducible bootstrap.' })
+    facts.push({ id: `asset.${namespace(asset.manifest.name)}.version`, value: asset.manifest.version })
+    if (asset.manifest.installation.mobile) signals.push({ id: `asset.${namespace(asset.manifest.name)}.mobile`, level: 'info', message: 'Asset source is mobile; pin a Git tag or commit for reproducible bootstrap.' })
   }
   for (const target of targets) {
     facts.push({ id: `target.${target.id}.repository`, value: target.repository })
