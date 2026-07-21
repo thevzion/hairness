@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0-alpha.1
+
+- Keep GitHub Asset staging alive until every declared source file has been read.
+
 ## 0.4.0-alpha.0
 
 - Make the provider-agnostic Home the primary Hairness product.

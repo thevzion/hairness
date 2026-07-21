@@ -30,7 +30,7 @@ test('create produces a Git-ready Home with onboarding and tracked projections',
     assert.deepEqual(document, {
       $schema: 'https://hairness.dev/schema/home.json',
       name: 'my-home',
-      runtime: '@hairness/cli@0.4.0-alpha.0',
+      runtime: '@hairness/cli@0.4.0-alpha.1',
       providers: ['codex', 'claude'],
     })
     for (const absent of ['package.json', 'package-lock.json', 'hairness.lock.json', '.overlay/config.json']) {
